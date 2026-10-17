@@ -130,9 +130,10 @@ public enum Speaker {
         return naturalPitch - 1.0;
     }
 
-    /** Die Lage, in der die Stimme singt: eine Oktave über ihrem Brummen – so klingen die bekannten Dorfbewohner-Videos (hell, flink). */
+    /** Die Lage, in der die Stimme singt: etwa fünf Halbtöne über ihrem Brummen (Grundton um 130 Hz) – so liegt der Gesang in den bekannten
+     * Dorfbewohner-Videos (gemessen am Spektrum ihrer Gesangsspur). */
     public double singingPitch() {
-        return naturalPitch + 12.0;
+        return naturalPitch + 5.0;
     }
 
     /** Der tiefste Ton (halbe Geschwindigkeit). */

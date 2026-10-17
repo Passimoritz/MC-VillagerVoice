@@ -87,27 +87,111 @@ def pitch_of(vocals: np.ndarray, start: float, end: float) -> float | None:
     return float(np.round(69 + 12 * np.log2(np.median(vals) / 440.0)))
 
 
-def melody_for_words(words: list[dict], notes: list[list], vocals: np.ndarray) -> list[dict]:
-    """Jedes Wort bekommt die Toene seiner Zeit; ohne Ton: ein Ton in der Tonhoehe der Gesangsspur."""
+def syllables_of(word: str, language: str) -> int:
+    """Grobe Silbenzahl eines Wortes (Vokalgruppen)."""
+    vowels = "aeiouyäöü"
+    w = word.lower()
+    count = 0
+    prev = False
+    for c in w:
+        is_v = c in vowels
+        if is_v and not prev:
+            count += 1
+        prev = is_v
+    if language == "en" and w.endswith("e") and count > 1 and not w.endswith(("le", "ee", "ye")):
+        count -= 1
+    return max(1, count)
+
+
+def melody_for_words(words: list[dict], notes: list[list], vocals: np.ndarray, language: str = "en") -> list[dict]:
+    """Eine saubere, singbare Melodie: je Silbe ein Ton. Die Zeit kommt von Whisper (Wort, gleichmaessig auf seine Silben verteilt), die
+    Tonhoehe aus der Gesangsspur selbst (Median der Tonhoehe im Silbenfenster, auf den Halbton gerundet); die erkannten Noten (basic-pitch)
+    dienen nur als Stuetze, wenn die Tonhoehe nicht messbar ist. Keine Streuer, keine Oktavspruenge durch Obertoene."""
+    import librosa
+    f0, voiced, _ = librosa.pyin(vocals, fmin=70, fmax=900, sr=SR, frame_length=2048, hop_length=512)
+    midi = 69 + 12 * np.log2(np.maximum(np.nan_to_num(f0, nan=1.0), 1.0) / 440.0)
+    ok = np.nan_to_num(voiced) > 0.5
+    hop_s = 512 / SR
+
+    def pitch_between(a: float, b: float) -> float | None:
+        i, j = int(a / hop_s), max(int(a / hop_s) + 1, int(b / hop_s))
+        vals = midi[i:j][ok[i:j]]
+        if len(vals) < 2:
+            return None
+        return float(np.round(np.median(vals)))
+
+    # Energie-Verlauf fuer Silben-Einsaetze und Wortenden
+    rms = librosa.feature.rms(y=vocals, frame_length=1024, hop_length=512)[0]
+    onset_env = librosa.onset.onset_strength(y=vocals, sr=SR, hop_length=512)
+    # Whisper legt bei schnellen Passagen mehrere Woerter auf dieselbe Zeit: Zeiten der Reihe nach erzwingen, zu kurze Woerter bleiben stumm
+    cursor = 0.0
+    for w in words:
+        if w["start"] < cursor:
+            w["start"] = cursor
+        if w["end"] < w["start"] + 0.06:
+            w["end"] = w["start"] + 0.06
+        cursor = w["start"] + 0.04
     melody = []
-    used = set()
-    last_pitch = 60.0
+    last = 60.0
     for i, w in enumerate(words):
-        a, b = w["start"] - 0.06, w["end"] + 0.04
-        own = [(k, n) for k, n in enumerate(notes) if k not in used and n[0] < b and n[1] > a]
-        if not own:
-            pitch = pitch_of(vocals, w["start"], w["end"]) or last_pitch
-            melody.append({"start": int(w["start"] * 1000), "dur": max(80, int((w["end"] - w["start"]) * 1000)), "pitch": pitch, "volume": 0.8, "word": i})
-            last_pitch = pitch
-            continue
-        for k, n in own:
-            used.add(k)
-            s = max(n[0], a)
-            e = min(n[1], b + 0.15)
-            melody.append({"start": int(s * 1000), "dur": max(60, int((e - s) * 1000)), "pitch": n[2], "volume": round(0.45 + 0.55 * min(1.0, n[3]), 2), "word": i})
-            last_pitch = n[2]
-    melody.sort(key=lambda m: m["start"])
-    return melody
+        start = w["start"]
+        if i + 1 < len(words) and words[i + 1]["start"] - start < 0.07:
+            continue  # kein Platz fuer einen eigenen Ton
+        # Wortende: spaetestens der Beginn des naechsten Wortes, hoechstens 1,2 s, und nicht laenger als der Gesang dort klingt
+        end = min(w["end"], start + 1.2, words[i + 1]["start"] if i + 1 < len(words) else w["end"] + 0.3)
+        f_a, f_b = int(start / hop_s), max(int(start / hop_s) + 2, int(end / hop_s))
+        seg_rms = rms[f_a:f_b]
+        if len(seg_rms) > 3:
+            loud_frames = np.where(seg_rms > seg_rms.max() * 0.15)[0]
+            end = min(end, start + (loud_frames[-1] + 2) * hop_s) if len(loud_frames) else end
+        if end - start < 0.08:
+            end = start + 0.08
+        count = syllables_of(w["text"], language)
+        # Silben-Einsaetze aus dem Energie-Anstieg im Wort (mindestens 90 ms Abstand), so viele wie Silben
+        cuts = [start]
+        if count > 1:
+            env = onset_env[f_a:f_b]
+            if len(env) > 3:
+                peaks = librosa.util.peak_pick(env, pre_max=2, post_max=2, pre_avg=3, post_avg=3, delta=0.3 * (env.max() + 1e-9), wait=3)
+                cand = sorted([(env[k], start + k * hop_s) for k in peaks if start + k * hop_s > start + 0.09 and start + k * hop_s < end - 0.07], reverse=True)
+                cuts += [t for _, t in cand[: count - 1]]
+                cuts = sorted(cuts)
+            while len(cuts) < count:
+                # fehlende Einsaetze: Rest gleichmaessig teilen
+                gaps = [(cuts[k + 1] if k + 1 < len(cuts) else end) - cuts[k] for k in range(len(cuts))]
+                k = int(np.argmax(gaps))
+                nxt = cuts[k + 1] if k + 1 < len(cuts) else end
+                if nxt - cuts[k] < 0.18:
+                    break
+                cuts.insert(k + 1, (cuts[k] + nxt) / 2)
+        cuts = sorted(set(cuts))
+        for k, a in enumerate(cuts):
+            b = cuts[k + 1] if k + 1 < len(cuts) else end
+            if b - a < 0.06:
+                continue
+            pitch = pitch_between(a + 0.02, b - 0.02) or pitch_between(a, b)
+            if pitch is None:
+                near = [n for n in notes if n[0] < b and n[1] > a]
+                pitch = float(max(near, key=lambda n: n[3])[2]) if near else last
+            while pitch - last > 9:
+                pitch -= 12
+            while last - pitch > 9:
+                pitch += 12
+            last = pitch
+            seg = vocals[int(a * SR): int(b * SR)]
+            loud = float(np.sqrt(np.mean(seg ** 2))) if len(seg) else 0.0
+            melody.append({"start": int(a * 1000), "dur": max(80, int((b - a) * 1000) - 15), "pitch": pitch, "loud": loud, "word": i})
+    peak = max((m["loud"] for m in melody), default=1.0) or 1.0
+    for m in melody:
+        m["volume"] = round(0.5 + 0.5 * min(1.0, m.pop("loud") / peak) ** 0.5, 2)
+    # gleiche Toene direkt hintereinander im selben Wort verbinden (ein gehaltener Ton statt Stottern)
+    merged: list[dict] = []
+    for m in melody:
+        if merged and merged[-1]["word"] == m["word"] and merged[-1]["pitch"] == m["pitch"] and merged[-1]["start"] + merged[-1]["dur"] >= m["start"] - 20:
+            merged[-1]["dur"] = m["start"] + m["dur"] - merged[-1]["start"]
+        else:
+            merged.append(m)
+    return merged
 
 
 def main() -> None:
@@ -152,7 +236,7 @@ def main() -> None:
             words = transcribe(cache / "stems" / "vocals.wav", args.start, end, args.lang, args.whisper)
             lyrics_file.write_text(json.dumps(words, indent=0, ensure_ascii=False), encoding="utf-8")
         text = " ".join(w["text"] for w in words)
-        melody = melody_for_words(words, notes, vocals)
+        melody = melody_for_words(words, notes, vocals, args.lang)
         log(f"Whisper: {len(words)} Woerter: {text[:160]}")
         log(f"Melodie: {len(melody)} Toene aus {len(notes)} erkannten Gesangsnoten ({args.start:.1f}-{end:.1f} s)")
     if not text.strip() or not melody:
@@ -178,8 +262,10 @@ def main() -> None:
     # 3. mischen
     backing = sum(load(cache / "stems" / f"{stem}.wav", args.start, end) for stem in ("bass", "drums", "other") if (cache / "stems" / f"{stem}.wav").exists())
     n = len(vocals)
-    sf.write(str(out / "1-original-vocals.wav"), vocals, SR)
-    sf.write(str(out / "1-original.wav"), np.clip(vocals + backing, -1, 1), SR)
+    title = out.name
+    names = {"original": "Original", "villager": "Villager Vanilla", "pack": "Villager Paket"}
+    sf.write(str(out / f"{title} - 1 {names['original']} - nur Gesang.wav"), vocals, SR)
+    sf.write(str(out / f"{title} - 1 {names['original']} - mit Begleitung.wav"), np.clip(vocals + backing, -1, 1), SR)
     target_rms = float(np.sqrt(np.mean(vocals ** 2))) + 1e-9
     number = 2
     for label in ("villager", "pack"):
@@ -192,15 +278,18 @@ def main() -> None:
             y = librosa.resample(y, orig_sr=rate, target_sr=SR)
         y = np.pad(y, (0, max(0, n - len(y))))[:n]
         y *= target_rms / (float(np.sqrt(np.mean(y ** 2))) + 1e-9)
-        sf.write(str(out / f"{number}-{label}-vocals.wav"), np.clip(y, -1, 1), SR)
-        sf.write(str(out / f"{number}-{label}.wav"), np.clip(y + backing, -1, 1), SR)
+        sf.write(str(out / f"{title} - {number} {names[label]} - nur Gesang.wav"), np.clip(y, -1, 1), SR)
+        sf.write(str(out / f"{title} - {number} {names[label]} - mit Begleitung.wav"), np.clip(y + backing, -1, 1), SR)
         number += 1
 
     # 4. messen
-    renders = [str(out / "2-villager-vocals.wav")] + ([str(out / "3-pack-vocals.wav")] if (out / "3-pack-vocals.wav").exists() else [])
-    labels = "villager" + (",pack" if len(renders) > 1 else "")
-    subprocess.run([python, "-I", "-X", "utf8", str(HERE / "compare.py"), str(out / "1-original-vocals.wav"), *renders, "--labels", labels,
-                    "--out", str(out / "bericht.json"), "--listen", str(out / "vergleich.wav")], check=True)
+    renders = [str(out / f"{title} - 2 Villager Vanilla - nur Gesang.wav")]
+    labels = "villager"
+    if (out / f"{title} - 3 Villager Paket - nur Gesang.wav").exists():
+        renders.append(str(out / f"{title} - 3 Villager Paket - nur Gesang.wav"))
+        labels += ",pack"
+    subprocess.run([python, "-I", "-X", "utf8", str(HERE / "compare.py"), str(out / f"{title} - 1 Original - nur Gesang.wav"), *renders, "--labels", labels,
+                    "--out", str(out / "bericht.json"), "--listen", str(out / f"{title} - Vergleich nacheinander (Original, Vanilla, Paket).wav")], check=True)
     log(f"fertig: {out}")
 
 

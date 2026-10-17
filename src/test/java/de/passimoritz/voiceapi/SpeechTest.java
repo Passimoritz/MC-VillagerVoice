@@ -156,7 +156,7 @@ class SpeechTest {
         for (Segment vowel : vowels) {
             assertTrue(vowel.pitch() >= 40 && vowel.pitch() <= 70, vowel.toString());
         }
-        // eine Oktavlage für alle, um die Gesangslage (55,6) herum: Mitte 67 → eine Oktave tiefer (64 → 52); h vor dem ersten Ton bleibt bei 0
+        // eine Oktavlage für alle, um die Gesangslage (48,6) herum: Mitte 67 → eine Oktave tiefer (64 → 52); h vor dem ersten Ton bleibt bei 0
         assertEquals(52, vowels.get(0).pitch(), 0.01);
         assertTrue(sung.segments().getFirst().startMs() >= 0);
         assertEquals(Phoneme.H, sung.segments().getFirst().phoneme());

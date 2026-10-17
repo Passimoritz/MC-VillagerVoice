@@ -39,9 +39,10 @@ public final class PackRenderer implements Renderer {
             Phoneme phoneme = segment.phoneme();
             float volume = segment.volume() * MASTER;
             if (utterance.sung()) {
-                // Gesang: das echte Hmm der Stimme auf der Tonhöhe des Tons, keine Geräusche (wie die bekannten Dorfbewohner-Videos)
+                // Gesang: das echte Hmm der Stimme auf der Tonhöhe des Tons, keine Geräusche (wie die bekannten Dorfbewohner-Videos);
+                // die Hmm-Samples sind über die Spitze normiert (leiser als die Vokale), darum ohne MASTER
                 if (phoneme.isVocalic() || phoneme.isSonorant()) {
-                    hum(cues, utterance.speaker(), segment.midPitch(), segment.startMs(), segment.endMs(), volume, i);
+                    hum(cues, utterance.speaker(), segment.midPitch(), segment.startMs(), segment.endMs(), segment.volume(), i);
                 }
                 continue;
             }

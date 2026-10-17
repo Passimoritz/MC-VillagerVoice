@@ -54,7 +54,9 @@ SONORANTS = {
 NOISES = ["p", "b", "t", "d", "k", "g", "f", "v", "s", "z", "sh", "zh", "th", "dh", "h", "x", "xi", "ts", "pf", "ch", "dj"]
 # Gesang: das echte Hmm einer Stimme (Vanilla-Klang aus ~/.voiceapi/sounds, von voicelab.py setup): Datei, stabiler Ausschnitt (s), Tonhoehe (MIDI)
 # je Stimme mehrere Aufnahmen: Datei, Beginn (kurz vor dem Einsatz, mit natuerlichem Anstieg), Ende, stabile Mitte (Schleife), Tonhoehe (MIDI)
-HUMS = {"villager": [("mob/villager/idle2", 0.30, 0.95, 0.45, 0.90, 42.6), ("mob/villager/idle1", 0.08, 0.62, 0.25, 0.58, 45.0)]}
+# (Pegel- und Tonhoehenverlauf der Aufnahmen gemessen: Schleife nur dort, wo Pegel und Ton stehen – vor dem natuerlichen Abfall)
+HUMS = {"villager": [("mob/villager/idle2", 0.32, 0.72, 0.40, 0.70, 42.6), ("mob/villager/idle1", 0.18, 0.48, 0.28, 0.46, 45.0),
+                     ("mob/villager/no1", 0.10, 0.42, 0.16, 0.40, 43.2)]}
 # zwei Laengen (ms gesamt, ms gehalten): kurz fuer kurze Toene (Luft dazwischen wie in den Videos), lang fuer gehaltene
 HUM_LENGTHS = {"s": (350, 200), "m": (520, 340), "l": (750, 480)}
 SOUNDS = Path.home() / ".voiceapi" / "sounds"
@@ -298,23 +300,19 @@ def flatten_pitch(piece: np.ndarray, midi: float) -> np.ndarray:
     hop = int(0.01 * SR)
     f0 = librosa.yin(piece, fmin=60, fmax=400, sr=SR, frame_length=2048, hop_length=hop)
     target = midi_hz(midi)
-    # Ausreisser glaetten
-    f0 = np.where((f0 > target * 0.6) & (f0 < target * 1.6), f0, target)
+    # Ausreisser der Messung (Oktavfehler, Rauschen) nicht mitziehen: nur Werte nahe am Ziel gelten, dann glaetten
+    f0 = np.where((f0 > target * 0.62) & (f0 < target * 1.5), f0, target)
+    from scipy.signal import medfilt
+    f0 = medfilt(f0, 7)
     kernel = np.ones(5) / 5
     f0 = np.convolve(np.pad(f0, 2, mode="edge"), kernel, mode="valid")
-    # je Frame: Geschwindigkeit = Ziel / gemessen
-    out = []
-    pos = 0.0
-    for k in range(len(f0)):
-        speed = target / f0[k]
-        n = int(hop / speed)
-        idx = pos + np.arange(n) * speed
-        idx = idx[idx < len(piece) - 1]
-        if len(idx) == 0:
-            break
-        out.append(np.interp(idx, np.arange(len(piece)), piece))
-        pos = idx[-1] + speed
-    return np.concatenate(out).astype(np.float32)
+    # stetige Lesegeschwindigkeit (je Sample interpoliert): Ziel / gemessen – kein Sprung an Frame-Grenzen, also keine Klicks
+    frame_pos = np.arange(len(f0)) * hop + hop / 2
+    speed_per_sample = np.interp(np.arange(len(piece)), frame_pos, target / f0)
+    # Leseposition im Original: Integral der Geschwindigkeit ueber die Ausgabe-Samples
+    read = np.cumsum(speed_per_sample)
+    read = read[read < len(piece) - 1]
+    return np.interp(read, np.arange(len(piece)), piece).astype(np.float32)
 
 
 def hum(speaker: str, root: int, length: str = "l", take: int = 0) -> np.ndarray:
@@ -359,14 +357,13 @@ def hum(speaker: str, root: int, length: str = "l", take: int = 0) -> np.ndarray
     out *= envelope(len(out), 3, 20)
     # Klang wie in den Videos: unter 300 Hz etwa 20 dB duenner, der Formant um 900 Hz betont, oben weicher (die schneller laufende Aufnahme
     # wird sonst zu spitz)
-    out = band(out, 420, None, 2)
-    out = out + 0.9 * band(out, 600, 1300, 2)
-    soft = band(out, None, 2400, 2)
-    out = soft + 0.35 * (out - soft)
-    # Pegel nach den ersten 300 ms (der Einsatz), damit alle Grundtoene und Aufnahmen gleich laut sind
-    ref = out[: int(0.3 * SR)]
-    out = out * (10 ** (VOWEL_DB / 20) / (float(np.sqrt(np.mean(ref ** 2))) + 1e-9))
-    return soft_limit(out)
+    out = band(out, 150, None, 2)
+    out = out + 0.3 * band(out, 600, 1300, 2)
+    soft = band(out, None, 2600, 2)
+    out = soft + 0.4 * (out - soft)
+    # Pegel ueber die Spitze (kein Limiter: der verzerrt das Hmm hoerbar), alle Grundtoene und Aufnahmen gleich laut
+    out = out * (0.7 / (float(np.abs(out[: int(0.3 * SR)]).max()) + 1e-9))
+    return np.clip(out, -0.98, 0.98).astype(np.float32)
 
 
 # ── Paket ───────────────────────────────────────────────────
