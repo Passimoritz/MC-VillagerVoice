@@ -103,95 +103,70 @@ def syllables_of(word: str, language: str) -> int:
     return max(1, count)
 
 
-def melody_for_words(words: list[dict], notes: list[list], vocals: np.ndarray, language: str = "en") -> list[dict]:
-    """Eine saubere, singbare Melodie: je Silbe ein Ton. Die Zeit kommt von Whisper (Wort, gleichmaessig auf seine Silben verteilt), die
-    Tonhoehe aus der Gesangsspur selbst (Median der Tonhoehe im Silbenfenster, auf den Halbton gerundet); die erkannten Noten (basic-pitch)
-    dienen nur als Stuetze, wenn die Tonhoehe nicht messbar ist. Keine Streuer, keine Oktavspruenge durch Obertoene."""
+def melody_from_pitch(vocals: np.ndarray, words: list[dict] | None) -> list[dict]:
+    """Die Melodie direkt aus der Gesangsspur: Die Tonhoehenkurve wird in Toene zerlegt (neuer Ton, wenn die Tonhoehe laenger als 60 ms um
+    mehr als 0,8 Halbtoene wegbleibt, bei einer Stimm-Pause oder einem deutlichen Energie-Anstieg = neue Silbe auf gleicher Hoehe). Jeder Ton:
+    Median-Tonhoehe auf den Halbton, Lautstaerke aus der Spur. So fehlt kein gesungener Ton – egal, was Whisper aus dem Text macht.
+    Woerter (falls da) ordnen den Toenen nur die Wortnummer zu (fuer Untertitel)."""
     import librosa
-    f0, voiced, _ = librosa.pyin(vocals, fmin=70, fmax=900, sr=SR, frame_length=2048, hop_length=512)
+    hop = 256
+    f0, voiced, prob = librosa.pyin(vocals, fmin=65, fmax=900, sr=SR, frame_length=2048, hop_length=hop)
     midi = 69 + 12 * np.log2(np.maximum(np.nan_to_num(f0, nan=1.0), 1.0) / 440.0)
-    ok = np.nan_to_num(voiced) > 0.5
-    hop_s = 512 / SR
-
-    def pitch_between(a: float, b: float) -> float | None:
-        i, j = int(a / hop_s), max(int(a / hop_s) + 1, int(b / hop_s))
-        vals = midi[i:j][ok[i:j]]
-        if len(vals) < 2:
-            return None
-        return float(np.round(np.median(vals)))
-
-    # Energie-Verlauf fuer Silben-Einsaetze und Wortenden
-    rms = librosa.feature.rms(y=vocals, frame_length=1024, hop_length=512)[0]
-    onset_env = librosa.onset.onset_strength(y=vocals, sr=SR, hop_length=512)
-    # Whisper legt bei schnellen Passagen mehrere Woerter auf dieselbe Zeit: Zeiten der Reihe nach erzwingen, zu kurze Woerter bleiben stumm
-    cursor = 0.0
-    for w in words:
-        if w["start"] < cursor:
-            w["start"] = cursor
-        if w["end"] < w["start"] + 0.06:
-            w["end"] = w["start"] + 0.06
-        cursor = w["start"] + 0.04
-    melody = []
-    last = 60.0
-    for i, w in enumerate(words):
-        start = w["start"]
-        if i + 1 < len(words) and words[i + 1]["start"] - start < 0.07:
-            continue  # kein Platz fuer einen eigenen Ton
-        # Wortende: spaetestens der Beginn des naechsten Wortes, hoechstens 1,2 s, und nicht laenger als der Gesang dort klingt
-        end = min(w["end"], start + 1.2, words[i + 1]["start"] if i + 1 < len(words) else w["end"] + 0.3)
-        f_a, f_b = int(start / hop_s), max(int(start / hop_s) + 2, int(end / hop_s))
-        seg_rms = rms[f_a:f_b]
-        if len(seg_rms) > 3:
-            loud_frames = np.where(seg_rms > seg_rms.max() * 0.15)[0]
-            end = min(end, start + (loud_frames[-1] + 2) * hop_s) if len(loud_frames) else end
-        if end - start < 0.08:
-            end = start + 0.08
-        count = syllables_of(w["text"], language)
-        # Silben-Einsaetze aus dem Energie-Anstieg im Wort (mindestens 90 ms Abstand), so viele wie Silben
-        cuts = [start]
-        if count > 1:
-            env = onset_env[f_a:f_b]
-            if len(env) > 3:
-                peaks = librosa.util.peak_pick(env, pre_max=2, post_max=2, pre_avg=3, post_avg=3, delta=0.3 * (env.max() + 1e-9), wait=3)
-                cand = sorted([(env[k], start + k * hop_s) for k in peaks if start + k * hop_s > start + 0.09 and start + k * hop_s < end - 0.07], reverse=True)
-                cuts += [t for _, t in cand[: count - 1]]
-                cuts = sorted(cuts)
-            while len(cuts) < count:
-                # fehlende Einsaetze: Rest gleichmaessig teilen
-                gaps = [(cuts[k + 1] if k + 1 < len(cuts) else end) - cuts[k] for k in range(len(cuts))]
-                k = int(np.argmax(gaps))
-                nxt = cuts[k + 1] if k + 1 < len(cuts) else end
-                if nxt - cuts[k] < 0.18:
+    rms = librosa.feature.rms(y=vocals, frame_length=2048, hop_length=hop)[0]
+    # Stimmhaft = pyin haelt es fuer stimmhaft (locker: bei rauen, tiefen Stimmen wie Johnny Cash ist die Sicherheit niedrig) und es klingt dort
+    n0 = min(len(voiced), len(rms))
+    ok = (np.nan_to_num(voiced[:n0]) > 0.35) & (rms[:n0] > rms.max() * 0.08)
+    ok = np.pad(ok, (0, max(0, len(voiced) - n0)))
+    onset = librosa.onset.onset_strength(y=vocals, sr=SR, hop_length=hop)
+    n = min(len(midi), len(ok), len(rms), len(onset))
+    midi, ok, rms, onset = midi[:n], ok[:n], rms[:n], onset[:n]
+    # Oktavfehler glaetten: springt die Kurve um ~12, zurueckziehen
+    for k in range(1, n):
+        if ok[k] and ok[k - 1]:
+            while midi[k] - midi[k - 1] > 7:
+                midi[k] -= 12
+            while midi[k - 1] - midi[k] > 7:
+                midi[k] += 12
+    hop_s = hop / SR
+    min_frames = int(0.06 / hop_s)
+    peaks = set(librosa.util.peak_pick(onset, pre_max=3, post_max=3, pre_avg=5, post_avg=5, delta=0.35 * (onset.max() + 1e-9), wait=int(0.09 / hop_s)).tolist())
+    notes = []
+    k = 0
+    while k < n:
+        if not ok[k]:
+            k += 1
+            continue
+        start = k
+        ref = [midi[k]]
+        k += 1
+        while k < n and ok[k]:
+            center = float(np.median(ref[-8:]))
+            if abs(midi[k] - center) > 0.8:
+                # bleibt die Abweichung? (60 ms) -> neuer Ton
+                ahead = midi[k:k + min_frames]
+                if len(ahead) >= min_frames and np.all(np.abs(ahead - center) > 0.6) and k - start >= min_frames:
                     break
-                cuts.insert(k + 1, (cuts[k] + nxt) / 2)
-        cuts = sorted(set(cuts))
-        for k, a in enumerate(cuts):
-            b = cuts[k + 1] if k + 1 < len(cuts) else end
-            if b - a < 0.06:
-                continue
-            pitch = pitch_between(a + 0.02, b - 0.02) or pitch_between(a, b)
-            if pitch is None:
-                near = [n for n in notes if n[0] < b and n[1] > a]
-                pitch = float(max(near, key=lambda n: n[3])[2]) if near else last
-            while pitch - last > 9:
-                pitch -= 12
-            while last - pitch > 9:
-                pitch += 12
-            last = pitch
-            seg = vocals[int(a * SR): int(b * SR)]
-            loud = float(np.sqrt(np.mean(seg ** 2))) if len(seg) else 0.0
-            melody.append({"start": int(a * 1000), "dur": max(80, int((b - a) * 1000) - 15), "pitch": pitch, "loud": loud, "word": i})
-    peak = max((m["loud"] for m in melody), default=1.0) or 1.0
-    for m in melody:
+            if k in peaks and k - start >= min_frames and rms[k] > rms[max(0, k - min_frames)] * 1.25:
+                break  # neue Silbe auf (fast) gleicher Hoehe
+            ref.append(midi[k])
+            k += 1
+        a, b = start * hop_s, k * hop_s
+        if b - a >= 0.055:
+            notes.append({"start": int(a * 1000), "dur": int((b - a) * 1000), "pitch": float(np.round(np.median(ref))), "loud": float(np.sqrt(np.mean(rms[start:k] ** 2)))})
+    # winzige Luecken schliessen (Legato), Lautstaerke 0.5 … 1
+    for i in range(len(notes) - 1):
+        gap = notes[i + 1]["start"] - (notes[i]["start"] + notes[i]["dur"])
+        if 0 < gap <= 40:
+            notes[i]["dur"] += gap
+    peak = max((m["loud"] for m in notes), default=1.0) or 1.0
+    for m in notes:
         m["volume"] = round(0.5 + 0.5 * min(1.0, m.pop("loud") / peak) ** 0.5, 2)
-    # gleiche Toene direkt hintereinander im selben Wort verbinden (ein gehaltener Ton statt Stottern)
-    merged: list[dict] = []
-    for m in melody:
-        if merged and merged[-1]["word"] == m["word"] and merged[-1]["pitch"] == m["pitch"] and merged[-1]["start"] + merged[-1]["dur"] >= m["start"] - 20:
-            merged[-1]["dur"] = m["start"] + m["dur"] - merged[-1]["start"]
-        else:
-            merged.append(m)
-    return merged
+    if words:
+        for m in notes:
+            t = m["start"] / 1000
+            idx = [i for i, w in enumerate(words) if w["start"] - 0.05 <= t]
+            m["word"] = idx[-1] if idx else 0
+    return notes
 
 
 def main() -> None:
@@ -209,6 +184,8 @@ def main() -> None:
     parser.add_argument("--lyrics")
     parser.add_argument("--whisper", default="small")
     parser.add_argument("--fresh", action="store_true", help="Text neu erkennen statt lyrics.json wiederzuverwenden")
+    parser.add_argument("--pack-only", action="store_true", help="nur die Paket-Variante rendern (Vanilla-Gesang ist abgeschaltet)")
+    parser.add_argument("--title", help="Name fuer die Dateien (Standard: Ordnername)")
     args = parser.parse_args()
     cache = Path(args.cache)
     out = Path(args.out)
@@ -226,7 +203,7 @@ def main() -> None:
     # 1. Text und Melodie
     if args.lyrics:
         text = args.lyrics
-        melody = [{"start": int(n[0] * 1000), "dur": int((n[1] - n[0]) * 1000), "pitch": n[2], "volume": round(0.6 + 0.4 * min(1.0, n[3]), 2)} for n in notes]
+        melody = melody_from_pitch(vocals, None)
         log(f"Melodie: {len(melody)} Toene, Text vorgegeben")
     else:
         lyrics_file = out / "lyrics.json"
@@ -236,7 +213,7 @@ def main() -> None:
             words = transcribe(cache / "stems" / "vocals.wav", args.start, end, args.lang, args.whisper)
             lyrics_file.write_text(json.dumps(words, indent=0, ensure_ascii=False), encoding="utf-8")
         text = " ".join(w["text"] for w in words)
-        melody = melody_for_words(words, notes, vocals, args.lang)
+        melody = melody_from_pitch(vocals, words)
         log(f"Whisper: {len(words)} Woerter: {text[:160]}")
         log(f"Melodie: {len(melody)} Toene aus {len(notes)} erkannten Gesangsnoten ({args.start:.1f}-{end:.1f} s)")
     if not text.strip() or not melody:
@@ -246,6 +223,8 @@ def main() -> None:
     # 2. singen lassen
     for label, pack in (("villager", False), ("pack", True)):
         if pack and not args.pack:
+            continue
+        if not pack and args.pack_only:
             continue
         cues = out / f"cues-{label}.json"
         cmd = java + ["sing", text, "--melody", str(out / "melody.json"), "--lang", args.lang, "--speaker", args.speaker, "--cues", str(cues)]
@@ -262,7 +241,7 @@ def main() -> None:
     # 3. mischen
     backing = sum(load(cache / "stems" / f"{stem}.wav", args.start, end) for stem in ("bass", "drums", "other") if (cache / "stems" / f"{stem}.wav").exists())
     n = len(vocals)
-    title = out.name
+    title = args.title or out.name
     names = {"original": "Original", "villager": "Villager Vanilla", "pack": "Villager Paket"}
     sf.write(str(out / f"{title} - 1 {names['original']} - nur Gesang.wav"), vocals, SR)
     sf.write(str(out / f"{title} - 1 {names['original']} - mit Begleitung.wav"), np.clip(vocals + backing, -1, 1), SR)
@@ -283,13 +262,15 @@ def main() -> None:
         number += 1
 
     # 4. messen
-    renders = [str(out / f"{title} - 2 Villager Vanilla - nur Gesang.wav")]
-    labels = "villager"
-    if (out / f"{title} - 3 Villager Paket - nur Gesang.wav").exists():
-        renders.append(str(out / f"{title} - 3 Villager Paket - nur Gesang.wav"))
-        labels += ",pack"
-    subprocess.run([python, "-I", "-X", "utf8", str(HERE / "compare.py"), str(out / f"{title} - 1 Original - nur Gesang.wav"), *renders, "--labels", labels,
-                    "--out", str(out / "bericht.json"), "--listen", str(out / f"{title} - Vergleich nacheinander (Original, Vanilla, Paket).wav")], check=True)
+    renders, labels = [], []
+    for label, number_name in (("villager", "2 Villager Vanilla"), ("pack", f"{2 if args.pack_only else 3} Villager Paket")):
+        path = out / f"{title} - {number_name} - nur Gesang.wav"
+        if path.exists():
+            renders.append(str(path))
+            labels.append(label)
+    order = "Original, " + ", ".join("Vanilla" if l == "villager" else "Paket" for l in labels)
+    subprocess.run([python, "-I", "-X", "utf8", str(HERE / "compare.py"), str(out / f"{title} - 1 Original - nur Gesang.wav"), *renders, "--labels", ",".join(labels),
+                    "--out", str(out / "bericht.json"), "--listen", str(out / f"{title} - Vergleich nacheinander ({order}).wav")], check=True)
     log(f"fertig: {out}")
 
 

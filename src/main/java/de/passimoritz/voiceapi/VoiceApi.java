@@ -117,11 +117,15 @@ public final class VoiceApi {
     }
 
     /**
-     * Ob ein Stück das Ressourcenpaket braucht, damit Spieler es richtig hören: Gesang ja (mit Vanilla-Klängen trifft der Dorfbewohner die
-     * Töne nicht; {@code sing.require-pack}), Sprache nein. Das einbindende Plugin erzwingt dann das NoteAPI-Paket, bevor es singen lässt.
+     * Ob ein Stück das Ressourcenpaket braucht, damit Spieler es richtig hören (Standard: immer – {@code sing.require-pack},
+     * {@code speech.require-pack}; die Vanilla-Laute sind nur eine abschaltbare Notlösung). Das einbindende Plugin erzwingt dann das
+     * NoteAPI-Paket, bevor es sprechen oder singen lässt.
      */
     public static synchronized boolean needsPack(Utterance utterance) {
-        return utterance.sung() && (player == null || player.singRequiresPack());
+        if (player == null) {
+            return true;
+        }
+        return utterance.sung() ? player.singRequiresPack() : player.speechRequiresPack();
     }
 
     /** Stoppt alle laufenden Stücke. */

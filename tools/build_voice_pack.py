@@ -315,7 +315,7 @@ def flatten_pitch(piece: np.ndarray, midi: float) -> np.ndarray:
     return np.interp(read, np.arange(len(piece)), piece).astype(np.float32)
 
 
-def hum(speaker: str, root: int, length: str = "l", take: int = 0) -> np.ndarray:
+def hum(speaker: str, root: int, length: str = "l", take: int = 0, legato: bool = False) -> np.ndarray:
     """Ein gesungenes Hmm wie in den bekannten Videos: die Original-Aufnahme mit ihrem natuerlichen Einsatz, auf den Halbton gezogen, die
     stabile Mitte nahtlos verlaengert, dann langsam nachlassend; auf den Grundton gebracht, indem die Aufnahme schneller laeuft (so wird der
     Dorfbewohner hoeher und heller – genau der Klang der Videos)."""
@@ -333,7 +333,8 @@ def hum(speaker: str, root: int, length: str = "l", take: int = 0) -> np.ndarray
     def faster(part):
         idx = np.arange(0, len(part) - 1, speed)
         return np.interp(idx, np.arange(len(part)), part).astype(np.float32)
-    head = faster(whole[: int((mid_b - start) * SR)])
+    # Legato: ohne den natuerlichen Einsatz – gleich aus dem gehaltenen Teil, mit kurzer Einblendung (kein Neuansatz, die Phrase bindet)
+    head = faster(whole[int((mid_a - start) * SR): int((mid_b - start) * SR)] if legato else whole[: int((mid_b - start) * SR)])
     loop = faster(whole[int((mid_a - start) * SR): int((mid_b - start) * SR)])
     tail = faster(whole[int((mid_b - start) * SR):])
     ms, sustain_ms = HUM_LENGTHS[length]
@@ -354,7 +355,7 @@ def hum(speaker: str, root: int, length: str = "l", take: int = 0) -> np.ndarray
     # leicht nachlassend wie eine Stimme, die den Ton haelt
     t = np.arange(len(out)) / SR
     out *= np.where(t < 0.12, 1.0, 10 ** (-4 / 20 * np.clip((t - 0.12) / 0.4, 0, 1)))
-    out *= envelope(len(out), 3, 20)
+    out *= envelope(len(out), 28 if legato else 3, 20)
     # Klang wie in den Videos: unter 300 Hz etwa 20 dB duenner, der Formant um 900 Hz betont, oben weicher (die schneller laufende Aufnahme
     # wird sonst zu spitz)
     out = band(out, 150, None, 2)
@@ -399,6 +400,7 @@ def all_sounds():
             for length in HUM_LENGTHS:
                 for take in range(len(HUMS[speaker])):
                     yield f"hum.{speaker}.{root}.{length}", f"hum/{speaker}/{root}_{length}{take}", (lambda sp=speaker, r=root, ln=length, t=take: hum(sp, r, ln, t))
+                    yield f"hum.{speaker}.{root}.{length}g", f"hum/{speaker}/{root}_{length}g{take}", (lambda sp=speaker, r=root, ln=length, t=take: hum(sp, r, ln, t, True))
 
 
 def build_entries(progress) -> dict[str, bytes]:

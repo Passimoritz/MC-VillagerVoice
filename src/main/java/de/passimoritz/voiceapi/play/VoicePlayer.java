@@ -47,6 +47,7 @@ public final class VoicePlayer {
     private volatile float master = 1.0f;
     private volatile double rate = 1.0;
     private volatile boolean singRequiresPack = true;
+    private volatile boolean speechRequiresPack = true;
 
     public VoicePlayer(JavaPlugin plugin, PackBridge pack) {
         this.plugin = plugin;
@@ -77,6 +78,16 @@ public final class VoicePlayer {
 
     public boolean singRequiresPack() {
         return singRequiresPack;
+    }
+
+    /** Ob auch Sprache nur mit dem Ressourcenpaket gespielt wird ({@code speech.require-pack}, Standard an: die Vanilla-Laute klingen nur als
+     * Notlösung). */
+    public void speechRequiresPack(boolean required) {
+        speechRequiresPack = required;
+    }
+
+    public boolean speechRequiresPack() {
+        return speechRequiresPack;
     }
 
     /** Das Sprechtempo aus der Einstellung (wird auf jedes Stück angewendet). */
@@ -116,7 +127,8 @@ public final class VoicePlayer {
     /** Siehe {@link de.passimoritz.voiceapi.VoiceApi#play}. */
     public Speech play(Utterance utterance, Supplier<Location> place, Predicate<Player> listeners, double volume, Runnable whenDone) {
         Utterance spoken = rate == 1.0 ? utterance : utterance.stretched(1.0 / rate);
-        List<Cue> vanilla = spoken.sung() && singRequiresPack ? List.of() : VanillaRenderer.INSTANCE.render(spoken);
+        boolean packOnly = spoken.sung() ? singRequiresPack : speechRequiresPack;
+        List<Cue> vanilla = packOnly ? List.of() : VanillaRenderer.INSTANCE.render(spoken);
         List<Cue> packCues = pack != null && pack.available() ? PackRenderer.INSTANCE.render(spoken) : List.of();
         Speech speech = new Speech(ids.incrementAndGet(), spoken, vanilla, packCues, place, listeners, volume, whenDone);
         if (Bukkit.isPrimaryThread()) {

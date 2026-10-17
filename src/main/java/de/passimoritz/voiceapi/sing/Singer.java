@@ -114,7 +114,8 @@ public final class Singer {
             for (int n = 0; n < group.size(); n++) {
                 MelodyNote note = group.get(n);
                 int from = n == 0 ? vowelStart : note.startMs();
-                int to = n == group.size() - 1 ? vowelEnd : Math.min(vowelEnd, group.get(n + 1).startMs());
+                // bis zum nächsten Ton, aber nur über kleine Lücken hinweg (eine Pause bleibt eine Pause)
+                int to = n == group.size() - 1 ? vowelEnd : Math.min(vowelEnd, Math.min(group.get(n + 1).startMs(), note.endMs() + LEGATO_GAP_MS));
                 if (to <= from) {
                     continue;
                 }

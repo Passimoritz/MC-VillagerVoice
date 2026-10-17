@@ -7,6 +7,9 @@ speech:
   volume: 1.0
   # Klang-Kategorie, über die Spieler die Sprache regeln: VOICE (Regler „Stimme/Sprache“), RECORDS, PLAYERS, NEUTRAL, MASTER
   category: VOICE
+  # Sprache nur mit Ressourcenpaket (Spieler ohne Paket hören nichts; das einbindende Plugin erzwingt das Paket, VoiceApi.needsPack).
+  # false = ohne Paket mit Dorfbewohner- und Block-Lauten sprechen (Notlösung, klingt grob).
+  require-pack: true
 
 sing:
   # Gesang nur mit Ressourcenpaket: Mit Vanilla-Klängen trifft der Dorfbewohner die Töne nicht (sein Brummen steht nur kurz stabil, das Spiel

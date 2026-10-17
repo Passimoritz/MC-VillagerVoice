@@ -60,10 +60,21 @@ public final class VoicePack {
     /** Die Stimmen, für die das Paket echte Hmm-Samples hat (wie {@code HUMS} in build_voice_pack.py). */
     public static final java.util.Set<String> HUM_SPEAKERS = java.util.Set.of("villager");
 
-    /** Der Klang des Hmm einer Stimme bei einer Tonhöhe, lang oder kurz (Stimmen ohne eigenes Sample: der Dorfbewohner). */
+    /** Der Klang des Hmm einer Stimme bei einer Tonhöhe und Länge (Stimmen ohne eigenes Sample: der Dorfbewohner). */
     public static String humSound(String speaker, int root, String length) {
-        return "voiceapi:hum." + (HUM_SPEAKERS.contains(speaker) ? speaker : "villager") + "." + root + "." + length;
+        return humSound(speaker, root, length, false);
     }
+
+    /**
+     * Der Klang des Hmm; {@code legato}: die Variante ohne Neuansatz (weicher Einsatz aus dem gehaltenen Teil) für Töne, die direkt an den
+     * vorigen anschließen – so wird eine Phrase gebunden statt gestottert.
+     */
+    public static String humSound(String speaker, int root, String length, boolean legato) {
+        return "voiceapi:hum." + (HUM_SPEAKERS.contains(speaker) ? speaker : "villager") + "." + root + "." + length + (legato ? "g" : "");
+    }
+
+    /** Schließt ein Ton höchstens so viele Millisekunden nach dem Ende des vorigen an, wird er gebunden gesungen. */
+    public static final int LEGATO_GAP_MS = 45;
 
     /** Der Pfad des Format-Steckbriefs im Paket. */
     public static final String MARKER = "assets/voiceapi/voiceapi.json";
@@ -173,7 +184,8 @@ public final class VoicePack {
         for (String speaker : HUM_SPEAKERS) {
             for (int root : roots()) {
                 for (String length : HUM_LENGTH_KEYS) {
-                    all.add(humSound(speaker, root, length));
+                    all.add(humSound(speaker, root, length, false));
+                    all.add(humSound(speaker, root, length, true));
                 }
             }
         }

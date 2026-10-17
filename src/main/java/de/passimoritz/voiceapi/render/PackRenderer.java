@@ -31,6 +31,7 @@ public final class PackRenderer implements Renderer {
     public List<Cue> render(Utterance utterance) {
         List<Cue> cues = new ArrayList<>(utterance.segments().size() * 2);
         List<Segment> segments = utterance.segments();
+        int lastVoicedEnd = -1;
         for (int i = 0; i < segments.size(); i++) {
             Segment segment = segments.get(i);
             if (segment.isPause()) {
@@ -40,9 +41,12 @@ public final class PackRenderer implements Renderer {
             float volume = segment.volume() * MASTER;
             if (utterance.sung()) {
                 // Gesang: das echte Hmm der Stimme auf der Tonhöhe des Tons, keine Geräusche (wie die bekannten Dorfbewohner-Videos);
-                // die Hmm-Samples sind über die Spitze normiert (leiser als die Vokale), darum ohne MASTER
+                // die Hmm-Samples sind über die Spitze normiert (leiser als die Vokale), darum ohne MASTER. Schließt der Ton direkt an den
+                // vorigen an, wird er gebunden (weicher Einsatz ohne Neuansatz).
                 if (phoneme.isVocalic() || phoneme.isSonorant()) {
-                    hum(cues, utterance.speaker(), segment.midPitch(), segment.startMs(), segment.endMs(), segment.volume(), i);
+                    boolean legato = segment.startMs() - lastVoicedEnd <= VoicePack.LEGATO_GAP_MS && lastVoicedEnd > 0;
+                    hum(cues, utterance.speaker(), segment.midPitch(), segment.startMs(), segment.endMs(), segment.volume(), i, legato);
+                    lastVoicedEnd = segment.endMs();
                 }
                 continue;
             }
@@ -73,17 +77,20 @@ public final class PackRenderer implements Renderer {
      * Ein gesungener Ton: das Hmm wird am Tonbeginn angestoßen und klingt von selbst aus (kein Stopp – der Ausklang liegt unter dem nächsten
      * Ton, wie in den bekannten Videos); hält der Ton länger als das Sample, wird es neu angesetzt.
      */
-    private static void hum(List<Cue> cues, String speaker, double pitch, int from, int to, float volume, int index) {
+    private static void hum(List<Cue> cues, String speaker, double pitch, int from, int to, float volume, int index, boolean legato) {
         if (to <= from) {
             return;
         }
         int root = VoicePack.root(pitch);
         float rate = VoicePack.rate(pitch, root);
         int at = from;
+        boolean soft = legato;
         while (true) {
-            // die Länge, die ungefähr mit dem Ton endet (klingt von selbst aus, Luft bis zum nächsten Ton); nie hart stoppen
-            cues.add(new Cue(at, VoicePack.humSound(speaker, root, VoicePack.humLength(to - at)), rate, volume, -1, index));
+            // die Länge, die ungefähr mit dem Ton endet (klingt von selbst aus, Luft bis zum nächsten Ton); nie hart stoppen;
+            // Fortsetzungen eines langen Tons sind immer gebunden
+            cues.add(new Cue(at, VoicePack.humSound(speaker, root, VoicePack.humLength(to - at), soft), rate, volume, -1, index));
             at += VoicePack.HUM_RETRIGGER_MS;
+            soft = true;
             if (at + 120 >= to) {
                 break;
             }

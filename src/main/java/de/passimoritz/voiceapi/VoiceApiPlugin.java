@@ -32,6 +32,7 @@ public final class VoiceApiPlugin extends JavaPlugin {
         player = new VoicePlayer(this, pack);
         player.configure(getConfig().getString("speech.category", "VOICE"), getConfig().getDouble("speech.volume", 1.0), getConfig().getDouble("speech.rate", 1.0));
         player.singRequiresPack(getConfig().getBoolean("sing.require-pack", true));
+        player.speechRequiresPack(getConfig().getBoolean("speech.require-pack", true));
         player.start();
         VoiceApi.enable(player, library, pack);
         getLogger().info("VoiceAPI " + getDescription().getVersion() + " bereit: " + Speaker.values().length + " Stimmen, " + library.size()
