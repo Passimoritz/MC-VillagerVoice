@@ -1,0 +1,16 @@
+target/
+.idea/
+*.iml
+.settings/
+.project
+.classpath
+*.class
+*.log
+# Jars nur im Ordner release/
+*.jar
+!release/*.jar
+/songs/
+__pycache__/
+hoerproben/
+native/build*/
+tools/bin/

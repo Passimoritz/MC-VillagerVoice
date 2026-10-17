@@ -1,0 +1,7 @@
+name: VoiceAPI
+version: '${project.version}'
+main: de.passimoritz.voiceapi.VoiceApiPlugin
+api-version: '26.3'
+author: Passimoritz
+description: Sprache und Gesang aus Dorfbewohner-Lauten (Deutsch, Englisch) für Spiel-Plugins. Keine Befehle – NoteAPI und andere Plugins binden sie ein.
+softdepend: [NoteAPI]
