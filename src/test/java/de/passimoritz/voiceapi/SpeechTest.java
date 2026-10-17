@@ -172,6 +172,19 @@ class SpeechTest {
     }
 
     @Test
+    void notesTaggedWithWordsStayWithTheirWord() {
+        // "Hallo" bekommt zwei Töne, "Welt" einen – egal wie die Silben sonst verteilt würden
+        List<MelodyNote> melody = List.of(new MelodyNote(0, 300, 60, 0.8f, 0), new MelodyNote(300, 300, 62, 0.8f, 0), new MelodyNote(1000, 500, 64, 0.8f, 1));
+        Utterance sung = Singer.sing("Hallo Welt", Language.GERMAN, Speaker.VILLAGER, melody, Style.DEFAULT);
+        List<Segment> vowels = sung.segments().stream().filter(s -> s.phoneme().isVocalic()).toList();
+        assertEquals(3, vowels.size());
+        assertEquals(0, vowels.get(0).word());
+        assertEquals(0, vowels.get(1).word());
+        assertEquals(1, vowels.get(2).word());
+        assertEquals(1000, vowels.get(2).startMs());
+    }
+
+    @Test
     void speakersStayInTheirRange() {
         for (Speaker speaker : Speaker.values()) {
             assertEquals(1.0f, speaker.rateFor(speaker.naturalPitch()), 1e-6);
