@@ -20,69 +20,70 @@ import java.util.Optional;
 public enum Speaker {
 
     VILLAGER("villager", "Dorfbewohner", 43.6, 1.0,
-            new Carrier("entity.villager.no", 54, 329, 64, 0.0),
-            new Carrier("entity.villager.hurt", 19, 151, 24, 4.8),
-            new Carrier("entity.villager.death", 19, 284, 34, 7.0),
-            List.of(new Carrier("entity.villager.ambient", 84, 473, 269, -1.4), new Carrier("entity.villager.trade", 64, 239, 189, 2.2))),
+            new Carrier("entity.villager.no", 54, 150, 329, 64, 0.0),
+            new Carrier("entity.villager.hurt", 19, 40, 151, 24, 4.8),
+            new Carrier("entity.villager.death", 19, 60, 284, 34, 7.0),
+            List.of(new Carrier("entity.villager.ambient", 84, 300, 473, 269, -1.4), new Carrier("entity.villager.trade", 64, 200, 239, 189, 2.2))),
 
     TRADER("trader", "Fahrender Händler", 55.0, 1.1,
-            new Carrier("entity.wandering_trader.no", 94, 548, 114, 6.2),
-            new Carrier("entity.wandering_trader.hurt", 17, 254, 34, 8.5),
-            new Carrier("entity.wandering_trader.yes", 114, 508, 136, 9.8),
-            List.of(new Carrier("entity.wandering_trader.ambient", 139, 314, 234, 2.6), new Carrier("entity.wandering_trader.trade", 69, 628, 234, 1.9))),
+            new Carrier("entity.wandering_trader.no", 94, 180, 548, 114, 6.2),
+            new Carrier("entity.wandering_trader.hurt", 17, 60, 254, 34, 8.5),
+            new Carrier("entity.wandering_trader.yes", 114, 200, 508, 136, 9.8),
+            List.of(new Carrier("entity.wandering_trader.ambient", 139, 250, 314, 234, 2.6), new Carrier("entity.wandering_trader.trade", 69, 200, 628, 234, 1.9))),
 
     WITCH("witch", "Hexe", 64.0, 1.25,
-            new Carrier("entity.witch.ambient", 117, 436, 59, 5.7),
-            new Carrier("entity.witch.hurt", 29, 259, 39, 6.1),
-            new Carrier("entity.witch.celebrate", 104, 473, 59, 7.6),
+            new Carrier("entity.witch.ambient", 117, 200, 436, 59, 5.7),
+            new Carrier("entity.witch.hurt", 29, 60, 259, 39, 6.1),
+            new Carrier("entity.witch.celebrate", 104, 200, 473, 59, 7.6),
             List.of()),
 
     ALLAY("allay", "Allay", 75.0, 1.1,
-            new Carrier("entity.allay.ambient_with_item", 72, 760, 159, -2.2),
-            new Carrier("entity.allay.hurt", 104, 545, 114, 7.6),
-            new Carrier("entity.allay.item_given", 0, 678, 59, -10.0),
+            new Carrier("entity.allay.ambient_with_item", 72, 150, 760, 159, -2.2),
+            new Carrier("entity.allay.hurt", 104, 150, 545, 114, 7.6),
+            new Carrier("entity.allay.item_given", 0, 100, 678, 59, -10.0),
             List.of()),
 
     PIGLIN("piglin", "Piglin", 41.5, 0.9,
-            new Carrier("entity.piglin.ambient", 39, 508, 194, 2.9),
-            new Carrier("entity.piglin.hurt", 9, 264, 109, 2.5),
-            new Carrier("entity.piglin.angry", 39, 683, 141, 4.6),
-            List.of(new Carrier("entity.piglin.jealous", 54, 379, 209, 6.8))),
+            new Carrier("entity.piglin.ambient", 39, 150, 508, 194, 2.9),
+            new Carrier("entity.piglin.hurt", 9, 60, 264, 109, 2.5),
+            new Carrier("entity.piglin.angry", 39, 150, 683, 141, 4.6),
+            List.of(new Carrier("entity.piglin.jealous", 54, 150, 379, 209, 6.8))),
 
     ZOMBIE("zombie", "Zombie-Dorfbewohner", 40.0, 0.6,
-            new Carrier("entity.zombie_villager.ambient", 104, 1032, 254, 0.3),
-            new Carrier("entity.zombie_villager.death", 9, 563, 84, 3.7),
-            new Carrier("entity.zombie_villager.hurt", 217, 550, 126, 5.1),
-            List.of(new Carrier("entity.zombified_piglin.ambient", 29, 927, 101, -2.4))),
+            new Carrier("entity.zombie_villager.ambient", 104, 250, 1032, 254, 0.3),
+            new Carrier("entity.zombie_villager.death", 9, 80, 563, 84, 3.7),
+            new Carrier("entity.zombie_villager.hurt", 217, 250, 550, 126, 5.1),
+            List.of(new Carrier("entity.zombified_piglin.ambient", 29, 120, 927, 101, -2.4))),
 
     EVOKER("evoker", "Magier", 46.0, 1.0,
-            new Carrier("entity.evoker.prepare_wololo", 29, 1785, 453, -2.6),
-            new Carrier("entity.evoker.ambient", 37, 725, 176, 4.3),
-            new Carrier("entity.evoker.hurt", 17, 149, 34, 7.5),
-            List.of(new Carrier("entity.evoker.prepare_attack", 14, 2052, 872, -5.0))),
+            new Carrier("entity.evoker.prepare_wololo", 29, 60, 1785, 453, -2.6),
+            new Carrier("entity.evoker.ambient", 37, 120, 725, 176, 4.3),
+            new Carrier("entity.evoker.hurt", 17, 40, 149, 34, 7.5),
+            List.of(new Carrier("entity.evoker.prepare_attack", 14, 80, 2052, 872, -5.0))),
 
     GOAT("goat", "Schreiende Ziege", 64.0, 1.3,
-            new Carrier("entity.goat.screaming.ambient", 69, 763, 354, -0.8),
-            new Carrier("entity.goat.screaming.hurt", 0, 738, 349, 3.0),
-            new Carrier("entity.goat.screaming.hurt", 0, 738, 349, 3.0),
-            List.of(new Carrier("entity.goat.ambient", 99, 598, 316, -7.6))),
+            new Carrier("entity.goat.screaming.ambient", 69, 200, 763, 354, -0.8),
+            new Carrier("entity.goat.screaming.hurt", 0, 120, 738, 349, 3.0),
+            new Carrier("entity.goat.screaming.hurt", 0, 120, 738, 349, 3.0),
+            List.of(new Carrier("entity.goat.ambient", 99, 250, 598, 316, -7.6))),
 
     CAT("cat", "Katze", 72.0, 1.2,
-            new Carrier("entity.cat.ambient", 59, 488, 189, 2.0),
-            new Carrier("entity.cat.hurt", 9, 409, 159, -0.1),
-            new Carrier("entity.cat.hurt", 9, 409, 159, -0.1),
-            List.of(new Carrier("entity.cat.purreow", 194, 710, 351, -15.6)));
+            new Carrier("entity.cat.ambient", 59, 150, 488, 189, 2.0),
+            new Carrier("entity.cat.hurt", 9, 80, 409, 159, -0.1),
+            new Carrier("entity.cat.hurt", 9, 80, 409, 159, -0.1),
+            List.of(new Carrier("entity.cat.purreow", 194, 300, 710, 351, -15.6)));
 
     /**
      * Ein Vanilla-Klang, der Vokale trägt.
      *
      * @param sound    der Name des Klang-Ereignisses
      * @param onsetMs  nach so vielen Millisekunden (bei normaler Geschwindigkeit) ist der Laut hörbar – der Renderer startet ihn so viel früher
+     * @param stableMs nach so vielen Millisekunden steht seine Tonhöhe (davor rutscht sie) – beim Singen startet der Renderer so viel früher
      * @param lengthMs so lange ist der Laut nutzbar (danach ist er aus oder klingt ab); längere Vokale starten ihn erneut
      * @param attackMs wie weich der Laut einsetzt (Zeit bis zur vollen Lautstärke)
      * @param gainDb   wie viel lauter als das Dorfbewohner-„Hmm“ der Klang ist (wird beim Abspielen ausgeglichen)
      */
-    public record Carrier(String sound, int onsetMs, int lengthMs, int attackMs, double gainDb) {
+    public record Carrier(String sound, int onsetMs, int stableMs, int lengthMs, int attackMs, double gainDb) {
 
         /** Der Lautstärke-Faktor, der den Klang auf das Dorfbewohner-„Hmm“ bringt (höchstens 1: lauter als 1 geht im Spiel nicht). */
         public float gain() {

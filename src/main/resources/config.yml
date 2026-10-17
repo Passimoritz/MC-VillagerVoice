@@ -8,6 +8,12 @@ speech:
   # Klang-Kategorie, über die Spieler die Sprache regeln: VOICE (Regler „Stimme/Sprache“), RECORDS, PLAYERS, NEUTRAL, MASTER
   category: VOICE
 
+sing:
+  # Gesang nur mit Ressourcenpaket: Mit Vanilla-Klängen trifft der Dorfbewohner die Töne nicht (sein Brummen steht nur kurz stabil, das Spiel
+  # wählt zufällig eine von drei Aufnahmen). Spieler ohne Paket hören dann keinen Gesang; das einbindende Plugin soll das Paket erzwingen
+  # (VoiceApi.needsPack). false = trotzdem mit Vanilla-Klängen singen (klingt schief).
+  require-pack: true
+
 pack:
   # Spieler mit dem NoteAPI-Ressourcenpaket (das die VoiceAPI-Laute enthält) hören echte Vokale und Konsonanten statt Dorfbewohner-Lauten
   use: true

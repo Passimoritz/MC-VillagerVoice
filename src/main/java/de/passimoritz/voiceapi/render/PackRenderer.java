@@ -38,6 +38,13 @@ public final class PackRenderer implements Renderer {
             }
             Phoneme phoneme = segment.phoneme();
             float volume = segment.volume() * MASTER;
+            if (utterance.sung()) {
+                // Gesang: das echte Hmm der Stimme auf der Tonhöhe des Tons, keine Geräusche (wie die bekannten Dorfbewohner-Videos)
+                if (phoneme.isVocalic() || phoneme.isSonorant()) {
+                    hum(cues, utterance.speaker(), segment.midPitch(), segment.startMs(), segment.endMs(), volume, i);
+                }
+                continue;
+            }
             if (phoneme.isVocalic()) {
                 Phoneme first = phoneme.start() != null ? phoneme.start() : phoneme;
                 Phoneme second = phoneme.end() != null ? phoneme.end() : phoneme;
@@ -59,6 +66,25 @@ public final class PackRenderer implements Renderer {
             }
         }
         return Renderer.finish(cues);
+    }
+
+    private static void hum(List<Cue> cues, String speaker, double pitch, int from, int to, float volume, int index) {
+        if (to <= from) {
+            return;
+        }
+        int root = VoicePack.root(pitch);
+        float rate = VoicePack.rate(pitch, root);
+        String sound = VoicePack.humSound(speaker, root);
+        int usable = (int) (VoicePack.HUM_MS / rate) - 20;
+        int at = from;
+        while (at < to) {
+            int stop = Math.min(to, at + usable);
+            cues.add(new Cue(at, sound, rate, volume, stop, index));
+            if (stop >= to) {
+                break;
+            }
+            at = stop - 20;
+        }
     }
 
     private static void tone(List<Cue> cues, String key, boolean vowel, double pitch, int from, int to, float volume, int index) {

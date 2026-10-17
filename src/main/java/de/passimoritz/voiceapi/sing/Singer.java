@@ -50,8 +50,10 @@ public final class Singer {
         }
         List<Segment> segments = new ArrayList<>();
         if (units.isEmpty() || notes.isEmpty()) {
-            return new Utterance("", "", text, language, speaker.id(), style, segments);
+            return new Utterance("", "", text, language, speaker.id(), style, segments, true);
         }
+        // eine Oktavlage für die ganze Melodie (so hoch wie möglich im Umfang der Stimme – wie die bekannten Dorfbewohner-Videos)
+        double shift = octaveShift(notes, speaker, style.pitch());
         // Töne auf Silben verteilen: Töne mit Wort-Zuordnung bleiben bei den Silben ihres Wortes
         List<List<MelodyNote>> perUnit = notes.stream().anyMatch(n -> n.word() >= 0) ? distributeByWord(units, notes) : distribute(units, notes);
         double energy = style.energy();
@@ -74,7 +76,7 @@ public final class Singer {
             MelodyNote last = group.getLast();
             boolean stressed = unit.syllable().isStressed();
             float loud = (float) Math.min(1.0, first.volume() * energy * (stressed ? 1.0 : 0.9));
-            double firstPitch = speaker.fit(first.pitch() + style.pitch());
+            double firstPitch = clamp(speaker, first.pitch() + shift);
             // Anlaut-Konsonanten vor dem Ton (nicht in die vorige Silbe hinein)
             int onsetTotal = 0;
             for (int i = 0; i < (nucleus < 0 ? phonemes.size() : nucleus); i++) {
@@ -97,7 +99,15 @@ public final class Singer {
             for (int i = nucleus + 1; i < phonemes.size(); i++) {
                 codaTotal += consonantMs(phonemes.get(i));
             }
-            int vowelEnd = last.endMs() - Math.min(codaTotal, Math.max(0, last.durMs() - 40));
+            // Legato: Der Vokal klingt bis zum nächsten Ton weiter, wenn der bald folgt (erkannte Töne sind oft kürzer als gesungen);
+            // die Auslaut-Konsonanten nehmen höchstens ein Drittel des Tons
+            int noteEnd = last.endMs();
+            int nextStart = nextNoteStart(perUnit, u);
+            if (nextStart > noteEnd && nextStart - noteEnd <= LEGATO_GAP_MS) {
+                noteEnd = nextStart;
+            }
+            int noteLength = noteEnd - first.startMs();
+            int vowelEnd = noteEnd - Math.min(codaTotal, Math.max(0, noteLength / 3));
             int vowelStart = first.startMs();
             Phoneme vowel = phonemes.get(nucleus);
             // ein Vokal-Abschnitt je Ton (Melisma); kurze Lücken zwischen Tönen bleiben Vokal
@@ -108,23 +118,59 @@ public final class Singer {
                 if (to <= from) {
                     continue;
                 }
-                double pitch = speaker.fit(note.pitch() + style.pitch());
+                double pitch = clamp(speaker, note.pitch() + shift);
                 float volume = (float) Math.min(1.0, note.volume() * energy * (stressed ? 1.0 : 0.9));
                 // Diphthong: nur der erste Ton gleitet, weitere Töne halten den zweiten Vokal
                 Phoneme sung = n == 0 ? vowel : (vowel.end() != null ? vowel.end() : vowel);
                 segments.add(new Segment(from, to - from, sung, (float) pitch, (float) pitch, volume, unit.word(), stressed));
             }
             at = Math.max(vowelEnd, vowelStart);
-            int codaSpace = last.endMs() - at;
+            int codaSpace = noteEnd - at;
             for (int i = nucleus + 1; i < phonemes.size(); i++) {
                 int dur = codaTotal == 0 ? 0 : Math.max(20, consonantMs(phonemes.get(i)) * Math.max(codaSpace, 20 * (phonemes.size() - nucleus - 1)) / codaTotal);
-                double pitch = speaker.fit(last.pitch() + style.pitch());
+                double pitch = clamp(speaker, last.pitch() + shift);
                 segments.add(new Segment(at, dur, phonemes.get(i), (float) pitch, (float) (pitch - 1), loud * 0.7f, unit.word(), stressed));
                 at += dur;
             }
             previousEnd = at;
         }
-        return new Utterance("", "", text, language, speaker.id(), style, segments);
+        return new Utterance("", "", text, language, speaker.id(), style, segments, true);
+    }
+
+    /** Bis zu so viele Millisekunden Lücke zum nächsten Ton werden gebunden (Legato). */
+    private static final int LEGATO_GAP_MS = 260;
+
+    /**
+     * Die Verschiebung (ganze Oktaven plus die Tonlage des Stils), mit der die Melodie in den Umfang der Stimme passt – so hoch wie möglich,
+     * ohne dass mehr als jeder zehnte Ton oben anstößt. Eine gemeinsame Lage für alle Töne hält die Melodie zusammen (einzeln gefaltete Töne
+     * springen Oktaven).
+     */
+    static double octaveShift(List<MelodyNote> notes, Speaker speaker, double stylePitch) {
+        if (notes.isEmpty()) {
+            return stylePitch;
+        }
+        double[] pitches = notes.stream().mapToDouble(n -> n.pitch() + stylePitch).sorted().toArray();
+        double high = pitches[(int) Math.min(pitches.length - 1, Math.floor(pitches.length * 0.9))];
+        double low = pitches[(int) Math.floor(pitches.length * 0.1)];
+        double shift = Math.floor((speaker.highest() - high) / 12.0) * 12.0;
+        while (low + shift < speaker.lowest() && high + shift + 12 <= speaker.highest() + 3) {
+            shift += 12;
+        }
+        return stylePitch + shift;
+    }
+
+    private static double clamp(Speaker speaker, double midi) {
+        return Math.clamp(midi, speaker.lowest(), speaker.highest());
+    }
+
+    /** Der Beginn des ersten Tons nach der Silbe {@code index}, oder −1. */
+    private static int nextNoteStart(List<List<MelodyNote>> perUnit, int index) {
+        for (int u = index + 1; u < perUnit.size(); u++) {
+            if (!perUnit.get(u).isEmpty()) {
+                return perUnit.get(u).getFirst().startMs();
+            }
+        }
+        return -1;
     }
 
     /** Wie lang ein Konsonant beim Singen ist (kürzer als beim Sprechen). */

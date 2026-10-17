@@ -46,6 +46,7 @@ public final class VoicePlayer {
     private volatile SoundCategory category = SoundCategory.VOICE;
     private volatile float master = 1.0f;
     private volatile double rate = 1.0;
+    private volatile boolean singRequiresPack = true;
 
     public VoicePlayer(JavaPlugin plugin, PackBridge pack) {
         this.plugin = plugin;
@@ -65,6 +66,17 @@ public final class VoicePlayer {
         category = found;
         master = (float) Math.max(0.0, Math.min(1.0, volume));
         rate = Double.isFinite(speechRate) && speechRate > 0 ? Math.clamp(speechRate, 0.4, 2.5) : 1.0;
+    }
+
+    /** Ob Gesang nur mit dem Ressourcenpaket gespielt wird ({@code sing.require-pack}): Mit Vanilla-Klängen trifft der Dorfbewohner die Töne
+     * nicht (sein Brummen steht nur ~180 ms stabil und das Spiel wählt zufällig eine von drei Aufnahmen); Spieler ohne Paket hören dann nichts,
+     * und das einbindende Plugin soll das Paket erzwingen ({@link de.passimoritz.voiceapi.VoiceApi#needsPack}). */
+    public void singRequiresPack(boolean required) {
+        singRequiresPack = required;
+    }
+
+    public boolean singRequiresPack() {
+        return singRequiresPack;
     }
 
     /** Das Sprechtempo aus der Einstellung (wird auf jedes Stück angewendet). */
@@ -104,14 +116,14 @@ public final class VoicePlayer {
     /** Siehe {@link de.passimoritz.voiceapi.VoiceApi#play}. */
     public Speech play(Utterance utterance, Supplier<Location> place, Predicate<Player> listeners, double volume, Runnable whenDone) {
         Utterance spoken = rate == 1.0 ? utterance : utterance.stretched(1.0 / rate);
-        List<Cue> vanilla = VanillaRenderer.INSTANCE.render(spoken);
+        List<Cue> vanilla = spoken.sung() && singRequiresPack ? List.of() : VanillaRenderer.INSTANCE.render(spoken);
         List<Cue> packCues = pack != null && pack.available() ? PackRenderer.INSTANCE.render(spoken) : List.of();
         Speech speech = new Speech(ids.incrementAndGet(), spoken, vanilla, packCues, place, listeners, volume, whenDone);
         if (Bukkit.isPrimaryThread()) {
             speech.ears = ears(speech);
         }
         running.add(speech);
-        if (vanilla.isEmpty()) {
+        if (vanilla.isEmpty() && packCues.isEmpty()) {
             finish(speech);
         }
         return speech;
@@ -262,6 +274,10 @@ public final class VoicePlayer {
             }
         }
         boolean cuesDone = speech.vanillaIndex >= speech.vanilla.size() && speech.packIndex >= speech.pack.size();
+        if (speech.vanilla.isEmpty() && speech.pack.isEmpty()) {
+            finish(speech);
+            return;
+        }
         if (cuesDone && speech.stops.isEmpty() && elapsed >= speech.lengthMs()) {
             finish(speech);
         }

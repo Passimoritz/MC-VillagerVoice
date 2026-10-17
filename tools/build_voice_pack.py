@@ -27,7 +27,7 @@ import numpy as np
 
 SR = 44100
 PACK_FORMAT = 97  # Minecraft 26.3
-SOUND_FORMAT = 1  # muss zu VoicePack.FORMAT passen
+SOUND_FORMAT = 2  # muss zu VoicePack.FORMAT passen
 STEP, ROOT_LOW, ROOT_HIGH = 4, 33, 85
 VOWEL_MS, SONORANT_MS = 1500, 400
 ROOTS = list(range(ROOT_LOW, ROOT_HIGH + 1, STEP))
@@ -52,6 +52,10 @@ SONORANTS = {
     "j": ((270, 2200, 3000, 3600), (70, 120, 200, 300), -5, True),
 }
 NOISES = ["p", "b", "t", "d", "k", "g", "f", "v", "s", "z", "sh", "zh", "th", "dh", "h", "x", "xi", "ts", "pf", "ch", "dj"]
+# Gesang: das echte Hmm einer Stimme (Vanilla-Klang aus ~/.voiceapi/sounds, von voicelab.py setup): Datei, stabiler Ausschnitt (s), Tonhoehe (MIDI)
+HUMS = {"villager": ("mob/villager/idle2", 0.36, 0.94, 42.6)}
+HUM_MS = 2000
+SOUNDS = Path.home() / ".voiceapi" / "sounds"
 VOWEL_DB = -14.0  # Ziel-Pegel (RMS dBFS) der Vokale
 
 CREDITS = """VoiceAPI-Laute
@@ -285,6 +289,57 @@ def consonant(key: str) -> np.ndarray:
     return soft_limit(y)
 
 
+def flatten_pitch(piece: np.ndarray, midi: float) -> np.ndarray:
+    """Zieht die Tonhoehe des Ausschnitts auf einen festen Ton: Je 10 ms wird die gemessene Tonhoehe durch Umabtasten auf den Zielton gebracht
+    (das Original brummt eine Spur unsauber – gesungen muss es auf dem Halbton sitzen wie in den bekannten Videos)."""
+    import librosa
+    hop = int(0.01 * SR)
+    f0 = librosa.yin(piece, fmin=60, fmax=400, sr=SR, frame_length=2048, hop_length=hop)
+    target = midi_hz(midi)
+    # Ausreisser glaetten
+    f0 = np.where((f0 > target * 0.6) & (f0 < target * 1.6), f0, target)
+    kernel = np.ones(5) / 5
+    f0 = np.convolve(np.pad(f0, 2, mode="edge"), kernel, mode="valid")
+    # je Frame: Geschwindigkeit = Ziel / gemessen
+    out = []
+    pos = 0.0
+    for k in range(len(f0)):
+        speed = target / f0[k]
+        n = int(hop / speed)
+        idx = pos + np.arange(n) * speed
+        idx = idx[idx < len(piece) - 1]
+        if len(idx) == 0:
+            break
+        out.append(np.interp(idx, np.arange(len(piece)), piece))
+        pos = idx[-1] + speed
+    return np.concatenate(out).astype(np.float32)
+
+
+def hum(speaker: str, root: int, ms: int = HUM_MS) -> np.ndarray:
+    """Das gehaltene Hmm: stabiler Ausschnitt des Originals, nahtlos zu einer Schleife verlaengert (Ueberblendung), auf den Grundton gestimmt."""
+    import soundfile as sf
+    import librosa
+    file, start, end, midi = HUMS[speaker]
+    data, rate = sf.read(str(SOUNDS / f"{file}.ogg"), always_2d=True)
+    y = data.mean(axis=1).astype(np.float32)
+    if rate != SR:
+        y = librosa.resample(y, orig_sr=rate, target_sr=SR)
+    piece = flatten_pitch(y[int(start * SR): int(end * SR)], midi)
+    fade = int(0.08 * SR)
+    out = piece.copy()
+    while len(out) < int((ms + 300) / 1000 * SR) * 2:
+        head = piece[:fade] * np.linspace(0, 1, fade)
+        tail = out[-fade:] * np.linspace(1, 0, fade)
+        out = np.concatenate([out[:-fade], tail + head, piece[fade:]])
+    # auf den Grundton: Geschwindigkeit aendern (so macht es auch das Spiel – der Dorfbewohner wird hoeher und schneller)
+    speed = 2 ** ((root - midi) / 12)
+    idx = np.arange(0, len(out) - 1, speed)
+    out = np.interp(idx, np.arange(len(out)), out).astype(np.float32)
+    out = out[: int(ms / 1000 * SR)]
+    out *= envelope(len(out), 25, 60)
+    return normalize(out, VOWEL_DB)
+
+
 # ── Paket ───────────────────────────────────────────────────
 
 def ogg(y: np.ndarray, work: Path) -> bytes:
@@ -313,6 +368,9 @@ def all_sounds():
             yield f"c.{key}.{root}", f"c/{key}/{root}", (lambda k=key, r=root: sonorant(k, r))
     for key in NOISES:
         yield f"c.{key}", f"c/{key}", (lambda k=key: consonant(k))
+    for speaker in HUMS:
+        for root in ROOTS:
+            yield f"hum.{speaker}.{root}", f"hum/{speaker}/{root}", (lambda sp=speaker, r=root: hum(sp, r))
 
 
 def build_entries(progress) -> dict[str, bytes]:
@@ -329,7 +387,7 @@ def build_entries(progress) -> dict[str, bytes]:
                 progress(i, len(items))
     entries["assets/voiceapi/sounds.json"] = json.dumps(sounds, indent=1).encode("utf-8")
     entries["assets/voiceapi/voiceapi.json"] = json.dumps({"format": SOUND_FORMAT, "step": STEP, "roots": ROOTS, "vowels": list(VOWELS),
-                                                            "sonorants": list(SONORANTS), "noises": NOISES}).encode("utf-8")
+                                                            "sonorants": list(SONORANTS), "noises": NOISES, "hums": list(HUMS)}).encode("utf-8")
     entries["assets/voiceapi/CREDITS.txt"] = CREDITS.encode("utf-8")
     return entries
 
@@ -366,6 +424,8 @@ def preview(folder: Path) -> None:
     for key in NOISES:
         sf.write(str(folder / f"c-{key}.wav"), consonant(key), SR)
     # ein Satz aus Rohlauten: "ba na na" bei 45
+    for root in (41, 53, 57):
+        sf.write(str(folder / f"hum-villager-{root}.wav"), hum("villager", root, 1200), SR)
     bits = [consonant("b"), vowel("a", 45, 180), sonorant("n", 45, 70), vowel("a", 45, 160), sonorant("n", 45, 70), vowel("a", 45, 300)]
     sf.write(str(folder / "banana.wav"), np.concatenate(bits), SR)
     log(f"Hoerproben in {folder}")

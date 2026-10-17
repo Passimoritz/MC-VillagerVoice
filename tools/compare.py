@@ -37,10 +37,17 @@ def same_length(a: np.ndarray, b: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
 
 def pitch_track(y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Tonhoehe je Frame (MIDI) und ob dort ein Ton klingt. yin mit kurzen Fenstern (auch kurze Silben zaehlen), Stimmhaftigkeit aus
+    Flachheit des Spektrums und Lautstaerke – pyin haelt die kurzen, gestoppten Dorfbewohner-Laute sonst fuer unstimmhaft."""
     import librosa
-    f0, voiced, _ = librosa.pyin(y, fmin=55, fmax=1100, sr=SR, frame_length=2048, hop_length=512)
-    midi = 69 + 12 * np.log2(np.maximum(np.nan_to_num(f0, nan=1.0), 1.0) / 440.0)
-    return midi, np.nan_to_num(voiced.astype(float)) > 0.5
+    hop = 256
+    f0 = librosa.yin(y, fmin=50, fmax=1100, sr=SR, frame_length=1024, hop_length=hop)
+    flat = librosa.feature.spectral_flatness(y=y, n_fft=1024, hop_length=hop)[0]
+    rms = librosa.feature.rms(y=y, frame_length=1024, hop_length=hop)[0]
+    n = min(len(f0), len(flat), len(rms))
+    voiced = (flat[:n] < 0.05) & (rms[:n] > rms.max() * 0.08)
+    midi = 69 + 12 * np.log2(np.maximum(f0[:n], 1.0) / 440.0)
+    return midi, voiced
 
 
 def melody(a: np.ndarray, b: np.ndarray) -> dict:
@@ -63,12 +70,12 @@ def melody(a: np.ndarray, b: np.ndarray) -> dict:
 
 def rhythm(a: np.ndarray, b: np.ndarray) -> dict:
     import librosa
-    ea = librosa.onset.onset_strength(y=a, sr=SR, hop_length=512)
-    eb = librosa.onset.onset_strength(y=b, sr=SR, hop_length=512)
+    ea = librosa.onset.onset_strength(y=a, sr=SR, hop_length=256)
+    eb = librosa.onset.onset_strength(y=b, sr=SR, hop_length=256)
     n = min(len(ea), len(eb))
     corr = float(np.corrcoef(ea[:n], eb[:n])[0, 1]) if ea[:n].std() > 0 and eb[:n].std() > 0 else 0.0
-    ra = librosa.feature.rms(y=a, hop_length=512)[0]
-    rb = librosa.feature.rms(y=b, hop_length=512)[0]
+    ra = librosa.feature.rms(y=a, hop_length=256)[0]
+    rb = librosa.feature.rms(y=b, hop_length=256)[0]
     n = min(len(ra), len(rb))
     on_a = ra[:n] > ra.max() * 0.08
     on_b = rb[:n] > rb.max() * 0.08

@@ -14,3 +14,4 @@ __pycache__/
 hoerproben/
 native/build*/
 tools/bin/
+release/*.zip

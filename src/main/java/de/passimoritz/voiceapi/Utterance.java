@@ -18,8 +18,15 @@ import java.util.Locale;
  * @param speaker  die Stimme ({@link Speaker#id()})
  * @param style    der Stil, mit dem das Stück gebaut wurde
  * @param segments die Laute, nach {@link Segment#startMs()} geordnet
+ * @param sung     ob das Stück gesungen ist (Tonhöhen aus einer Melodie): dann hält der Renderer die Tonhöhe strenger (nur der gehaltene Laut,
+ *                 keine Grunz- und Schrei-Einsätze, deren Tonhöhe nicht stimmt)
  */
-public record Utterance(String id, String title, String text, Language language, String speaker, Style style, List<Segment> segments) {
+public record Utterance(String id, String title, String text, Language language, String speaker, Style style, List<Segment> segments, boolean sung) {
+
+    /** Ein gesprochenes Stück. */
+    public Utterance(String id, String title, String text, Language language, String speaker, Style style, List<Segment> segments) {
+        this(id, title, text, language, speaker, style, segments, false);
+    }
 
     public Utterance {
         id = id == null ? "" : id;
@@ -72,17 +79,17 @@ public record Utterance(String id, String title, String text, Language language,
 
     /** Dasselbe Stück mit anderer Kennung und anderem Titel. */
     public Utterance named(String newId, String newTitle) {
-        return new Utterance(newId, newTitle, text, language, speaker, style, segments);
+        return new Utterance(newId, newTitle, text, language, speaker, style, segments, sung);
     }
 
     /** Dasselbe Stück mit anderer Stimme. */
     public Utterance spokenBy(Speaker newSpeaker) {
-        return new Utterance(id, title, text, language, newSpeaker.id(), style, segments);
+        return new Utterance(id, title, text, language, newSpeaker.id(), style, segments, sung);
     }
 
     /** Dasselbe Stück, um Halbtöne verschoben. */
     public Utterance transposed(double semitones) {
-        return new Utterance(id, title, text, language, speaker, style, segments.stream().map(s -> s.transposed(semitones)).toList());
+        return new Utterance(id, title, text, language, speaker, style, segments.stream().map(s -> s.transposed(semitones)).toList(), sung);
     }
 
     /** Dasselbe Stück, gedehnt oder gestaucht (Faktor 2 = doppelt so lang). */
@@ -92,12 +99,12 @@ public record Utterance(String id, String title, String text, Language language,
             changed.add(new Segment((int) Math.round(segment.startMs() * factor), (int) Math.round(segment.durMs() * factor), segment.phoneme(),
                     segment.pitch(), segment.pitchEnd(), segment.volume(), segment.word(), segment.stressed()));
         }
-        return new Utterance(id, title, text, language, speaker, style, changed);
+        return new Utterance(id, title, text, language, speaker, style, changed, sung);
     }
 
     /** Dasselbe Stück ab einem späteren Beginn (alle Laute um {@code offsetMs} verschoben). */
     public Utterance delayed(int offsetMs) {
-        return new Utterance(id, title, text, language, speaker, style, segments.stream().map(s -> s.at(s.startMs() + offsetMs)).toList());
+        return new Utterance(id, title, text, language, speaker, style, segments.stream().map(s -> s.at(s.startMs() + offsetMs)).toList(), sung);
     }
 
     /** Zwei Stücke hintereinander (mit einer Pause dazwischen). */
@@ -109,7 +116,7 @@ public record Utterance(String id, String title, String text, Language language,
             all.add(new Segment(segment.startMs() + offset, segment.durMs(), segment.phoneme(), segment.pitch(), segment.pitchEnd(), segment.volume(),
                     segment.word() < 0 ? -1 : segment.word() + wordOffset, segment.stressed()));
         }
-        return new Utterance(id, title, (text + " " + next.text).strip(), language, speaker, style, all);
+        return new Utterance(id, title, (text + " " + next.text).strip(), language, speaker, style, all, sung || next.sung);
     }
 
     /** Die Lautschrift des Stücks (Laute durch Wortgrenzen getrennt), für Anzeigen. */

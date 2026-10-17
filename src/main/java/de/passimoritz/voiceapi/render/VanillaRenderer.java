@@ -128,10 +128,11 @@ public final class VanillaRenderer implements Renderer {
             }
             Phoneme phoneme = segment.phoneme();
             if (phoneme.isVocalic()) {
-                vowel(cues, speaker, segment, i);
+                vowel(cues, speaker, segment, i, utterance.sung());
             } else if (phoneme.isSonorant()) {
-                sonorant(cues, speaker, segment, i);
-            } else if (phoneme.isConsonant()) {
+                sonorant(cues, speaker, segment, i, utterance.sung());
+            } else if (phoneme.isConsonant() && !utterance.sung()) {
+                // beim Singen keine Geräusche: Dorfbewohner singen „Hmm“ (wie in den bekannten Videos) – die Melodie zählt
                 consonant(cues, speaker, segment, i);
             }
         }
@@ -140,19 +141,20 @@ public final class VanillaRenderer implements Renderer {
 
     // ── Vokale ──
 
-    private static void vowel(List<Cue> cues, Speaker speaker, Segment segment, int index) {
+    private static void vowel(List<Cue> cues, Speaker speaker, Segment segment, int index, boolean sung) {
         Phoneme phoneme = segment.phoneme();
         int start = segment.startMs();
         int end = segment.endMs();
         int dur = segment.durMs();
-        double colourStart = colour(phoneme.start() != null ? phoneme.start() : phoneme);
-        double colourEnd = colour(phoneme.end() != null ? phoneme.end() : phoneme);
+        double colourStart = sung ? 0 : colour(phoneme.start() != null ? phoneme.start() : phoneme);
+        double colourEnd = sung ? 0 : colour(phoneme.end() != null ? phoneme.end() : phoneme);
         double pitchStart = segment.pitch() + colourStart;
         double pitchEnd = segment.pitchEnd() + colourEnd;
         boolean glide = dur >= GLIDE_MIN_MS && (phoneme.isDiphthong() || Math.abs(pitchEnd - pitchStart) >= 1.0);
         float volume = segment.volume() * MASTER;
         // Beginn: offener Laut oder Schrei bei offenen betonten Vokalen
-        boolean open = phoneme.openness() >= 0.6 && segment.stressed();
+        // Grunz- und Schrei-Einsätze haben keine verlässliche Tonhöhe: beim Singen nur das gehaltene Hmm
+        boolean open = !sung && phoneme.openness() >= 0.6 && segment.stressed();
         Speaker.Carrier onset = null;
         if (open && segment.volume() >= 0.95f) {
             onset = speaker.cry();
@@ -172,22 +174,29 @@ public final class VanillaRenderer implements Renderer {
             volume *= 0.9f;
         }
         if (!glide) {
-            hum(cues, speaker, speaker.hum(), (pitchStart + pitchEnd) / 2, start, end, volume, index);
+            hum(cues, speaker, speaker.hum(), (pitchStart + pitchEnd) / 2, start, end, volume, index, sung);
             return;
         }
         int middle = start + (end - start) / 2;
-        hum(cues, speaker, speaker.hum(), pitchStart, start, middle, volume, index);
-        hum(cues, speaker, speaker.hum(), pitchEnd, middle, end, volume, index);
+        hum(cues, speaker, speaker.hum(), pitchStart, start, middle, volume, index, sung);
+        hum(cues, speaker, speaker.hum(), pitchEnd, middle, end, volume, index, sung);
     }
 
-    /** Ein gehaltener Laut von {@code from} bis {@code to} (ms): vorgezogen um den Einsatz, bei Bedarf neu gestartet, am Ende gestoppt. */
     private static void hum(List<Cue> cues, Speaker speaker, Speaker.Carrier carrier, double pitch, int from, int to, float volume, int index) {
+        hum(cues, speaker, carrier, pitch, from, to, volume, index, false);
+    }
+
+    /**
+     * Ein gehaltener Laut von {@code from} bis {@code to} (ms): vorgezogen um den Einsatz (beim Singen bis die Tonhöhe steht – der Rutscher davor
+     * wird zum Portamento in den Ton), bei Bedarf neu gestartet, am Ende gestoppt.
+     */
+    private static void hum(List<Cue> cues, Speaker speaker, Speaker.Carrier carrier, double pitch, int from, int to, float volume, int index, boolean sung) {
         if (to <= from) {
             return;
         }
         float rate = speaker.rateFor(pitch);
-        int lead = (int) (carrier.onsetMs() / rate);
-        int usable = Math.max(60, (int) ((carrier.lengthMs() - carrier.onsetMs()) / rate));
+        int lead = (int) ((sung ? Math.max(carrier.onsetMs(), carrier.stableMs()) : carrier.onsetMs()) / rate);
+        int usable = Math.max(60, (int) ((carrier.lengthMs() - (sung ? Math.max(carrier.onsetMs(), carrier.stableMs()) : carrier.onsetMs())) / rate));
         float gain = volume * carrier.gain();
         int dur = to - from;
         if (dur < carrier.attackMs() / rate) {
@@ -207,10 +216,10 @@ public final class VanillaRenderer implements Renderer {
 
     // ── klingende Konsonanten ──
 
-    private static void sonorant(List<Cue> cues, Speaker speaker, Segment segment, int index) {
-        double pitch = segment.midPitch() + colour(segment.phoneme());
-        float volume = segment.volume() * MASTER * (segment.phoneme().kind() == Phoneme.Kind.NASAL ? 0.85f : 0.75f);
-        hum(cues, speaker, speaker.hum(), pitch, segment.startMs(), segment.endMs(), volume, index);
+    private static void sonorant(List<Cue> cues, Speaker speaker, Segment segment, int index, boolean sung) {
+        double pitch = segment.midPitch() + (sung ? 0 : colour(segment.phoneme()));
+        float volume = segment.volume() * MASTER * (sung ? 1f : segment.phoneme().kind() == Phoneme.Kind.NASAL ? 0.85f : 0.75f);
+        hum(cues, speaker, speaker.hum(), pitch, segment.startMs(), segment.endMs(), volume, index, sung);
     }
 
     // ── Geräusch-Konsonanten ──

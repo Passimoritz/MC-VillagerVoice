@@ -14,6 +14,7 @@ import java.util.Locale;
  * title: Willkommen
  * lang: de
  * speaker: villager
+ * kind: sung            (nur bei gesungenen Stücken)
  * style: rate=1.00; pitch=0.0; range=1.00; energy=1.00; mood=happy
  * text: Willkommen im Dorf!
  * ---
@@ -81,6 +82,7 @@ public final class UtteranceFile {
         String speaker = Speaker.VILLAGER.id();
         Style style = Style.DEFAULT;
         String spoken = "";
+        boolean sung = false;
         List<Segment> segments = new ArrayList<>();
         boolean body = false;
         int word = -1;
@@ -104,6 +106,8 @@ public final class UtteranceFile {
                     style = Style.parse(line.substring(6).strip());
                 } else if (line.startsWith("text:")) {
                     spoken = line.substring(5).strip();
+                } else if (line.startsWith("kind:")) {
+                    sung = line.substring(5).strip().equalsIgnoreCase("sung");
                 }
                 continue;
             }
@@ -132,7 +136,7 @@ public final class UtteranceFile {
                 throw new IllegalArgumentException("Zeile " + lineNumber + " ist nicht zu lesen: " + line, e);
             }
         }
-        return new Utterance(id, title, spoken, language, speaker, style, segments);
+        return new Utterance(id, title, spoken, language, speaker, style, segments, sung);
     }
 
     private static String oneLine(String text) {

@@ -116,6 +116,14 @@ public final class VoiceApi {
         return play(speak(text, language, speaker, style), null, p -> p.getUniqueId().equals(target.getUniqueId()), 1.0, null);
     }
 
+    /**
+     * Ob ein Stück das Ressourcenpaket braucht, damit Spieler es richtig hören: Gesang ja (mit Vanilla-Klängen trifft der Dorfbewohner die
+     * Töne nicht; {@code sing.require-pack}), Sprache nein. Das einbindende Plugin erzwingt dann das NoteAPI-Paket, bevor es singen lässt.
+     */
+    public static synchronized boolean needsPack(Utterance utterance) {
+        return utterance.sung() && (player == null || player.singRequiresPack());
+    }
+
     /** Stoppt alle laufenden Stücke. */
     public static synchronized void stopAll() {
         if (player != null) {

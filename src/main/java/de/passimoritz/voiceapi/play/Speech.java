@@ -81,7 +81,7 @@ public final class Speech {
     /** Die Länge des Stücks in Millisekunden (inklusive Vorlauf der Klänge). */
     public int lengthMs() {
         int end = utterance.lengthMs();
-        for (Cue cue : vanilla) {
+        for (Cue cue : vanilla.isEmpty() ? pack : vanilla) {
             end = Math.max(end, cue.stops() ? cue.stopMs() : cue.atMs() + 300);
         }
         return end;

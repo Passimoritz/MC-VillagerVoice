@@ -39,20 +39,17 @@ def load(path: Path, start: float, end: float) -> np.ndarray:
 def transcribe(vocals: Path, start: float, end: float, language: str, model: str) -> list[dict]:
     """Whisper: Woerter mit Zeiten (relativ zum Ausschnitt)."""
     from faster_whisper import WhisperModel
-    import soundfile as sf
     import librosa
     y, sr = librosa.load(str(vocals), sr=16000, mono=True, offset=start, duration=end - start)
-    tmp = vocals.parent / "_vocals16k.wav"
-    sf.write(str(tmp), y, 16000)
     whisper = WhisperModel(model, device="cpu", compute_type="int8")
-    segments, _ = whisper.transcribe(str(tmp), language=language, word_timestamps=True, beam_size=5, vad_filter=False)
+    # Audio direkt uebergeben (kein Dateizugriff ueber PyAV)
+    segments, _ = whisper.transcribe(y.astype(np.float32), language=language, word_timestamps=True, beam_size=5, vad_filter=False)
     words = []
     for segment in segments:
         for w in segment.words or []:
             text = re.sub(r"[^\w'’\-]", "", w.word.strip(), flags=re.UNICODE)
             if text:
                 words.append({"text": text, "start": round(w.start, 3), "end": round(w.end, 3), "p": round(w.probability, 2)})
-    tmp.unlink(missing_ok=True)
     return words
 
 
@@ -127,6 +124,7 @@ def main() -> None:
     parser.add_argument("--style", default="")
     parser.add_argument("--lyrics")
     parser.add_argument("--whisper", default="small")
+    parser.add_argument("--fresh", action="store_true", help="Text neu erkennen statt lyrics.json wiederzuverwenden")
     args = parser.parse_args()
     cache = Path(args.cache)
     out = Path(args.out)
@@ -147,8 +145,12 @@ def main() -> None:
         melody = [{"start": int(n[0] * 1000), "dur": int((n[1] - n[0]) * 1000), "pitch": n[2], "volume": round(0.6 + 0.4 * min(1.0, n[3]), 2)} for n in notes]
         log(f"Melodie: {len(melody)} Toene, Text vorgegeben")
     else:
-        words = transcribe(cache / "stems" / "vocals.wav", args.start, end, args.lang, args.whisper)
-        (out / "lyrics.json").write_text(json.dumps(words, indent=0, ensure_ascii=False), encoding="utf-8")
+        lyrics_file = out / "lyrics.json"
+        if lyrics_file.exists() and not args.fresh:
+            words = json.loads(lyrics_file.read_text(encoding="utf-8"))
+        else:
+            words = transcribe(cache / "stems" / "vocals.wav", args.start, end, args.lang, args.whisper)
+            lyrics_file.write_text(json.dumps(words, indent=0, ensure_ascii=False), encoding="utf-8")
         text = " ".join(w["text"] for w in words)
         melody = melody_for_words(words, notes, vocals)
         log(f"Whisper: {len(words)} Woerter: {text[:160]}")

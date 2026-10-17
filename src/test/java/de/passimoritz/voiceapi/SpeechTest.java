@@ -156,8 +156,8 @@ class SpeechTest {
         for (Segment vowel : vowels) {
             assertTrue(vowel.pitch() >= Speaker.VILLAGER.lowest() && vowel.pitch() <= Speaker.VILLAGER.highest(), vowel.toString());
         }
-        // 64 → 52 (eine Oktave tiefer), Konsonant h vor dem ersten Ton bleibt bei 0 (nicht davor)
-        assertEquals(52, vowels.get(0).pitch(), 0.01);
+        // eine Oktavlage für alle: der höchste Ton (71) muss passen → zwei Oktaven tiefer (64 → 40); h vor dem ersten Ton bleibt bei 0
+        assertEquals(40, vowels.get(0).pitch(), 0.01);
         assertTrue(sung.segments().getFirst().startMs() >= 0);
         assertEquals(Phoneme.H, sung.segments().getFirst().phoneme());
     }

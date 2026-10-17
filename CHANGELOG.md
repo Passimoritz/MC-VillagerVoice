@@ -6,7 +6,9 @@
   aus dem gehaltenen „Hmm“ (gestartet, vorgezogen, gestoppt; Helligkeit über die Tonhöhe), Konsonanten aus Block- und Tiergeräuschen.
 - **9 Stimmen** (Dorfbewohner, Händler, Hexe, Allay, Piglin, Zombie, Magier, Ziege, Katze), **10 Stimmungen**, Stil (Tempo, Tonlage, Umfang,
   Kraft), Hervorhebung (`GROSS`, `*so*`), Zahlen als Wörter.
-- **Singen**: Silben auf Töne, Konsonanten vor dem Schlag, Melismen, Oktav-Faltung.
+- **Singen**: Silben auf Töne (Melismen, Töne je Wort), eine Oktavlage für die ganze Melodie, legato; gesungen wird nur „Hmm“ wie in den
+  bekannten Dorfbewohner-Videos. Gesang braucht das Ressourcenpaket (`sing.require-pack`, `VoiceApi.needsPack`): Paket-Format 2 enthält das echte
+  Dorfbewohner-Hmm je Grundton (`voiceapi:hum.villager.<grundton>`), sauber geschnitten, nahtlos verlängert, auf den Halbton gezogen.
 - **Ressourcenpaket**: `tools/build_voice_pack.py` baut Formant-Laute (19 Vokale × 14 Grundtöne, 7 klingende und 21 Geräusch-Konsonanten) und
   mischt sie in das NoteAPI-Paket; Spieler mit Paket hören echte Laute (Auskunft über die NoteAPI oder `packProbe`).
 - **Sprach-Uhr** (5 ms), `Speech` mit `onWord`/`onSegment`/`stop`, Bibliothek `voices/*.voice`, Werkzeug `java -jar voiceapi.jar`.

@@ -19,6 +19,8 @@ import java.util.regex.Pattern;
  *   Vokal) erkennbar.</li>
  *   <li>Klingende Konsonanten (m, n, ŋ, l, r, w, j): {@code voiceapi:c.<laut>.<grundton>}, ebenso je Grundton.</li>
  *   <li>Geräusch-Konsonanten: {@code voiceapi:c.<laut>} ohne Tonhöhe.</li>
+ *   <li>Gesang: {@code voiceapi:hum.<stimme>.<grundton>} – das echte, gehaltene „Hmm“ der Stimme (sauber geschnitten, nahtlos verlängert) je
+ *   Grundton; damit singt der Dorfbewohner wie in den bekannten Videos. Stimmen ohne Hmm-Samples singen mit dem Dorfbewohner-Hmm.</li>
  * </ul>
  * Das Paket wird in das NoteAPI-Ressourcenpaket gemischt ({@code build_voice_pack.py --merge}); {@code assets/voiceapi/voiceapi.json}
  * nennt das Format, damit das Plugin ein unpassendes Paket erkennt.
@@ -26,7 +28,7 @@ import java.util.regex.Pattern;
 public final class VoicePack {
 
     /** Wie die Klänge heißen; muss zu {@code SOUND_FORMAT} in build_voice_pack.py passen. */
-    public static final int FORMAT = 1;
+    public static final int FORMAT = 2;
     /** Halbtöne zwischen zwei Grundtönen. */
     public static final int STEP = 4;
     public static final int ROOT_LOW = 33;
@@ -35,6 +37,16 @@ public final class VoicePack {
     public static final int VOWEL_MS = 1500;
     /** So lang (ms) ist ein Sample eines klingenden Konsonanten. */
     public static final int SONORANT_MS = 400;
+    /** So lang (ms) ist ein Hmm-Sample. */
+    public static final int HUM_MS = 2000;
+    /** Die Stimmen, für die das Paket echte Hmm-Samples hat (wie {@code HUMS} in build_voice_pack.py). */
+    public static final java.util.Set<String> HUM_SPEAKERS = java.util.Set.of("villager");
+
+    /** Der Klang des gehaltenen Hmm einer Stimme bei einer Tonhöhe (Stimmen ohne eigenes Sample: der Dorfbewohner). */
+    public static String humSound(String speaker, int root) {
+        return "voiceapi:hum." + (HUM_SPEAKERS.contains(speaker) ? speaker : "villager") + "." + root;
+    }
+
     /** Der Pfad des Format-Steckbriefs im Paket. */
     public static final String MARKER = "assets/voiceapi/voiceapi.json";
 
@@ -140,6 +152,11 @@ public final class VoicePack {
     /** Alle Klangnamen, die das Paket haben muss (für den Abgleich mit einer gebauten Datei). */
     public static List<String> sounds() {
         List<String> all = new ArrayList<>();
+        for (String speaker : HUM_SPEAKERS) {
+            for (int root : roots()) {
+                all.add(humSound(speaker, root));
+            }
+        }
         for (Phoneme phoneme : Phoneme.values()) {
             String vowel = vowelKey(phoneme);
             if (vowel != null) {
