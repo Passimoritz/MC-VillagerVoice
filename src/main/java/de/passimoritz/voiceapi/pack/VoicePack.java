@@ -19,8 +19,10 @@ import java.util.regex.Pattern;
  *   Vokal) erkennbar.</li>
  *   <li>Klingende Konsonanten (m, n, ŋ, l, r, w, j): {@code voiceapi:c.<laut>.<grundton>}, ebenso je Grundton.</li>
  *   <li>Geräusch-Konsonanten: {@code voiceapi:c.<laut>} ohne Tonhöhe.</li>
- *   <li>Gesang: {@code voiceapi:hum.<stimme>.<grundton>} – das echte, gehaltene „Hmm“ der Stimme (sauber geschnitten, nahtlos verlängert) je
- *   Grundton; damit singt der Dorfbewohner wie in den bekannten Videos. Stimmen ohne Hmm-Samples singen mit dem Dorfbewohner-Hmm.</li>
+ *   <li>Gesang: {@code voiceapi:hum.<stimme>.<grundton>} – das echte „Hmm“ der Stimme je Grundton, auf den Halbton gezogen, mit natürlichem
+ *   Einsatz, {@value #HUM_MS} ms lang und natürlich ausklingend (mehrere Aufnahmen je Ton, das Spiel wählt). Jeder Ton wird einzeln
+ *   angestoßen und klingt aus statt gestoppt zu werden – so singen die bekannten Dorfbewohner-Videos. Stimmen ohne Hmm-Samples singen mit dem
+ *   Dorfbewohner-Hmm.</li>
  * </ul>
  * Das Paket wird in das NoteAPI-Ressourcenpaket gemischt ({@code build_voice_pack.py --merge}); {@code assets/voiceapi/voiceapi.json}
  * nennt das Format, damit das Plugin ein unpassendes Paket erkennt.
@@ -38,13 +40,29 @@ public final class VoicePack {
     /** So lang (ms) ist ein Sample eines klingenden Konsonanten. */
     public static final int SONORANT_MS = 400;
     /** So lang (ms) ist ein Hmm-Sample. */
-    public static final int HUM_MS = 2000;
+    public static final int HUM_MS = 750;
+    /** Drei Längen (ms gesamt): kurz, mittel, lang – ein Ton bekommt die längste, die ungefähr mit ihm endet; so bleibt zwischen den Tönen
+     * Luft wie in den Videos, und nichts muss hart gestoppt werden. */
+    public static final int[] HUM_LENGTHS_MS = {350, 520, 750};
+    public static final String[] HUM_LENGTH_KEYS = {"s", "m", "l"};
+
+    /** Die Länge des Hmm für einen Ton dieser Dauer. */
+    public static String humLength(int durMs) {
+        for (int i = 0; i < HUM_LENGTHS_MS.length - 1; i++) {
+            if (durMs < HUM_LENGTHS_MS[i] + 90) {
+                return HUM_LENGTH_KEYS[i];
+            }
+        }
+        return HUM_LENGTH_KEYS[HUM_LENGTH_KEYS.length - 1];
+    }
+    /** Nach so vielen Millisekunden setzt ein langer Ton das Hmm neu an (bevor das Sample ausgeklungen ist). */
+    public static final int HUM_RETRIGGER_MS = 520;
     /** Die Stimmen, für die das Paket echte Hmm-Samples hat (wie {@code HUMS} in build_voice_pack.py). */
     public static final java.util.Set<String> HUM_SPEAKERS = java.util.Set.of("villager");
 
-    /** Der Klang des gehaltenen Hmm einer Stimme bei einer Tonhöhe (Stimmen ohne eigenes Sample: der Dorfbewohner). */
-    public static String humSound(String speaker, int root) {
-        return "voiceapi:hum." + (HUM_SPEAKERS.contains(speaker) ? speaker : "villager") + "." + root;
+    /** Der Klang des Hmm einer Stimme bei einer Tonhöhe, lang oder kurz (Stimmen ohne eigenes Sample: der Dorfbewohner). */
+    public static String humSound(String speaker, int root, String length) {
+        return "voiceapi:hum." + (HUM_SPEAKERS.contains(speaker) ? speaker : "villager") + "." + root + "." + length;
     }
 
     /** Der Pfad des Format-Steckbriefs im Paket. */
@@ -154,7 +172,9 @@ public final class VoicePack {
         List<String> all = new ArrayList<>();
         for (String speaker : HUM_SPEAKERS) {
             for (int root : roots()) {
-                all.add(humSound(speaker, root));
+                for (String length : HUM_LENGTH_KEYS) {
+                    all.add(humSound(speaker, root, length));
+                }
             }
         }
         for (Phoneme phoneme : Phoneme.values()) {

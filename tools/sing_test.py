@@ -104,7 +104,7 @@ def melody_for_words(words: list[dict], notes: list[list], vocals: np.ndarray) -
             used.add(k)
             s = max(n[0], a)
             e = min(n[1], b + 0.15)
-            melody.append({"start": int(s * 1000), "dur": max(60, int((e - s) * 1000)), "pitch": n[2], "volume": round(0.6 + 0.4 * min(1.0, n[3]), 2), "word": i})
+            melody.append({"start": int(s * 1000), "dur": max(60, int((e - s) * 1000)), "pitch": n[2], "volume": round(0.45 + 0.55 * min(1.0, n[3]), 2), "word": i})
             last_pitch = n[2]
     melody.sort(key=lambda m: m["start"])
     return melody

@@ -130,6 +130,11 @@ public enum Speaker {
         return naturalPitch - 1.0;
     }
 
+    /** Die Lage, in der die Stimme singt: eine Oktave über ihrem Brummen – so klingen die bekannten Dorfbewohner-Videos (hell, flink). */
+    public double singingPitch() {
+        return naturalPitch + 12.0;
+    }
+
     /** Der tiefste Ton (halbe Geschwindigkeit). */
     public double lowest() {
         return naturalPitch - 12.0;

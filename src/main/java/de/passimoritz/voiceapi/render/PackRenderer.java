@@ -68,22 +68,24 @@ public final class PackRenderer implements Renderer {
         return Renderer.finish(cues);
     }
 
+    /**
+     * Ein gesungener Ton: das Hmm wird am Tonbeginn angestoßen und klingt von selbst aus (kein Stopp – der Ausklang liegt unter dem nächsten
+     * Ton, wie in den bekannten Videos); hält der Ton länger als das Sample, wird es neu angesetzt.
+     */
     private static void hum(List<Cue> cues, String speaker, double pitch, int from, int to, float volume, int index) {
         if (to <= from) {
             return;
         }
         int root = VoicePack.root(pitch);
         float rate = VoicePack.rate(pitch, root);
-        String sound = VoicePack.humSound(speaker, root);
-        int usable = (int) (VoicePack.HUM_MS / rate) - 20;
         int at = from;
-        while (at < to) {
-            int stop = Math.min(to, at + usable);
-            cues.add(new Cue(at, sound, rate, volume, stop, index));
-            if (stop >= to) {
+        while (true) {
+            // die Länge, die ungefähr mit dem Ton endet (klingt von selbst aus, Luft bis zum nächsten Ton); nie hart stoppen
+            cues.add(new Cue(at, VoicePack.humSound(speaker, root, VoicePack.humLength(to - at)), rate, volume, -1, index));
+            at += VoicePack.HUM_RETRIGGER_MS;
+            if (at + 120 >= to) {
                 break;
             }
-            at = stop - 20;
         }
     }
 

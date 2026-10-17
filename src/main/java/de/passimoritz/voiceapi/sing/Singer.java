@@ -137,8 +137,9 @@ public final class Singer {
         return new Utterance("", "", text, language, speaker.id(), style, segments, true);
     }
 
-    /** Bis zu so viele Millisekunden Lücke zum nächsten Ton werden gebunden (Legato). */
-    private static final int LEGATO_GAP_MS = 260;
+    /** Bis zu so viele Millisekunden Lücke zum nächsten Ton werden gebunden; größere Lücken bleiben – jeder Ton wird einzeln angestoßen wie
+     * in den bekannten Videos. */
+    private static final int LEGATO_GAP_MS = 50;
 
     /**
      * Die Verschiebung (ganze Oktaven plus die Tonlage des Stils), mit der die Melodie in den Umfang der Stimme passt – so hoch wie möglich,
@@ -150,17 +151,14 @@ public final class Singer {
             return stylePitch;
         }
         double[] pitches = notes.stream().mapToDouble(n -> n.pitch() + stylePitch).sorted().toArray();
-        double high = pitches[(int) Math.min(pitches.length - 1, Math.floor(pitches.length * 0.9))];
-        double low = pitches[(int) Math.floor(pitches.length * 0.1)];
-        double shift = Math.floor((speaker.highest() - high) / 12.0) * 12.0;
-        while (low + shift < speaker.lowest() && high + shift + 12 <= speaker.highest() + 3) {
-            shift += 12;
-        }
-        return stylePitch + shift;
+        double median = pitches[pitches.length / 2];
+        // die Oktave, in der die Mitte der Melodie der Gesangslage der Stimme am nächsten kommt (im Zweifel die höhere: hell wie in den Videos)
+        return stylePitch + Math.round((speaker.singingPitch() + 2.0 - median) / 12.0) * 12.0;
     }
 
+    /** Gesang spielt aus dem Paket, dessen Grundtöne weit reichen: nur grob begrenzen. */
     private static double clamp(Speaker speaker, double midi) {
-        return Math.clamp(midi, speaker.lowest(), speaker.highest());
+        return Math.clamp(midi, 30.0, 90.0);
     }
 
     /** Der Beginn des ersten Tons nach der Silbe {@code index}, oder −1. */
