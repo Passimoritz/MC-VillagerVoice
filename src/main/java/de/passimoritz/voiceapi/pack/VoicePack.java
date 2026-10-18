@@ -43,8 +43,8 @@ public final class VoicePack {
     public static final int HUM_MS = 750;
     /** Drei Längen (ms gesamt): kurz, mittel, lang – ein Ton bekommt die längste, die ungefähr mit ihm endet; so bleibt zwischen den Tönen
      * Luft wie in den Videos, und nichts muss hart gestoppt werden. */
-    public static final int[] HUM_LENGTHS_MS = {350, 520, 750};
-    public static final String[] HUM_LENGTH_KEYS = {"s", "m", "l"};
+    public static final int[] HUM_LENGTHS_MS = {350, 520, 750, 1700};
+    public static final String[] HUM_LENGTH_KEYS = {"s", "m", "l", "x"};
 
     /** Die Länge des Hmm für einen Ton dieser Dauer. */
     public static String humLength(int durMs) {
@@ -56,9 +56,10 @@ public final class VoicePack {
         return HUM_LENGTH_KEYS[HUM_LENGTH_KEYS.length - 1];
     }
     /** Nach so vielen Millisekunden setzt ein langer Ton das Hmm neu an (bevor das Sample ausgeklungen ist). */
-    public static final int HUM_RETRIGGER_MS = 520;
+    public static final int HUM_RETRIGGER_MS = 1450;
     /** Die Stimmen, für die das Paket echte Hmm-Samples hat (wie {@code HUMS} in build_voice_pack.py). */
-    public static final java.util.Set<String> HUM_SPEAKERS = java.util.Set.of("villager");
+    public static final java.util.Set<String> HUM_SPEAKERS = java.util.Set.of("villager", "trader", "witch", "allay", "piglin", "zombie", "evoker",
+            "goat", "cat");
 
     /** Der Klang des Hmm einer Stimme bei einer Tonhöhe und Länge (Stimmen ohne eigenes Sample: der Dorfbewohner). */
     public static String humSound(String speaker, int root, String length) {

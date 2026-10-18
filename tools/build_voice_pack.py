@@ -57,8 +57,15 @@ NOISES = ["p", "b", "t", "d", "k", "g", "f", "v", "s", "z", "sh", "zh", "th", "d
 # (Pegel- und Tonhoehenverlauf der Aufnahmen gemessen: Schleife nur dort, wo Pegel und Ton stehen – vor dem natuerlichen Abfall)
 HUMS = {"villager": [("mob/villager/idle2", 0.32, 0.72, 0.40, 0.70, 42.6), ("mob/villager/idle1", 0.18, 0.48, 0.28, 0.46, 45.0),
                      ("mob/villager/no1", 0.10, 0.42, 0.16, 0.40, 43.2)]}
+# die anderen Stimmen: stabile Stellen, gefunden von tools/find_hums.py (tools/hums.json); je Stimme die besten 2 Aufnahmen (Paketgroesse)
+_HUMS_FILE = Path(__file__).resolve().parent / "hums.json"
+if _HUMS_FILE.exists():
+    for _speaker, _takes in json.loads(_HUMS_FILE.read_text(encoding="utf-8")).items():
+        if _speaker != "villager" and _takes:
+            HUMS[_speaker] = [tuple(t) for t in _takes[:2]]
 # zwei Laengen (ms gesamt, ms gehalten): kurz fuer kurze Toene (Luft dazwischen wie in den Videos), lang fuer gehaltene
-HUM_LENGTHS = {"s": (350, 200), "m": (520, 340), "l": (750, 480)}
+HUM_RMS_DB = -20.0  # Lautheit des gehaltenen Hmm (dBFS)
+HUM_LENGTHS = {"s": (350, 200), "m": (520, 340), "l": (750, 480), "x": (1700, 1450)}  # x: gehaltene Toene ohne Neuanschlag
 SOUNDS = Path.home() / ".voiceapi" / "sounds"
 VOWEL_DB = -14.0  # Ziel-Pegel (RMS dBFS) der Vokale
 
@@ -298,8 +305,9 @@ def flatten_pitch(piece: np.ndarray, midi: float) -> np.ndarray:
     (das Original brummt eine Spur unsauber – gesungen muss es auf dem Halbton sitzen wie in den bekannten Videos)."""
     import librosa
     hop = int(0.01 * SR)
-    f0 = librosa.yin(piece, fmin=60, fmax=400, sr=SR, frame_length=2048, hop_length=hop)
     target = midi_hz(midi)
+    # Suchbereich um die Lage der Stimme (Zombie ~75 Hz … Katze/Allay ~900 Hz)
+    f0 = librosa.yin(piece, fmin=max(40.0, target / 1.6), fmax=min(2000.0, target * 1.6), sr=SR, frame_length=2048, hop_length=hop)
     # Ausreisser der Messung (Oktavfehler, Rauschen) nicht mitziehen: nur Werte nahe am Ziel gelten, dann glaetten
     f0 = np.where((f0 > target * 0.62) & (f0 < target * 1.5), f0, target)
     from scipy.signal import medfilt
@@ -363,8 +371,10 @@ def hum(speaker: str, root: int, length: str = "l", take: int = 0, legato: bool 
     soft = band(out, None, 2600, 2)
     out = soft + 0.4 * (out - soft)
     # Pegel ueber die Spitze (kein Limiter: der verzerrt das Hmm hoerbar), alle Grundtoene und Aufnahmen gleich laut
-    out = out * (0.7 / (float(np.abs(out[: int(0.3 * SR)]).max()) + 1e-9))
-    return np.clip(out, -0.98, 0.98).astype(np.float32)
+    # Pegel nach der Lautheit des gehaltenen Teils (50–300 ms), nicht nach der Spitze: so sind alle Stimmen, Aufnahmen und Grundtoene gleich laut
+    body = out[int(0.05 * SR): int(0.3 * SR)]
+    out = out * (10 ** (HUM_RMS_DB / 20) / (float(np.sqrt(np.mean(body ** 2))) + 1e-9))
+    return soft_limit(out, knee=0.75, ceiling=0.97)
 
 
 # ── Paket ───────────────────────────────────────────────────

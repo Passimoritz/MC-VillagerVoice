@@ -44,7 +44,8 @@ public final class PackRenderer implements Renderer {
                 // die Hmm-Samples sind über die Spitze normiert (leiser als die Vokale), darum ohne MASTER. Schließt der Ton direkt an den
                 // vorigen an, wird er gebunden (weicher Einsatz ohne Neuansatz).
                 if (phoneme.isVocalic() || phoneme.isSonorant()) {
-                    boolean legato = segment.startMs() - lastVoicedEnd <= VoicePack.LEGATO_GAP_MS && lastVoicedEnd > 0;
+                    // gebunden: schließt an oder überlappt (Singer.smooth setzt gebundene Töne früher ein)
+                    boolean legato = lastVoicedEnd > 0 && segment.startMs() - lastVoicedEnd <= VoicePack.LEGATO_GAP_MS;
                     hum(cues, utterance.speaker(), segment.midPitch(), segment.startMs(), segment.endMs(), segment.volume(), i, legato);
                     lastVoicedEnd = segment.endMs();
                 }

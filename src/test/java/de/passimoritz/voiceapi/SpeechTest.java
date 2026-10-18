@@ -148,7 +148,7 @@ class SpeechTest {
     @Test
     void singingPutsVowelsOnTheNotesAndFoldsIntoTheRange() {
         List<MelodyNote> melody = List.of(new MelodyNote(0, 400, 64), new MelodyNote(400, 400, 67), new MelodyNote(800, 800, 71), new MelodyNote(1600, 400, 60));
-        Utterance sung = Singer.sing("Hallo Welt", Language.GERMAN, Speaker.VILLAGER, melody, Style.DEFAULT);
+        Utterance sung = Singer.sing("Hallo Welt", Language.GERMAN, Speaker.VILLAGER, melody, Style.DEFAULT, de.passimoritz.voiceapi.sing.SingOptions.DETACHED);
         List<Segment> vowels = sung.segments().stream().filter(s -> s.phoneme().isVocalic()).toList();
         assertEquals(4, vowels.size(), sung.segments().toString());
         assertEquals(0, vowels.get(0).startMs());
@@ -182,6 +182,32 @@ class SpeechTest {
         assertEquals(0, vowels.get(1).word());
         assertEquals(1, vowels.get(2).word());
         assertEquals(1000, vowels.get(2).startMs());
+    }
+
+    @Test
+    void smoothingBindsNotesGlidesOverJumpsAndEvensOutVolume() {
+        // zwei Töne mit 100 ms Lücke und Quint-Sprung, ein sehr leiser und ein lauter
+        List<MelodyNote> melody = List.of(new MelodyNote(0, 400, 55, 0.3f), new MelodyNote(500, 400, 62, 1.0f), new MelodyNote(2000, 400, 55, 0.6f));
+        de.passimoritz.voiceapi.sing.SingOptions options = de.passimoritz.voiceapi.sing.SingOptions.DEFAULT;
+        Utterance sung = Singer.sing("a a a", Language.GERMAN, Speaker.VILLAGER, melody, Style.DEFAULT, options);
+        List<Segment> vowels = sung.segments().stream().filter(s -> s.phoneme().isVocalic()).sorted(java.util.Comparator.comparingInt(Segment::startMs)).toList();
+        // erster Ton klingt bis zum zweiten durch (Lücke 100 ≤ 140), zweiter setzt 35 ms früher ein, davor ein Zwischenton (Sprung 7 ≥ 3)
+        assertEquals(500, vowels.get(0).endMs());
+        Segment glide = vowels.get(1);
+        assertEquals(465, glide.startMs());
+        assertEquals(options.glideMs(), glide.durMs());
+        assertTrue(glide.pitch() > vowels.get(0).pitch() && glide.pitch() < vowels.get(2).pitch());
+        // dritter Ton nach 1,1 s Pause: nicht gebunden, kein Zwischenton
+        assertEquals(2000, vowels.getLast().startMs());
+        // Lautstärke gestaucht: Abstand leise–laut deutlich kleiner als 0,3 → 1,0
+        float quiet = vowels.get(0).volume();
+        float loud = vowels.get(2).volume();
+        assertTrue(loud - quiet < 0.35f, quiet + " .. " + loud);
+        // im Paket: der gebundene Ton nimmt das Legato-Hmm, der freie nicht
+        List<Cue> cues = PackRenderer.INSTANCE.render(sung);
+        assertTrue(cues.stream().anyMatch(c -> c.sound().endsWith("g")), cues.toString());
+        assertTrue(cues.stream().filter(c -> c.atMs() == 2000).noneMatch(c -> c.sound().endsWith("g")));
+        assertEquals(options, de.passimoritz.voiceapi.sing.SingOptions.parse(options.describe()));
     }
 
     @Test

@@ -38,6 +38,71 @@ public final class Singer {
      * @param style    Tonlage ({@code pitch}, Halbtöne) und Kraft ({@code energy}); Tempo und Stimmung spielen beim Singen keine Rolle
      */
     public static Utterance sing(String text, Language language, Speaker speaker, List<MelodyNote> melody, Style style) {
+        return sing(text, language, speaker, melody, style, SingOptions.DEFAULT);
+    }
+
+    /** Wie {@link #sing(String, Language, Speaker, List, Style)}, mit eigenen Optionen (Binden, Überlappen, Gleiten, Dynamik, Lautstärke). */
+    public static Utterance sing(String text, Language language, Speaker speaker, List<MelodyNote> melody, Style style, SingOptions options) {
+        SingOptions o = options == null ? SingOptions.DEFAULT : options;
+        Utterance raw = singRaw(text, language, speaker, melody, style);
+        return new Utterance(raw.id(), raw.title(), raw.text(), raw.language(), raw.speaker(), raw.style(), smooth(raw.segments(), o), true);
+    }
+
+    /**
+     * Glättet den Gesang nach den Optionen: sehr kurze Töne gehen im vorigen auf, kleine Lücken werden gebunden (der Ton klingt bis zum
+     * nächsten), gebundene Töne überlappen den vorigen, große Sprünge bekommen einen kurzen Zwischenton, die Lautstärke wird gestaucht.
+     */
+    static List<Segment> smooth(List<Segment> segments, SingOptions o) {
+        List<Segment> voiced = new ArrayList<>();
+        List<Segment> others = new ArrayList<>();
+        for (Segment s : segments) {
+            if (s.phoneme().isVocalic() || s.phoneme().isSonorant()) {
+                voiced.add(s);
+            } else {
+                others.add(s);
+            }
+        }
+        voiced.sort(Comparator.comparingInt(Segment::startMs));
+        // 1. zu kurze Töne in den vorigen
+        List<Segment> merged = new ArrayList<>();
+        for (Segment s : voiced) {
+            if (!merged.isEmpty() && s.durMs() < o.minNoteMs() && s.startMs() - merged.getLast().endMs() <= o.legatoMs()) {
+                Segment last = merged.removeLast();
+                merged.add(last.lasting(Math.max(last.durMs(), s.endMs() - last.startMs())));
+            } else {
+                merged.add(s);
+            }
+        }
+        // 2. Lautstärke: mittlere Lautstärke, Abweichungen nach dynamics, dann volume
+        double mean = merged.stream().mapToDouble(Segment::volume).average().orElse(0.8);
+        List<Segment> out = new ArrayList<>(others);
+        for (int i = 0; i < merged.size(); i++) {
+            Segment s = merged.get(i);
+            float volume = (float) Math.clamp((mean + (s.volume() - mean) * o.dynamics()) / Math.max(0.05, mean) * o.volume(), 0.02, 1.0);
+            int start = s.startMs();
+            int end = s.endMs();
+            Segment previous = i > 0 ? merged.get(i - 1) : null;
+            Segment next = i + 1 < merged.size() ? merged.get(i + 1) : null;
+            boolean boundIn = previous != null && start - previous.endMs() <= o.legatoMs();
+            if (next != null && next.startMs() - end <= o.legatoMs()) {
+                end = next.startMs(); // durchklingen bis zum nächsten Ton
+            }
+            if (boundIn) {
+                start = Math.max(previous.startMs() + 1, start - o.overlapMs());
+            }
+            // 3. Gleiten: großer Sprung in einen gebundenen Ton → kurzer Zwischenton auf halber Höhe
+            if (boundIn && o.glideSemitones() > 0 && Math.abs(s.pitch() - previous.pitchEnd()) >= o.glideSemitones() && end - start > o.glideMs() * 2) {
+                float mid = (float) ((s.pitch() + previous.pitchEnd()) / 2.0);
+                out.add(new Segment(start, o.glideMs(), s.phoneme(), mid, mid, volume * 0.85f, s.word(), s.stressed()));
+                start += o.glideMs();
+            }
+            out.add(new Segment(start, Math.max(20, end - start), s.phoneme(), s.pitch(), s.pitchEnd(), volume, s.word(), s.stressed()));
+        }
+        out.sort(Comparator.comparingInt(Segment::startMs));
+        return out;
+    }
+
+    private static Utterance singRaw(String text, Language language, Speaker speaker, List<MelodyNote> melody, Style style) {
         List<MelodyNote> notes = new ArrayList<>(melody);
         notes.sort(Comparator.comparingInt(MelodyNote::startMs));
         List<Word> words = language.phonemizer().read(text);

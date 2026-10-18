@@ -2,6 +2,11 @@
 
   python villager_sing.py --cache <NoteAPI-Cache-Ordner> --out ordner/ --title "Genre - Titel" [--model villager] [--pitch auto|0|-12]
   python villager_sing.py --vocals gesang.wav --backing begleitung.wav --out ordner/ --title "…"
+  python villager_sing.py --vocals gesang.wav --chunks ordner/ --id <stueck-id>      fuer das Plugin: Villager-Gesang als Paket-Abschnitte
+
+--chunks (vom Plugin aufgerufen): wandelt nur den Gesang und legt ihn als kurze OGG-Abschnitte mit Ueberblendung ab (<id>/<n>.ogg) und dazu
+voice.json (Abschnitt-Laenge, Ueberlappung, Anzahl, Dauer, Modell). Die Abschnitte spielen nacheinander und ergeben zusammen den Gesang
+(lineare Ueberblendung summiert sich zu 1); so kann der Abspieler an jeder Stelle einsteigen und bleibt im Takt.
 
 Ergebnis (sprechende Namen):
   <Titel> - 1 Original - mit Begleitung.wav
@@ -15,16 +20,20 @@ damit es auch auf Linux-Servern ohne Grafikkarte geht.
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 import numpy as np
 
-HOME = Path.home() / ".voiceapi" / "rvc"
+HOME = Path(os.environ.get("VOICEAPI_RVC_HOME", str(Path.home() / ".voiceapi" / "rvc")))
 APPLIO = HOME / "Applio"
 PYTHON = HOME / "venv" / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
 SR = 44100
+CHUNK_MS = 4000      # so lang ist ein Abschnitt (ohne Ueberlappung)
+OVERLAP_MS = 60      # Ueberblendung zwischen zwei Abschnitten
 
 
 def log(text: str) -> None:
@@ -75,6 +84,37 @@ def auto_pitch(vocals: np.ndarray) -> int:
     return -12 if median > 67 else 0
 
 
+def write_chunks(y: np.ndarray, folder: Path, ident: str, model: str) -> dict:
+    """Schneidet den Gesang in ueberblendete Abschnitte und schreibt sie als OGG (Vorbis) – Abschnitt n beginnt bei n*CHUNK_MS - OVERLAP_MS."""
+    import soundfile as sf
+    folder.mkdir(parents=True, exist_ok=True)
+    for old in folder.glob("*.ogg"):
+        old.unlink()
+    chunk = int(CHUNK_MS / 1000 * SR)
+    over = int(OVERLAP_MS / 1000 * SR)
+    count = int(np.ceil(len(y) / chunk))
+    silent = []
+    for n in range(count):
+        a = max(0, n * chunk - over)
+        b = min(len(y), (n + 1) * chunk + over)
+        part = y[a:b].copy()
+        # lineare Ueberblendung ueber 2*over um jede Grenze herum: Einblenden am Anfang (ausser beim ersten), Ausblenden am Ende (ausser beim letzten)
+        if n > 0:
+            k = min(2 * over, len(part))
+            part[:k] *= np.linspace(0, 1, k)
+        if n < count - 1:
+            k = min(2 * over, len(part))
+            part[-k:] *= np.linspace(1, 0, k)
+        if float(np.abs(part).max()) < 1e-3:
+            silent.append(n)  # stiller Abschnitt: nicht ablegen, der Abspieler ueberspringt ihn
+            continue
+        sf.write(str(folder / f"{n}.ogg"), part.astype(np.float32), SR, format="OGG", subtype="VORBIS")
+    meta = {"id": ident, "chunkMs": CHUNK_MS, "overlapMs": OVERLAP_MS, "count": count, "silent": silent,
+            "lengthMs": int(len(y) / SR * 1000), "model": model, "sampleRate": SR}
+    (folder / "voice.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
+    return meta
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--cache")
@@ -82,8 +122,10 @@ def main() -> None:
     parser.add_argument("--backing")
     parser.add_argument("--from", dest="start", type=float, default=0.0)
     parser.add_argument("--to", dest="end", type=float)
-    parser.add_argument("--out", required=True)
-    parser.add_argument("--title", required=True)
+    parser.add_argument("--out")
+    parser.add_argument("--title")
+    parser.add_argument("--chunks", help="Ordner fuer die Paket-Abschnitte (Plugin)")
+    parser.add_argument("--id", help="Kennung des Stuecks (mit --chunks)")
     parser.add_argument("--model", default="villager")
     parser.add_argument("--pitch", default="auto")
     parser.add_argument("--f0-method", default="rmvpe")
@@ -92,6 +134,30 @@ def main() -> None:
     parser.add_argument("--label", default="Villager")
     args = parser.parse_args()
     import soundfile as sf
+    if args.chunks:
+        if not args.vocals or not args.id:
+            raise SystemExit("--chunks braucht --vocals und --id")
+        folder = Path(args.chunks).resolve()
+        folder.mkdir(parents=True, exist_ok=True)
+        vocals = load(Path(args.vocals), args.start, args.end)
+        src = folder / "_gesang.wav"
+        sf.write(str(src), vocals, SR)
+        pitch = auto_pitch(vocals) if args.pitch == "auto" else int(args.pitch)
+        raw = folder / "_villager.wav"
+        log("@@step Villager singt")
+        convert(src, raw, args.model, pitch, args.f0_method, args.index_rate, args.protect)
+        y = load(raw)
+        y = np.pad(y, (0, max(0, len(vocals) - len(y))))[: len(vocals)]
+        y *= float(np.sqrt(np.mean(vocals ** 2))) / (float(np.sqrt(np.mean(y ** 2))) + 1e-9)
+        y = np.clip(y, -0.98, 0.98)
+        log("@@step Abschnitte")
+        meta = write_chunks(y, folder, args.id, args.model)
+        src.unlink(missing_ok=True)
+        raw.unlink(missing_ok=True)
+        log(f"@@done {args.id} {meta['count']} Abschnitte, {meta['lengthMs'] / 1000:.1f} s")
+        return
+    if not args.out or not args.title:
+        raise SystemExit("--out und --title (oder --chunks und --id)")
     out = Path(args.out).resolve()
     out.mkdir(parents=True, exist_ok=True)
     if args.cache:

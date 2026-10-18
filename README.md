@@ -16,7 +16,9 @@ NoteAPI-Ressourcenpaket mit den VoiceAPI-Lauten geladen hat, hört stattdessen e
   Dorfbewohner die Töne nicht (sein Brummen steht nur ~180 ms stabil, das Spiel wählt zufällig eine von drei Aufnahmen), darum gilt
   `sing.require-pack: true`: Spieler ohne Paket hören keinen Gesang, und `VoiceApi.needsPack(utterance)` sagt dem einbindenden Plugin, dass es
   das Paket erzwingen soll
-- **9 Stimmen** – Dorfbewohner, Fahrender Händler, Hexe, Allay, Piglin, Zombie-Dorfbewohner, Magier (Wololo), Schreiende Ziege, Katze
+- **9 Stimmen** – Dorfbewohner, Fahrender Händler, Hexe, Allay, Piglin, Zombie-Dorfbewohner, Magier (Wololo), Schreiende Ziege, Katze – jede
+  singt mit ihrem eigenen Hmm
+- **Smoother Gesang einstellbar** – `SingOptions`: Lautstärke, Dynamik, Binden/Überlappen, Gleiten bei Sprüngen, kürzeste Note
 - **10 Stimmungen** – neutral, fröhlich, traurig, wütend, ängstlich, ruhig, aufgeregt, flüstern, Roboter, müde; dazu Tempo, Tonlage, Umfang, Kraft
 - **Sprach-Uhr** – eigener Thread mit 5-ms-Schritten: Klänge starten und stoppen auf die Millisekunde (der Server-Tick wäre zu grob)
 - **`.voice`-Dateien** – lesbar, von Hand änderbar, Bibliothek in `plugins/VoiceAPI/voices/`
@@ -47,7 +49,8 @@ if (VoiceApi.isAvailable()) {
 |---|---|
 | Text lesen | `VoiceApi.read(text, lang)` → Wörter mit Silben, Betonung, Satzgrenzen |
 | sprechen | `VoiceApi.speak(text, lang, speaker, style)` → `Utterance` (ohne Server) |
-| singen | `VoiceApi.sing(text, lang, speaker, List<MelodyNote>, style)` |
+| singen | `VoiceApi.sing(text, lang, speaker, List<MelodyNote>, style[, SingOptions])` |
+| Villager-Gesang (KI) | `VoiceApi.songVoice(id)` → `SongVoice.cues()` / `cuesFrom(ms)`; `convertSong(id, vocalsWav, progress)`, `onSoundPackChanged(…)`, `songVoiceMissing()` |
 | abspielen | `VoiceApi.play(utterance, place, listeners, volume, whenDone)` → `Speech`; `say(…)` an einem Ort, `tell(player, …)` nur für einen |
 | Klang-Befehle | `VoiceApi.cues(utterance, withPack)` → `Cue` (Klang, Geschwindigkeit, Lautstärke, Start, Stopp) |
 | Bibliothek | `VoiceApi.library().save(utterance)` / `get(id)` / `all()` – Dateien `voices/<id>.voice` |
@@ -58,8 +61,11 @@ if (VoiceApi.isAvailable()) {
 - **Stimme**: `Speaker.VILLAGER` … jede hat eine natürliche Tonlage und einen Umfang von ±12 Halbtönen (halbe bis doppelte Geschwindigkeit).
 - **Threads**: Aufrufe im Hauptthread. Orte und Zuhörer werden je Server-Tick im Hauptthread abgefragt; Beobachter (`onWord`, `onSegment`) und
   `whenDone` laufen im Hauptthread.
+- **Gesang einstellen**: `SingOptions.DEFAULT.withLegato(200, 40).withGlide(2, 50).withDynamics(0.2).withVolume(0.7)` oder
+  `SingOptions.parse("legato=200; overlap=40; glide=2; glideMs=50; dynamics=0.2; volume=0.7; minNote=70")`; `SingOptions.DETACHED` = jeder Ton
+  angeschlagen (alter Klang).
 - **Einstellungen** (`config.yml`): `speech.rate`, `speech.volume`, `speech.category` (Standard: Stimme/Sprache), `sing.require-pack`, `pack.use`,
-  `pack.file`.
+  `pack.file`, `rvc.home`, `rvc.model`.
 
 ## Wie die Sprache entsteht
 
@@ -109,7 +115,10 @@ Villager-Stimme gelernt hat und jeden Gesang in sie umwandelt. Alles läuft auf 
    der Original-Begleitung. Dateien: `<Titel> - 1 Original - mit Begleitung.wav`, `<Titel> - 2 Villager - mit Begleitung.wav`,
    `<Titel> - 2 Villager - nur Gesang.wav`, `<Titel> - Vergleich (erst Original, dann Villager).wav`.
 
-Die Anbindung an Plugin und Ressourcenpaket (fertige Villager-Gesangsspur je Lied als Klang im Paket) folgt, sobald das Modell fertig trainiert ist.
+**Im Plugin** (Schnittstelle 3): `VoiceApi.convertSong(id, vocalsWav, progress)` ruft `villager_sing.py --chunks` mit der Umgebung aus `rvc.home`
+auf, legt den Gesang als 4-s-Abschnitte mit 60 ms Überblendung nach `plugins/VoiceAPI/songs/<id>/` und schreibt das Lautpaket neu;
+`onSoundPackChanged` meldet das dem einbindenden Plugin (die NoteAPI mischt neu und sendet). Abgespielt wird über `VoiceApi.songVoice(id).cues()`
+auf der Musik-Uhr des Plugins. Auf einem Server ohne GPU: `python plugins/VoiceAPI/tools/rvc_setup.py --model villager.pth` (Linux und Windows).
 
 ## Bauen
 

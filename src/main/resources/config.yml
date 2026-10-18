@@ -17,6 +17,14 @@ sing:
   # (VoiceApi.needsPack). false = trotzdem mit Vanilla-Klängen singen (klingt schief).
   require-pack: true
 
+rvc:
+  # Villager-Gesang aus dem KI-Stimmmodell (RVC, nur CPU – auch auf Linux-Servern ohne Grafikkarte). Einrichten:
+  #   python plugins/VoiceAPI/tools/rvc_setup.py --model villager.pth
+  # Ordner der Umgebung (leer = ~/.voiceapi/rvc: venv, Applio, models)
+  home: ""
+  # Name des Modells in <home>/models/<model>.pth
+  model: villager
+
 pack:
   # Spieler mit dem NoteAPI-Ressourcenpaket (das die VoiceAPI-Laute enthält) hören echte Vokale und Konsonanten statt Dorfbewohner-Lauten
   use: true
