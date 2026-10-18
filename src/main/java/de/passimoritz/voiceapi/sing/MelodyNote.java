@@ -1,5 +1,7 @@
 package de.passimoritz.voiceapi.sing;
 
+import de.passimoritz.voiceapi.Compat;
+
 /**
  * Ein Ton einer Melodie, auf den gesungen wird.
  *
@@ -13,7 +15,7 @@ public record MelodyNote(int startMs, int durMs, double pitch, float volume, int
     public MelodyNote {
         startMs = Math.max(0, startMs);
         durMs = Math.max(1, durMs);
-        pitch = Double.isFinite(pitch) ? Math.clamp(pitch, 12.0, 108.0) : 60.0;
+        pitch = Double.isFinite(pitch) ? Compat.clamp(pitch, 12.0, 108.0) : 60.0;
         volume = Float.isNaN(volume) ? 0.8f : Math.max(0.01f, Math.min(1f, volume));
         word = Math.max(-1, word);
     }

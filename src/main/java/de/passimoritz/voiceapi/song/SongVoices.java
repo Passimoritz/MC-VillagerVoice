@@ -1,5 +1,7 @@
 package de.passimoritz.voiceapi.song;
 
+import de.passimoritz.voiceapi.Compat;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -86,7 +88,7 @@ public final class SongVoices {
             return Optional.empty();
         }
         try {
-            JsonObject json = JsonParser.parseString(Files.readString(meta, StandardCharsets.UTF_8)).getAsJsonObject();
+            JsonObject json = Compat.json(Files.readString(meta, StandardCharsets.UTF_8)).getAsJsonObject();
             Set<Integer> silent = new HashSet<>();
             if (json.has("silent")) {
                 for (JsonElement element : json.getAsJsonArray("silent")) {
@@ -144,11 +146,11 @@ public final class SongVoices {
             while (entries.hasMoreElements()) {
                 ZipEntry entry = entries.nextElement();
                 if (entry.getName().equals(SOUNDS_JSON)) {
-                    sounds = JsonParser.parseString(new String(read(source, entry), StandardCharsets.UTF_8)).getAsJsonObject();
+                    sounds = Compat.json(new String(read(source, entry), StandardCharsets.UTF_8)).getAsJsonObject();
                     continue;
                 }
                 if (entry.getName().equals(MARKER)) {
-                    marker = JsonParser.parseString(new String(read(source, entry), StandardCharsets.UTF_8)).getAsJsonObject();
+                    marker = Compat.json(new String(read(source, entry), StandardCharsets.UTF_8)).getAsJsonObject();
                     continue;
                 }
                 if (entry.getName().startsWith("assets/voiceapi/sounds/song/")) {

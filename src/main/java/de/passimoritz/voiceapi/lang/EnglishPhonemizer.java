@@ -1,5 +1,7 @@
 package de.passimoritz.voiceapi.lang;
 
+import de.passimoritz.voiceapi.Compat;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -188,8 +190,8 @@ public final class EnglishPhonemizer implements Phonemizer {
 
     private static List<Syllable> withSuffix(List<Syllable> stem, String suffix) {
         List<Syllable> result = new ArrayList<>(stem);
-        Syllable last = result.getLast();
-        Phoneme end = last.phonemes().getLast();
+        Syllable last = Compat.last(result);
+        Phoneme end = Compat.last(last.phonemes());
         if (suffix.equals("~s")) {
             if (end == S || end == Z || end == SH || end == ZH || end == CH || end == DJ) {
                 result.add(new Syllable(List.of(I, Z), 0));
@@ -209,8 +211,8 @@ public final class EnglishPhonemizer implements Phonemizer {
             return result;
         }
         List<Syllable> extra = Phonemizer.transcription(suffix);
-        if (extra.size() == 1 && !extra.getFirst().phonemes().getFirst().isVocalic() && extra.getFirst().phonemes().stream().noneMatch(Phoneme::isVocalic)) {
-            result.set(result.size() - 1, new Syllable(concat(last.phonemes(), extra.getFirst().phonemes()), last.stress()));
+        if (extra.size() == 1 && !Compat.first(Compat.first(extra).phonemes()).isVocalic() && Compat.first(extra).phonemes().stream().noneMatch(Phoneme::isVocalic)) {
+            result.set(result.size() - 1, new Syllable(concat(last.phonemes(), Compat.first(extra).phonemes()), last.stress()));
         } else {
             result.addAll(extra);
         }
@@ -319,8 +321,8 @@ public final class EnglishPhonemizer implements Phonemizer {
             // Endungen
             if (c == 'e' && last && !out.isEmpty() && out.stream().anyMatch(Phoneme::isVocalic)) {
                 // stummes e (name) – aber "le" am Ende (table) = əl
-                if (ch(-1) == 'l' && !out.isEmpty() && out.getLast() == L && w.length() > 2 && !isVowelLetter(ch(-2))) {
-                    out.removeLast();
+                if (ch(-1) == 'l' && !out.isEmpty() && Compat.last(out) == L && w.length() > 2 && !isVowelLetter(ch(-2))) {
+                    Compat.removeLast(out);
                     add(SCHWA, L);
                 }
                 i++;
@@ -437,7 +439,7 @@ public final class EnglishPhonemizer implements Phonemizer {
                 i += 3;
                 return;
             }
-            if (at("tion") || at("sion") && !out.isEmpty() && !out.getLast().isVocalic() || at("cian")) {
+            if (at("tion") || at("sion") && !out.isEmpty() && !Compat.last(out).isVocalic() || at("cian")) {
                 add(at("sion") ? ZH : SH, SCHWA, N);
                 i += 4;
                 return;
@@ -542,8 +544,8 @@ public final class EnglishPhonemizer implements Phonemizer {
                 case 'q' -> add(K);
                 case 'r' -> add(R);
                 case 's' -> {
-                    boolean between = !out.isEmpty() && out.getLast().isVocalic() && beforeVowel;
-                    boolean finalVoiced = i == w.length() - 1 && !out.isEmpty() && (out.getLast().isVocalic() || out.getLast().isVoiced());
+                    boolean between = !out.isEmpty() && Compat.last(out).isVocalic() && beforeVowel;
+                    boolean finalVoiced = i == w.length() - 1 && !out.isEmpty() && (Compat.last(out).isVocalic() || Compat.last(out).isVoiced());
                     add(between || finalVoiced ? Z : S);
                 }
                 case 't' -> add(T);

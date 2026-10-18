@@ -1,5 +1,7 @@
 package de.passimoritz.voiceapi.render;
 
+import de.passimoritz.voiceapi.Compat;
+
 import de.passimoritz.voiceapi.Utterance;
 
 import java.util.ArrayList;
@@ -33,7 +35,7 @@ public interface Renderer {
         }
         List<Cue> sorted = new ArrayList<>(cues);
         sorted.sort(Comparator.comparingInt(Cue::atMs));
-        int offset = -Math.min(0, sorted.getFirst().atMs());
+        int offset = -Math.min(0, Compat.first(sorted).atMs());
         List<Cue> shifted = new ArrayList<>(sorted.size());
         for (Cue cue : sorted) {
             shifted.add(offset == 0 ? cue : cue.shifted(offset));

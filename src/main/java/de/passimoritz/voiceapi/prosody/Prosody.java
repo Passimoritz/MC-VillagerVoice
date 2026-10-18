@@ -1,5 +1,7 @@
 package de.passimoritz.voiceapi.prosody;
 
+import de.passimoritz.voiceapi.Compat;
+
 import de.passimoritz.voiceapi.Segment;
 import de.passimoritz.voiceapi.Speaker;
 import de.passimoritz.voiceapi.Style;
@@ -88,7 +90,7 @@ public final class Prosody {
                 sentenceEnd++;
             }
             List<Word> sentence = words.subList(sentenceStart, sentenceEnd + 1);
-            Word.Break ending = sentence.getLast().after();
+            Word.Break ending = Compat.last(sentence).after();
             // Silben des Satzes zählen (für die Deklination)
             int syllables = 0;
             for (Word word : sentence) {

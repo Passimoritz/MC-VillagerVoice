@@ -62,10 +62,10 @@ public record Style(double rate, double pitch, double range, double energy, Mood
     public static final Style DEFAULT = new Style(1.0, 0.0, 1.0, 1.0, Mood.NEUTRAL);
 
     public Style {
-        rate = Double.isFinite(rate) ? Math.clamp(rate, 0.4, 2.5) : 1.0;
-        pitch = Double.isFinite(pitch) ? Math.clamp(pitch, -24.0, 24.0) : 0.0;
-        range = Double.isFinite(range) ? Math.clamp(range, 0.0, 3.0) : 1.0;
-        energy = Double.isFinite(energy) ? Math.clamp(energy, 0.1, 2.0) : 1.0;
+        rate = Double.isFinite(rate) ? Compat.clamp(rate, 0.4, 2.5) : 1.0;
+        pitch = Double.isFinite(pitch) ? Compat.clamp(pitch, -24.0, 24.0) : 0.0;
+        range = Double.isFinite(range) ? Compat.clamp(range, 0.0, 3.0) : 1.0;
+        energy = Double.isFinite(energy) ? Compat.clamp(energy, 0.1, 2.0) : 1.0;
         mood = mood == null ? Mood.NEUTRAL : mood;
     }
 

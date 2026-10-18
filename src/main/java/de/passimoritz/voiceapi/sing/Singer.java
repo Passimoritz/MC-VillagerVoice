@@ -1,5 +1,7 @@
 package de.passimoritz.voiceapi.sing;
 
+import de.passimoritz.voiceapi.Compat;
+
 import de.passimoritz.voiceapi.Segment;
 import de.passimoritz.voiceapi.Speaker;
 import de.passimoritz.voiceapi.Style;
@@ -66,8 +68,8 @@ public final class Singer {
         // 1. zu kurze Töne in den vorigen
         List<Segment> merged = new ArrayList<>();
         for (Segment s : voiced) {
-            if (!merged.isEmpty() && s.durMs() < o.minNoteMs() && s.startMs() - merged.getLast().endMs() <= o.legatoMs()) {
-                Segment last = merged.removeLast();
+            if (!merged.isEmpty() && s.durMs() < o.minNoteMs() && s.startMs() - Compat.last(merged).endMs() <= o.legatoMs()) {
+                Segment last = Compat.removeLast(merged);
                 merged.add(last.lasting(Math.max(last.durMs(), s.endMs() - last.startMs())));
             } else {
                 merged.add(s);
@@ -78,7 +80,7 @@ public final class Singer {
         List<Segment> out = new ArrayList<>(others);
         for (int i = 0; i < merged.size(); i++) {
             Segment s = merged.get(i);
-            float volume = (float) Math.clamp((mean + (s.volume() - mean) * o.dynamics()) / Math.max(0.05, mean) * o.volume(), 0.02, 1.0);
+            float volume = (float) Compat.clamp((mean + (s.volume() - mean) * o.dynamics()) / Math.max(0.05, mean) * o.volume(), 0.02, 1.0);
             int start = s.startMs();
             int end = s.endMs();
             Segment previous = i > 0 ? merged.get(i - 1) : null;
@@ -137,8 +139,8 @@ public final class Singer {
                     break;
                 }
             }
-            MelodyNote first = group.getFirst();
-            MelodyNote last = group.getLast();
+            MelodyNote first = Compat.first(group);
+            MelodyNote last = Compat.last(group);
             boolean stressed = unit.syllable().isStressed();
             float loud = (float) Math.min(1.0, first.volume() * energy * (stressed ? 1.0 : 0.9));
             double firstPitch = clamp(speaker, first.pitch() + shift);
@@ -224,14 +226,14 @@ public final class Singer {
 
     /** Gesang spielt aus dem Paket, dessen Grundtöne weit reichen: nur grob begrenzen. */
     private static double clamp(Speaker speaker, double midi) {
-        return Math.clamp(midi, 30.0, 90.0);
+        return Compat.clamp(midi, 30.0, 90.0);
     }
 
     /** Der Beginn des ersten Tons nach der Silbe {@code index}, oder −1. */
     private static int nextNoteStart(List<List<MelodyNote>> perUnit, int index) {
         for (int u = index + 1; u < perUnit.size(); u++) {
             if (!perUnit.get(u).isEmpty()) {
-                return perUnit.get(u).getFirst().startMs();
+                return Compat.first(perUnit.get(u)).startMs();
             }
         }
         return -1;
@@ -248,7 +250,7 @@ public final class Singer {
         for (int i = 0; i < units.size(); i++) {
             result.add(new ArrayList<>());
         }
-        int words = units.isEmpty() ? 0 : units.getLast().word() + 1;
+        int words = units.isEmpty() ? 0 : Compat.last(units).word() + 1;
         List<List<MelodyNote>> perWord = new ArrayList<>();
         for (int w = 0; w < words; w++) {
             perWord.add(new ArrayList<>());
@@ -321,7 +323,7 @@ public final class Singer {
                 }
             }
             while (n < notes.size()) {
-                result.getLast().add(notes.get(n++));
+                Compat.last(result).add(notes.get(n++));
             }
             return result;
         }

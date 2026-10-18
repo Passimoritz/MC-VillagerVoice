@@ -90,7 +90,7 @@ class PhonemizerTest {
         assertEquals(Word.Break.ELLIPSIS, words.get(6).after());
         assertTrue(words.get(7).emphasis());
         assertTrue(words.get(8).emphasis());
-        assertEquals(Word.Break.SENTENCE, words.getLast().after());
+        assertEquals(Word.Break.SENTENCE, Compat.last(words).after());
         assertFalse(words.get(0).emphasis());
     }
 
@@ -113,7 +113,7 @@ class PhonemizerTest {
     void vocalicRStaysInItsSyllable() {
         assertEquals(1, Language.GERMAN.phonemizer().word("uhr").size());
         assertEquals(3, Language.GERMAN.phonemizer().word("kartoffeln").size());
-        assertEquals(Phoneme.ER, Language.GERMAN.phonemizer().word("uhr").getFirst().phonemes().getLast());
+        assertEquals(Phoneme.ER, Compat.last(Compat.first(Language.GERMAN.phonemizer().word("uhr")).phonemes()));
     }
 
     @Test

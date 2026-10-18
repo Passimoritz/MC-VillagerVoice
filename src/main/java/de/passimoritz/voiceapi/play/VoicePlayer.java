@@ -1,5 +1,7 @@
 package de.passimoritz.voiceapi.play;
 
+import de.passimoritz.voiceapi.Compat;
+
 import de.passimoritz.voiceapi.Segment;
 import de.passimoritz.voiceapi.Utterance;
 import de.passimoritz.voiceapi.pack.PackBridge;
@@ -42,8 +44,8 @@ public final class VoicePlayer {
     private final AtomicLong ids = new AtomicLong();
     private final AtomicLong cuesPlayed = new AtomicLong();
     private ScheduledExecutorService clock;
-    private int syncTask = -1;
-    private volatile SoundCategory category = SoundCategory.VOICE;
+    private de.passimoritz.voiceapi.Scheduling.Repeating syncTask;
+    private volatile SoundCategory category = defaultCategory();
     private volatile float master = 1.0f;
     private volatile double rate = 1.0;
     private volatile boolean singRequiresPack = true;
@@ -56,7 +58,7 @@ public final class VoicePlayer {
 
     /** Übernimmt die Einstellungen ({@code speech.*}). */
     public void configure(String categoryName, double volume, double speechRate) {
-        SoundCategory found = SoundCategory.VOICE;
+        SoundCategory found = defaultCategory();
         if (categoryName != null) {
             for (SoundCategory candidate : SoundCategory.values()) {
                 if (candidate.name().equalsIgnoreCase(categoryName.strip())) {
@@ -66,7 +68,7 @@ public final class VoicePlayer {
         }
         category = found;
         master = (float) Math.max(0.0, Math.min(1.0, volume));
-        rate = Double.isFinite(speechRate) && speechRate > 0 ? Math.clamp(speechRate, 0.4, 2.5) : 1.0;
+        rate = Double.isFinite(speechRate) && speechRate > 0 ? Compat.clamp(speechRate, 0.4, 2.5) : 1.0;
     }
 
     /** Ob Gesang nur mit dem Ressourcenpaket gespielt wird ({@code sing.require-pack}): Mit Vanilla-Klängen trifft der Dorfbewohner die Töne
@@ -90,6 +92,18 @@ public final class VoicePlayer {
         return speechRequiresPack;
     }
 
+    /** „Stimme/Sprache“, sonst „Spieler“, sonst die erste Kategorie – nach Namen gesucht, damit kein Server-Update das Plugin bricht. */
+    private static SoundCategory defaultCategory() {
+        for (String name : new String[]{"VOICE", "PLAYERS", "MASTER"}) {
+            for (SoundCategory candidate : SoundCategory.values()) {
+                if (candidate.name().equals(name)) {
+                    return candidate;
+                }
+            }
+        }
+        return SoundCategory.values()[0];
+    }
+
     /** Das Sprechtempo aus der Einstellung (wird auf jedes Stück angewendet). */
     public double rate() {
         return rate;
@@ -109,14 +123,14 @@ public final class VoicePlayer {
             return thread;
         });
         clock.scheduleAtFixedRate(this::step, STEP_MS, STEP_MS, TimeUnit.MILLISECONDS);
-        syncTask = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, this::sync, 1L, 1L);
+        syncTask = de.passimoritz.voiceapi.Scheduling.everyTick(plugin, this::sync);
     }
 
     public void shutdown() {
         stopAll();
-        if (syncTask >= 0) {
-            Bukkit.getScheduler().cancelTask(syncTask);
-            syncTask = -1;
+        if (syncTask != null) {
+            syncTask.cancel();
+            syncTask = null;
         }
         if (clock != null) {
             clock.shutdownNow();
@@ -261,8 +275,8 @@ public final class VoicePlayer {
             return;
         }
         // Stopps, die fällig sind
-        while (!speech.stops.isEmpty() && speech.stops.getFirst().atMs() <= elapsed) {
-            Speech.PendingStop stop = speech.stops.removeFirst();
+        while (!speech.stops.isEmpty() && Compat.first(speech.stops).atMs() <= elapsed) {
+            Speech.PendingStop stop = Compat.removeFirst(speech.stops);
             for (Speech.Ear ear : ears) {
                 if (ear.pack() == stop.pack()) {
                     ear.player().stopSound(stop.sound(), category);
@@ -330,7 +344,7 @@ public final class VoicePlayer {
         }
         running.remove(speech);
         if (speech.whenDone != null) {
-            Bukkit.getScheduler().runTask(plugin, () -> {
+            de.passimoritz.voiceapi.Scheduling.run(plugin, () -> {
                 try {
                     speech.whenDone.run();
                 } catch (RuntimeException e) {

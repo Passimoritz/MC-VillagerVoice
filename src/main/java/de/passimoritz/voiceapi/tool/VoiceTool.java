@@ -1,5 +1,7 @@
 package de.passimoritz.voiceapi.tool;
 
+import de.passimoritz.voiceapi.Compat;
+
 import de.passimoritz.voiceapi.Speaker;
 import de.passimoritz.voiceapi.Style;
 import de.passimoritz.voiceapi.Utterance;
@@ -100,7 +102,7 @@ public final class VoiceTool {
                 if (rest.isEmpty()) {
                     throw new IllegalArgumentException("render braucht eine .voice-Datei");
                 }
-                Path file = Path.of(rest.getFirst());
+                Path file = Path.of(Compat.first(rest));
                 String id = file.getFileName().toString().replace(UtteranceFile.EXTENSION, "");
                 Utterance utterance = UtteranceFile.read(id, Files.readString(file, StandardCharsets.UTF_8));
                 if (cuesPath == null) {

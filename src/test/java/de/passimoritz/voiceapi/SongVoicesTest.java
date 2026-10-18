@@ -31,7 +31,7 @@ class SongVoicesTest {
         SongVoice voice = new SongVoice("lied", 4000, 60, 4, Set.of(2), 15000, "villager");
         List<Cue> cues = voice.cues();
         assertEquals(List.of(0, 3940, 11940), cues.stream().map(Cue::atMs).toList());
-        assertEquals("voiceapi:song.lied.3", cues.getLast().sound());
+        assertEquals("voiceapi:song.lied.3", Compat.last(cues).sound());
         assertTrue(cues.stream().allMatch(c -> c.pitch() == 1.0f && !c.stops()));
         assertEquals(List.of(11940), voice.cuesFrom(5000).stream().map(Cue::atMs).toList());
     }
@@ -69,11 +69,11 @@ class SongVoicesTest {
             assertNotNull(zip.getEntry("assets/voiceapi/sounds/hum/villager/45_l0.ogg"));
             assertNotNull(zip.getEntry("assets/voiceapi/sounds/song/lied/0.ogg"));
             assertNull(zip.getEntry("assets/voiceapi/sounds/song/lied/1.ogg"));
-            JsonObject sounds = JsonParser.parseString(read(zip, "assets/voiceapi/sounds.json")).getAsJsonObject();
+            JsonObject sounds = Compat.json(read(zip, "assets/voiceapi/sounds.json")).getAsJsonObject();
             assertTrue(sounds.has("hum.villager.45.l"));
             assertTrue(sounds.has("song.lied.2"));
             assertTrue(sounds.getAsJsonObject("song.lied.0").getAsJsonArray("sounds").get(0).getAsJsonObject().get("stream").getAsBoolean());
-            JsonObject marker = JsonParser.parseString(read(zip, "assets/voiceapi/voiceapi.json")).getAsJsonObject();
+            JsonObject marker = Compat.json(read(zip, "assets/voiceapi/voiceapi.json")).getAsJsonObject();
             assertEquals(2, marker.get("format").getAsInt());
             assertEquals("lied", marker.getAsJsonArray("songs").get(0).getAsJsonObject().get("id").getAsString());
         }
@@ -82,7 +82,7 @@ class SongVoicesTest {
         assertTrue(voices.writePack(base, target));
         try (ZipFile zip = new ZipFile(target.toFile())) {
             assertNull(zip.getEntry("assets/voiceapi/sounds/song/lied/0.ogg"));
-            assertEquals(0, JsonParser.parseString(read(zip, "assets/voiceapi/voiceapi.json")).getAsJsonObject().getAsJsonArray("songs").size());
+            assertEquals(0, Compat.json(read(zip, "assets/voiceapi/voiceapi.json")).getAsJsonObject().getAsJsonArray("songs").size());
         }
     }
 

@@ -182,7 +182,7 @@ public enum Speaker {
 
     /** Die Geschwindigkeit (0,5 … 2,0), mit der diese Stimme eine Tonhöhe erreicht; außerhalb des Umfangs wird begrenzt. */
     public float rateFor(double midi) {
-        return (float) Math.clamp(Math.pow(2.0, (midi - naturalPitch) / 12.0), 0.5, 2.0);
+        return (float) Compat.clamp(Math.pow(2.0, (midi - naturalPitch) / 12.0), 0.5, 2.0);
     }
 
     /** Rückt einen Ton um ganze Oktaven in den Umfang der Stimme (zum Singen). */

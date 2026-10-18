@@ -1,5 +1,7 @@
 package de.passimoritz.voiceapi.pack;
 
+import de.passimoritz.voiceapi.Compat;
+
 import de.passimoritz.voiceapi.lang.Phoneme;
 
 import java.io.IOException;
@@ -152,7 +154,7 @@ public final class VoicePack {
 
     /** Die Geschwindigkeit, mit der ein Sample des Grundtons die Tonhöhe trifft. */
     public static float rate(double midi, int root) {
-        return (float) Math.clamp(Math.pow(2.0, (midi - root) / 12.0), 0.5, 2.0);
+        return (float) Compat.clamp(Math.pow(2.0, (midi - root) / 12.0), 0.5, 2.0);
     }
 
     /** Der Klang eines Vokals bei einer Tonhöhe. */

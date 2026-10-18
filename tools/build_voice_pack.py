@@ -26,7 +26,9 @@ from pathlib import Path
 import numpy as np
 
 SR = 44100
-PACK_FORMAT = 97  # Minecraft 26.3
+PACK_FORMAT = 97  # Minecraft 26.3 (nur zur Information; das Paket gilt fuer alle Versionen, siehe pack_meta)
+PACK_FORMAT_OLDEST = 7  # Minecraft 1.17
+PACK_FORMAT_OPEN = 9999  # offenes oberes Ende: kuenftige Versionen nehmen das Paket ohne Warnung
 SOUND_FORMAT = 2  # muss zu VoicePack.FORMAT passen
 STEP, ROOT_LOW, ROOT_HIGH = 4, 33, 85
 VOWEL_MS, SONORANT_MS = 1500, 400
@@ -433,10 +435,17 @@ def build_entries(progress) -> dict[str, bytes]:
     return entries
 
 
+def pack_meta(description: str) -> dict:
+    """pack.mcmeta, die jede Minecraft-Version ab 1.17 annimmt – auch kuenftige, ohne Pflege: altes Feld pack_format (bis 1.20.1),
+    supported_formats (1.20.2 – 1.21.8) und min_format/max_format (ab 1.21.9) mit offenem oberen Ende. Die Laute (sounds.json, OGG) haben
+    seit 1.9 dasselbe Format."""
+    return {"pack": {"pack_format": PACK_FORMAT_OLDEST, "supported_formats": {"min_inclusive": PACK_FORMAT_OLDEST, "max_inclusive": PACK_FORMAT_OPEN},
+                     "min_format": PACK_FORMAT_OLDEST, "max_format": PACK_FORMAT_OPEN, "description": description}}
+
+
 def write_standalone(target: Path, entries: dict[str, bytes]) -> None:
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as pack:
-        pack.writestr("pack.mcmeta", json.dumps({"pack": {"pack_format": PACK_FORMAT, "min_format": PACK_FORMAT, "max_format": PACK_FORMAT,
-                                                           "description": "VoiceAPI: Sprache mit echten Lauten"}}, indent=1))
+        pack.writestr("pack.mcmeta", json.dumps(pack_meta("VoiceAPI: Sprache mit echten Lauten"), indent=1))
         for name, data in entries.items():
             pack.writestr(name, data)
 

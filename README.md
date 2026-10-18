@@ -1,6 +1,7 @@
 # VoiceAPI
 
-Sprache und Gesang aus Dorfbewohner-Lauten für **Paper 26.3** (Java 25) – als eigenes Plugin, das andere Plugins (z. B. [NoteAPI](https://github.com/Passimoritz/MC-MusicAPI))
+Sprache und Gesang aus Dorfbewohner-Lauten für **jeden Bukkit-Server ab Minecraft 1.17** – Spigot, Paper, Purpur, Folia, heute und künftig
+(Java 17+) – als eigenes Plugin, das andere Plugins (z. B. [NoteAPI](https://github.com/Passimoritz/MC-MusicAPI))
 nutzen. Ein Text (Deutsch oder Englisch) wird zu Lauten, Silben, Betonung und Satzmelodie und dann mit den Klängen gesprochen, die jeder Spieler
 schon hat: Das „Hmm“ des Dorfbewohners trägt die Vokale, Sand, Kies, ein Knopfklick und ein Lavablubb sind die Konsonanten. Wer das
 NoteAPI-Ressourcenpaket mit den VoiceAPI-Lauten geladen hat, hört stattdessen echte Vokale und Konsonanten (Formant-Synthese).
@@ -26,6 +27,26 @@ NoteAPI-Ressourcenpaket mit den VoiceAPI-Lauten geladen hat, hört stattdessen e
   (Paket-Laute bauen und in das NoteAPI-Paket mischen), `tools/compare.py` und `tools/sing_test.py` (echter Gesang vs. Dorfbewohner)
 - **Villager-Stimmmodell (KI, in Arbeit)** – `tools/villager_dataset.py` + `tools/villager_sing.py`: ein eigenes RVC-Stimmmodell, trainiert nur auf
   den Dorfbewohner-Lauten des Spiels, wandelt echten Gesang in die Villager-Stimme – Text, Melodie und Tempo bleiben. Läuft **ohne GPU** (siehe unten)
+
+## Kompatibilität – ohne Pflege
+
+| | |
+|---|---|
+| Minecraft | **1.17 bis heute (26.x) und künftige Versionen** |
+| Server | Spigot, Paper, Purpur, Folia (und Abkömmlinge) – ein und dasselbe Jar |
+| Java | 17 oder neuer (Minecraft 1.17–1.20.4 laufen auf 17, neuere auf 21/25 – alle führen das Jar aus) |
+| Ressourcenpaket | `pack.mcmeta` gilt für jedes Paketformat ab 1.17 mit offenem oberen Ende; die Laute (`sounds.json`, OGG) sind seit 1.9 gleich |
+
+So bleibt es ohne Wartung gültig:
+- **Kleinster gemeinsamer Nenner**: übersetzt gegen die *älteste* unterstützte Spigot-API (1.17.1) mit Java 17 – was hier übersetzt, gibt es auf
+  jedem Server. Genutzt wird nur ein kleiner, seit Jahren stabiler Teil der Bukkit-API (Spieler, Orte, Klänge abspielen/stoppen, Scheduler) und
+  Gson; kein Server-interner Code (NMS), keine Versionsabfragen, `api-version: '1.17'`.
+- **Zur Laufzeit erkannt statt fest verdrahtet**: Folia (eigener Scheduler, per Reflexion), die Klang-Kategorie (nach Namen, mit Ausweichen),
+  die Gson-Version (`Compat.json`). Dasselbe Jar läuft überall.
+- **Die CI prüft von selbst** – bei jedem Push und **jeden Montag**: übersetzt und testet gegen die älteste *und* die jeweils neueste Paper- und
+  Spigot-API (`ci/latest-api.sh` liest sie aus den Maven-Metadaten) und startet echte Server – Paper 1.17.1, 1.20.4, die neueste Paper-Version,
+  die neueste Folia und die neueste Spigot (BuildTools) – mit dem Jar (`ci/smoke.py`, Versionen und Java aus der PaperMC-API). Bricht eine neue
+  Minecraft- oder Server-Version etwas, schickt GitHub eine Mail – sonst ist nichts zu tun.
 
 ## Installation
 
@@ -123,7 +144,9 @@ auf der Musik-Uhr des Plugins. Auf einem Server ohne GPU: `python plugins/VoiceA
 ## Bauen
 
 ```
-mvn verify
+mvn verify                                                          # gegen Spigot-API 1.17.1 (Java 17)
+mvn -P paper-latest -Dbukkit.version=$(bash ci/latest-api.sh paper) verify    # Gegenprobe neueste Paper-API
+python ci/smoke.py --project paper --version latest --jar target/voiceapi-*.jar   # echter Server
 ```
 
 Die Python-Werkzeuge in `tools/` werden ins Jar gepackt und beim Start nach `plugins/VoiceAPI/tools/` gelegt; sie brauchen die

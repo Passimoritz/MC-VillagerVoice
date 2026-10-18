@@ -1,5 +1,7 @@
 package de.passimoritz.voiceapi.lang;
 
+import de.passimoritz.voiceapi.Compat;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -66,15 +68,15 @@ public interface Phonemizer {
                 default -> null;
             };
             if (found != null && !words.isEmpty()) {
-                Word last = words.getLast();
+                Word last = Compat.last(words);
                 if (last.after() == Word.Break.NONE || found.ordinal() > last.after().ordinal()) {
                     words.set(words.size() - 1, last.followedBy(found));
                 }
             }
         }
         markEmphasis(clean, words);
-        if (!words.isEmpty() && !words.getLast().after().endsSentence()) {
-            words.set(words.size() - 1, words.getLast().followedBy(Word.Break.SENTENCE));
+        if (!words.isEmpty() && !Compat.last(words).after().endsSentence()) {
+            words.set(words.size() - 1, Compat.last(words).followedBy(Word.Break.SENTENCE));
         }
         return words;
     }

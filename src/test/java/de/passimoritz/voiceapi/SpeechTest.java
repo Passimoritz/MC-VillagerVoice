@@ -98,7 +98,7 @@ class SpeechTest {
         Utterance utterance = speak("Mama und Papa nehmen neun Nüsse.", Language.GERMAN, Style.DEFAULT);
         List<Cue> cues = VanillaRenderer.INSTANCE.render(utterance);
         assertFalse(cues.isEmpty());
-        assertEquals(0, cues.getFirst().atMs());
+        assertEquals(0, Compat.first(cues).atMs());
         for (int i = 0; i < cues.size(); i++) {
             Cue cue = cues.get(i);
             assertTrue(cue.pitch() >= 0.5f && cue.pitch() <= 2.0f);
@@ -158,8 +158,8 @@ class SpeechTest {
         }
         // eine Oktavlage für alle, um die Gesangslage (48,6) herum: Mitte 67 → eine Oktave tiefer (64 → 52); h vor dem ersten Ton bleibt bei 0
         assertEquals(52, vowels.get(0).pitch(), 0.01);
-        assertTrue(sung.segments().getFirst().startMs() >= 0);
-        assertEquals(Phoneme.H, sung.segments().getFirst().phoneme());
+        assertTrue(Compat.first(sung.segments()).startMs() >= 0);
+        assertEquals(Phoneme.H, Compat.first(sung.segments()).phoneme());
     }
 
     @Test
@@ -198,7 +198,7 @@ class SpeechTest {
         assertEquals(options.glideMs(), glide.durMs());
         assertTrue(glide.pitch() > vowels.get(0).pitch() && glide.pitch() < vowels.get(2).pitch());
         // dritter Ton nach 1,1 s Pause: nicht gebunden, kein Zwischenton
-        assertEquals(2000, vowels.getLast().startMs());
+        assertEquals(2000, Compat.last(vowels).startMs());
         // Lautstärke gestaucht: Abstand leise–laut deutlich kleiner als 0,3 → 1,0
         float quiet = vowels.get(0).volume();
         float loud = vowels.get(2).volume();

@@ -1,5 +1,7 @@
 package de.passimoritz.voiceapi.sing;
 
+import de.passimoritz.voiceapi.Compat;
+
 /**
  * Wie gesungen wird – für die Hmm-Noten aus dem Ressourcenpaket ({@link Singer}).
  *
@@ -19,13 +21,13 @@ public record SingOptions(double volume, double dynamics, int legatoMs, int over
     public static final SingOptions DETACHED = new SingOptions(0.9, 1.0, 40, 0, 0.0, 45, 0);
 
     public SingOptions {
-        volume = Double.isFinite(volume) ? Math.clamp(volume, 0.0, 1.0) : 0.8;
-        dynamics = Double.isFinite(dynamics) ? Math.clamp(dynamics, 0.0, 1.0) : 0.35;
-        legatoMs = Math.clamp(legatoMs, 0, 2000);
-        overlapMs = Math.clamp(overlapMs, 0, 200);
-        glideSemitones = Double.isFinite(glideSemitones) ? Math.clamp(glideSemitones, 0.0, 24.0) : 0.0;
-        glideMs = Math.clamp(glideMs, 10, 300);
-        minNoteMs = Math.clamp(minNoteMs, 0, 500);
+        volume = Double.isFinite(volume) ? Compat.clamp(volume, 0.0, 1.0) : 0.8;
+        dynamics = Double.isFinite(dynamics) ? Compat.clamp(dynamics, 0.0, 1.0) : 0.35;
+        legatoMs = Compat.clamp(legatoMs, 0, 2000);
+        overlapMs = Compat.clamp(overlapMs, 0, 200);
+        glideSemitones = Double.isFinite(glideSemitones) ? Compat.clamp(glideSemitones, 0.0, 24.0) : 0.0;
+        glideMs = Compat.clamp(glideMs, 10, 300);
+        minNoteMs = Compat.clamp(minNoteMs, 0, 500);
     }
 
     public SingOptions withVolume(double value) {

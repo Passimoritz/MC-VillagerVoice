@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.0 (18.10.2026)
+
+- **Läuft auf jedem Bukkit-Server ab Minecraft 1.17**, heute und künftig: Spigot, Paper, Purpur, Folia – ein Jar. Java 17 als Ziel (vorher 25),
+  übersetzt gegen die älteste Spigot-API 1.17.1 (vorher Paper 26.3), `api-version: '1.17'`, `folia-supported: true`.
+- Folia: eigener Scheduler (`Scheduling`, per Reflexion, kein Bukkit-Scheduler); Klang-Kategorie nach Namen mit Ausweichen; Gson alt und neu
+  (`Compat`); Java-21-Methoden ersetzt.
+- Ressourcenpaket: `pack.mcmeta` mit `pack_format`, `supported_formats` und `min_format`/`max_format` – gültig für jedes Format ab 1.17, oben offen.
+- **CI ohne Pflege**: wöchentlich und bei jedem Push gegen die älteste und die neueste Paper-/Spigot-API (`ci/latest-api.sh`) und auf echten Servern
+  (Paper 1.17.1, 1.20.4, neueste, Folia neueste, Spigot neueste; `ci/smoke.py`). Lokal geprüft: Paper 1.17.1, 1.20.4, 26.3 und Folia 26.3 laden
+  und schalten die VoiceAPI fehlerfrei ein.
+
 ## 1.2.0 (18.10.2026)
 
 - **Alle 9 Stimmen singen mit eigenem Hmm** (Händler, Hexe, Allay, Piglin, Zombie, Magier, Ziege, Katze statt immer Dorfbewohner): stabile Stellen je

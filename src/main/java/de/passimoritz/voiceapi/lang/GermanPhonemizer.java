@@ -1,5 +1,7 @@
 package de.passimoritz.voiceapi.lang;
 
+import de.passimoritz.voiceapi.Compat;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -312,7 +314,7 @@ public final class GermanPhonemizer implements Phonemizer {
                 return;
             }
             if (at("ch")) {
-                Phoneme before = out.isEmpty() ? null : out.getLast();
+                Phoneme before = out.isEmpty() ? null : Compat.last(out);
                 if (i == 0) {
                     add(isVowelLetter(n) ? XI : K);
                 } else if (before == A || before == AA || before == O || before == OO || before == U || before == UU || before == AU) {
@@ -404,7 +406,7 @@ public final class GermanPhonemizer implements Phonemizer {
                 case 's' -> {
                     if (start && (n == 'p' || n == 't')) {
                         add(SH);
-                    } else if (!doubledS && beforeVowel && (start || out.isEmpty() || out.getLast().isVocalic() || out.getLast().isSonorant())) {
+                    } else if (!doubledS && beforeVowel && (start || out.isEmpty() || Compat.last(out).isVocalic() || Compat.last(out).isSonorant())) {
                         add(Z);
                     } else {
                         add(S);
@@ -416,7 +418,7 @@ public final class GermanPhonemizer implements Phonemizer {
                 case 'y' -> add(Y);
                 case 'h' -> {
                     // h vor Vokal am Silbenanfang klingt, nach Vokal ist es stumm (Dehnung) – außer vor Vokal in Fugen ("gehen": stumm)
-                    if (beforeVowel && (out.isEmpty() || !out.getLast().isVocalic())) {
+                    if (beforeVowel && (out.isEmpty() || !Compat.last(out).isVocalic())) {
                         add(H);
                     }
                 }
@@ -425,7 +427,7 @@ public final class GermanPhonemizer implements Phonemizer {
                 case 'l' -> add(L);
                 case 'r' -> {
                     // r nach Vokal am Silben-/Wortende: vokalisch (ɐ), sonst Zungen-r
-                    if (!beforeVowel && !out.isEmpty() && out.getLast().isVocalic() && out.getLast() != ER) {
+                    if (!beforeVowel && !out.isEmpty() && Compat.last(out).isVocalic() && Compat.last(out) != ER) {
                         add(ER);
                     } else {
                         add(R);

@@ -1,5 +1,7 @@
 package de.passimoritz.voiceapi.lang;
 
+import de.passimoritz.voiceapi.Compat;
+
 import java.util.List;
 
 /**
@@ -31,7 +33,7 @@ public record Syllable(List<Phoneme> phonemes, int stress) {
                 return phoneme;
             }
         }
-        return phonemes.getFirst();
+        return Compat.first(phonemes);
     }
 
     /** Dieselbe Silbe mit anderer Betonung. */

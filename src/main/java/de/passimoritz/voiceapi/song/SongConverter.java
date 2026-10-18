@@ -1,5 +1,7 @@
 package de.passimoritz.voiceapi.song;
 
+import de.passimoritz.voiceapi.Compat;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -105,7 +107,7 @@ public final class SongConverter {
                     while ((line = reader.readLine()) != null) {
                         tail.add(line);
                         if (tail.size() > 30) {
-                            tail.removeFirst();
+                            Compat.removeFirst(tail);
                         }
                         if (line.startsWith("@@step ") && progress != null) {
                             progress.accept(line.substring(7));

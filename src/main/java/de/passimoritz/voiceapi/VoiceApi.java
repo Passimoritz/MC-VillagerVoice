@@ -260,7 +260,7 @@ public final class VoiceApi {
         String id = de.passimoritz.voiceapi.song.SongVoices.safe(songId);
         org.bukkit.plugin.Plugin plugin = owner;
         java.util.function.Consumer<String> onMain = progress == null ? null
-                : text -> Bukkit.getScheduler().runTask(plugin, () -> progress.accept(text));
+                : text -> Scheduling.run(plugin, () -> progress.accept(text));
         converter.convert(id, vocals, songs.folder(id), onMain).whenComplete((folder, error) -> {
             de.passimoritz.voiceapi.song.SongVoice voice = null;
             Throwable failure = error;
@@ -274,7 +274,7 @@ public final class VoiceApi {
             }
             de.passimoritz.voiceapi.song.SongVoice done = voice;
             Throwable fail = failure;
-            Bukkit.getScheduler().runTask(plugin, () -> {
+            Scheduling.run(plugin, () -> {
                 if (fail != null) {
                     result.completeExceptionally(fail);
                 } else {
