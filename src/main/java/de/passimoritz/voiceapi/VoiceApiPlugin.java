@@ -34,7 +34,7 @@ public final class VoiceApiPlugin extends JavaPlugin {
         player.singRequiresPack(getConfig().getBoolean("sing.require-pack", true));
         player.speechRequiresPack(getConfig().getBoolean("speech.require-pack", true));
         player.start();
-        VoiceApi.enable(player, library, pack);
+        VoiceApi.enable(player, library, pack, extractSounds());
         getLogger().info("VoiceAPI " + getDescription().getVersion() + " bereit: " + Speaker.values().length + " Stimmen, " + library.size()
                 + " gespeicherte Stücke, Ressourcenpaket " + (pack.available() ? "mit" : "ohne") + " VoiceAPI-Laute.");
     }
@@ -43,6 +43,25 @@ public final class VoiceApiPlugin extends JavaPlugin {
     public void onDisable() {
         VoiceApi.disable();
         player = null;
+    }
+
+    /** Legt die beigelegten Laute nach {@code VoiceAPI-Sounds.zip} (nur, wenn sie sich geändert haben). @return die Datei, oder null */
+    private Path extractSounds() {
+        Path target = getDataFolder().toPath().resolve("VoiceAPI-Sounds.zip");
+        try (InputStream in = getResource("pack/VoiceAPI-Sounds.zip")) {
+            if (in == null) {
+                return Files.isRegularFile(target) ? target : null;
+            }
+            byte[] data = in.readAllBytes();
+            if (!Files.isRegularFile(target) || !java.util.Arrays.equals(Files.readAllBytes(target), data)) {
+                Files.createDirectories(target.getParent());
+                Files.write(target, data);
+            }
+            return target;
+        } catch (IOException e) {
+            getLogger().log(Level.WARNING, "Die Laute ließen sich nicht auspacken", e);
+            return Files.isRegularFile(target) ? target : null;
+        }
     }
 
     /** Legt die Python-Werkzeuge aus dem Jar in den Datenordner (immer der Stand des Jars). */

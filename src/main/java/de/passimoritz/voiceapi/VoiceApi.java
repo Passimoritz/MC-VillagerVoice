@@ -38,12 +38,13 @@ import java.util.function.Supplier;
  */
 public final class VoiceApi {
 
-    /** Die Version der Schnittstelle. 1: speak, sing, play, Bibliothek, Paket-Anbindung. */
-    public static final int API_VERSION = 1;
+    /** Die Version der Schnittstelle. 1: speak, sing, play, Bibliothek, Paket-Anbindung. 2: {@link #soundPack()} (beigelegte Laute). */
+    public static final int API_VERSION = 2;
 
     private static VoicePlayer player;
     private static VoiceLibrary library;
     private static PackBridge pack;
+    private static java.nio.file.Path soundPack;
 
     private VoiceApi() {
     }
@@ -173,6 +174,19 @@ public final class VoiceApi {
         return pack != null && pack.hears(target);
     }
 
+    /**
+     * Die fertigen Laute als Teil eines Ressourcenpakets ({@code assets/voiceapi/…}, dem Plugin beigelegt und beim Start nach
+     * {@code plugins/VoiceAPI/VoiceAPI-Sounds.zip} gelegt). Die NoteAPI mischt sie von selbst in ihr Paket – niemand muss etwas bauen.
+     */
+    public static synchronized java.util.Optional<java.nio.file.Path> soundPack() {
+        return java.util.Optional.ofNullable(soundPack).filter(java.nio.file.Files::isRegularFile);
+    }
+
+    /** Das Format der beigelegten Laute ({@link de.passimoritz.voiceapi.pack.VoicePack#FORMAT}). */
+    public static int soundPackFormat() {
+        return de.passimoritz.voiceapi.pack.VoicePack.FORMAT;
+    }
+
     /** Die Paket-Anbindung (Datei, Format, Spieler). */
     public static synchronized PackBridge pack() {
         if (pack == null) {
@@ -181,10 +195,11 @@ public final class VoiceApi {
         return pack;
     }
 
-    static synchronized void enable(VoicePlayer newPlayer, VoiceLibrary newLibrary, PackBridge newPack) {
+    static synchronized void enable(VoicePlayer newPlayer, VoiceLibrary newLibrary, PackBridge newPack, java.nio.file.Path newSoundPack) {
         player = newPlayer;
         library = newLibrary;
         pack = newPack;
+        soundPack = newSoundPack;
     }
 
     static synchronized void disable() {
@@ -194,5 +209,6 @@ public final class VoiceApi {
         player = null;
         library = null;
         pack = null;
+        soundPack = null;
     }
 }
