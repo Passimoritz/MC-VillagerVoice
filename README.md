@@ -22,14 +22,17 @@ NoteAPI-Ressourcenpaket mit den VoiceAPI-Lauten geladen hat, hört stattdessen e
 - **`.voice`-Dateien** – lesbar, von Hand änderbar, Bibliothek in `plugins/VoiceAPI/voices/`
 - **Werkzeuge** – `java -jar voiceapi.jar speak …` (ohne Server), `tools/voicelab.py` (so rendern, wie es im Spiel klingt), `tools/build_voice_pack.py`
   (Paket-Laute bauen und in das NoteAPI-Paket mischen), `tools/compare.py` und `tools/sing_test.py` (echter Gesang vs. Dorfbewohner)
+- **Villager-Stimmmodell (KI, in Arbeit)** – `tools/villager_dataset.py` + `tools/villager_sing.py`: ein eigenes RVC-Stimmmodell, trainiert nur auf
+  den Dorfbewohner-Lauten des Spiels, wandelt echten Gesang in die Villager-Stimme – Text, Melodie und Tempo bleiben. Läuft **ohne GPU** (siehe unten)
 
 ## Installation
 
 `voiceapi-<Version>.jar` in den `plugins`-Ordner legen und den Server neu starten. Das Plugin, das sie nutzt, trägt `VoiceAPI` unter `softdepend`
-(oder `depend`) ein. Für echte Laute: `python plugins/VoiceAPI/tools/build_voice_pack.py --merge plugins/NoteAPI/pack/NoteAPI-Sounds.zip`, dann
-in der NoteAPI `/music pack reload` – Spieler mit dem Paket hören die Sprache mit echten Vokalen, alle anderen mit Dorfbewohner-Lauten.
+(oder `depend`) ein. Die echten Laute liegen dem Jar bei (`plugins/VoiceAPI/VoiceAPI-Sounds.zip`); die **NoteAPI mischt sie von selbst** in ihr
+Ressourcenpaket. Mit der NoteAPI singt ein Dorfbewohner die Gesangsmelodie umgewandelter Lieder mit (Frage beim Umwandeln, Mischpult → 🎤 Stimme).
+Selbst bauen geht weiter mit `python plugins/VoiceAPI/tools/build_voice_pack.py --merge plugins/NoteAPI/pack/NoteAPI-Sounds.zip`.
 
-## Für Entwickler (Schnittstelle 1)
+## Für Entwickler (Schnittstelle 2)
 
 ```java
 if (VoiceApi.isAvailable()) {
@@ -48,7 +51,7 @@ if (VoiceApi.isAvailable()) {
 | abspielen | `VoiceApi.play(utterance, place, listeners, volume, whenDone)` → `Speech`; `say(…)` an einem Ort, `tell(player, …)` nur für einen |
 | Klang-Befehle | `VoiceApi.cues(utterance, withPack)` → `Cue` (Klang, Geschwindigkeit, Lautstärke, Start, Stopp) |
 | Bibliothek | `VoiceApi.library().save(utterance)` / `get(id)` / `all()` – Dateien `voices/<id>.voice` |
-| Paket | `VoiceApi.packAvailable()`, `hearsPack(player)`, `packProbe(predicate)` (statt der NoteAPI-Auskunft), `needsPack(utterance)` (Gesang) |
+| Paket | `VoiceApi.packAvailable()`, `hearsPack(player)`, `packProbe(predicate)` (statt der NoteAPI-Auskunft), `needsPack(utterance)` (Gesang), `soundPack()` (die beigelegten Laute) |
 
 - **Sprache**: `Language.GERMAN`, `Language.ENGLISH`, `Language.guess(text)`.
 - **Stil**: `Style.parse("rate=1.2; pitch=-3; range=1.4; energy=1.1; mood=happy")` oder `Style.of(Mood.SAD).withRate(0.8)`.
@@ -83,8 +86,30 @@ Die Zahlen der Stimmen (Einsatz, Länge, Tonlage, Lautheit jedes Klangs) stammen
 die Melodie aus den erkannten Gesangsnoten, lässt den Dorfbewohner denselben Text auf dieselbe Melodie singen und legt ab: Original,
 Dorfbewohner (Vanilla) und Dorfbewohner mit Paket, jeweils allein und mit der Begleitung, plus `vergleich.wav` zum Hintereinanderhören und
 `bericht.json` mit Kennzahlen (`tools/compare.py`: Melodie-Kontur und Halbton-Fehler, Rhythmus, Klangfarbe, wie sehr ein Klassifikator Gesang hört).
-Maßstab waren drei bekannte „Villager singt“-Videos: dort ist der Gesang zu 98 % tonal (keine Konsonanten), liegt 0,1–0,2 Halbtöne neben dem
-Raster und eine Oktave über dem natürlichen Brummen.
+Maßstab sind drei bekannte „Villager singt“-Videos. Gemessen (Videogesang gegen den Gesang des Originalsongs, beide mit demucs getrennt): Der
+Villager singt **in der Lage des Originals** (Mitte 54,0 → 54,1 bzw. 62,6 → 58,7), 0,1–0,2 Halbtöne neben dem Raster, zu 98 % tonal, mit
+120–500 Hz um 8–23 dB abgesenkt, Mitten um 700–1400 Hz vorn und über 4 kHz um 9–12 dB gedämpft. Das schaffen weder Hmm-Noten noch ein
+klassischer Vocoder (`tools/villager_voice.py`, klingt roboterhaft) – die Videos nutzen ein KI-Stimmmodell, darum der Weg unten.
+
+## Villager-Stimmmodell (KI, nur CPU)
+
+Wie die Videos: ein **RVC-Modell** (Retrieval-based Voice Conversion, Werkzeugkette [Applio](https://github.com/IAHispano/Applio)), das die
+Villager-Stimme gelernt hat und jeden Gesang in sie umwandelt. Alles läuft auf der **CPU** – auch auf Linux-Servern ohne Grafikkarte.
+
+1. **Einrichten** (einmal): Python 3.12-Umgebung in `~/.voiceapi/rvc/venv` mit `torch` (CPU-Build) und den Paketen aus Applios
+   `requirements-engine.txt` ohne die NVIDIA-Pakete; Applio nach `~/.voiceapi/rvc/Applio`, dann `python core.py prerequisites --no-exe`
+   (Basismodelle HiFi-GAN 40k, RMVPE, ContentVec; geladen mit `weights_only=True`).
+2. **Daten**: `python tools/villager_dataset.py --out ~/.voiceapi/rvc/dataset/villager` – alle 17 Dorfbewohner-Aufnahmen in 10 Tonlagen
+   (−7 … +12 Halbtöne, wie das Spiel sie per Geschwindigkeit spielt) und 3 Tempi: 510 Dateien, 4,2 min.
+3. **Trainieren** (in `Applio/`): `core.py preprocess --model-name villager --sample-rate 40000 …`, `core.py extract … --f0-method rmvpe --gpu -`,
+   `core.py train --model-name villager --sample-rate 40000 --batch-size 8 --gpu - --total-epoch 200 --save-every-epoch 5`, `core.py index …`.
+   Auf einem Ryzen 7 7800X3D dauert eine Runde etwa 4 Minuten (200 Runden ≈ 13 Stunden, einmalig).
+4. **Singen lassen**: `python tools/villager_sing.py --cache <NoteAPI-Cache-Ordner> --out <Ordner> --title "Genre - Titel"` – nimmt die
+   getrennte Gesangsspur, wandelt sie mit dem Modell (`~/.voiceapi/rvc/models/villager.pth` oder das neueste Trainingsgewicht) und mischt mit
+   der Original-Begleitung. Dateien: `<Titel> - 1 Original - mit Begleitung.wav`, `<Titel> - 2 Villager - mit Begleitung.wav`,
+   `<Titel> - 2 Villager - nur Gesang.wav`, `<Titel> - Vergleich (erst Original, dann Villager).wav`.
+
+Die Anbindung an Plugin und Ressourcenpaket (fertige Villager-Gesangsspur je Lied als Klang im Paket) folgt, sobald das Modell fertig trainiert ist.
 
 ## Bauen
 
