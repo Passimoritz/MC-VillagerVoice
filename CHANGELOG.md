@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.1 (19.10.2026)
+
+- **KI-Villager-Gesang klingt näher an den Videos**: `villager_sing.py` gleicht das Langzeitspektrum nach der Umwandlung an die gemessene Kurve der
+  Villager-Videos an (sanft, höchstens ±9 dB je Band; `--no-colour` schaltet es ab). Gemessen an „Thick of It“ gegen das Video desselben Songs:
+  Klang-Abstand 44,6 → 31,5, Tonhöhe weiter 0,10 Halbtöne wie das Video.
+- Tonhöhenerkennung der Umwandlung jetzt **FCPE** statt RMVPE: gleich genau, etwa 25 % schneller auf der CPU.
+- Symbol für die Hostwerk-Plugin-Liste (`hostwerk-icon.svg`, `hostwerk-icon:` in der `plugin.yml`).
+
 ## 1.3.0 (18.10.2026)
 
 - **Läuft auf jedem Bukkit-Server ab Minecraft 1.17**, heute und künftig: Spigot, Paper, Purpur, Folia – ein Jar. Java 17 als Ziel (vorher 25),

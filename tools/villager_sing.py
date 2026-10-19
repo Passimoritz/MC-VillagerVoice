@@ -60,7 +60,7 @@ def model_files(name: str) -> tuple[Path, Path | None]:
     return weights[-1], indexes[-1] if indexes else None
 
 
-def convert(vocals: Path, out: Path, model: str, pitch: int, f0_method: str = "rmvpe", index_rate: float = 0.75, protect: float = 0.33) -> None:
+def convert(vocals: Path, out: Path, model: str, pitch: int, f0_method: str = "fcpe", index_rate: float = 0.75, protect: float = 0.33) -> None:
     pth, index = model_files(model)
     cmd = [str(PYTHON), "core.py", "infer", "--input-path", str(vocals), "--output-path", str(out), "--pth-path", str(pth),
            "--pitch", str(pitch), "--f0-method", f0_method, "--index-rate", str(index_rate if index else 0), "--protect", str(protect),
@@ -82,6 +82,32 @@ def auto_pitch(vocals: np.ndarray) -> int:
         return 0
     median = 69 + 12 * np.log2(np.median(vals) / 440)
     return -12 if median > 67 else 0
+
+
+# Klang der Villager-Videos (Langzeitspektrum ihrer Gesangsspur, dB je Band relativ zum lautesten), gemessen an drei Referenzvideos
+VIDEO_EDGES = [60, 120, 180, 250, 350, 500, 700, 1000, 1400, 2000, 2800, 4000, 5600, 8000, 11000]
+VIDEO_CURVE = [-15, -13, -19, -15, -12, -2.5, 0, -6, -7, -14, -16, -31, -34, -38]
+
+
+def colour(y: np.ndarray, strength: float = 0.7, limit_db: float = 9.0) -> np.ndarray:
+    """Gleicht das Langzeitspektrum an den Klang der Villager-Videos an (sanft: strength, hoechstens limit_db je Band) – schliesst den Rest,
+    den das Stimmmodell noch vom echten Saenger mitbringt (mehr Bass, weniger nasale Mitte)."""
+    import librosa
+    S = librosa.stft(y, n_fft=2048, hop_length=512)
+    power = np.abs(S) ** 2
+    frame = power.sum(axis=0)
+    loud = frame > frame.max() * 0.05
+    if loud.sum() < 10:
+        return y
+    freqs = librosa.fft_frequencies(sr=SR, n_fft=2048)
+    mean = power[:, loud].mean(axis=1)
+    bands = np.array([10 * np.log10(mean[(freqs >= a) & (freqs < b)].mean() + 1e-12) for a, b in zip(VIDEO_EDGES[:-1], VIDEO_EDGES[1:])])
+    bands -= bands.max()
+    correction = np.clip((np.array(VIDEO_CURVE) - bands) * strength, -limit_db, limit_db)
+    centers = np.sqrt(np.array(VIDEO_EDGES[:-1]) * np.array(VIDEO_EDGES[1:]))
+    gain = 10 ** (np.interp(freqs, centers, correction) / 20)
+    out = librosa.istft(S * gain[:, None], hop_length=512, length=len(y))
+    return (out * (np.sqrt(np.mean(y ** 2)) / (np.sqrt(np.mean(out ** 2)) + 1e-9))).astype(np.float32)
 
 
 def write_chunks(y: np.ndarray, folder: Path, ident: str, model: str) -> dict:
@@ -128,7 +154,8 @@ def main() -> None:
     parser.add_argument("--id", help="Kennung des Stuecks (mit --chunks)")
     parser.add_argument("--model", default="villager")
     parser.add_argument("--pitch", default="auto")
-    parser.add_argument("--f0-method", default="rmvpe")
+    parser.add_argument("--f0-method", default="fcpe", help="fcpe (Standard, schneller, gleich genau) oder rmvpe")
+    parser.add_argument("--no-colour", action="store_true", help="den Klang nicht an die Villager-Videos angleichen")
     parser.add_argument("--index-rate", type=float, default=0.75)
     parser.add_argument("--protect", type=float, default=0.33)
     parser.add_argument("--label", default="Villager")
@@ -147,6 +174,8 @@ def main() -> None:
         log("@@step Villager singt")
         convert(src, raw, args.model, pitch, args.f0_method, args.index_rate, args.protect)
         y = load(raw)
+        if not args.no_colour:
+            y = colour(y)
         y = np.pad(y, (0, max(0, len(vocals) - len(y))))[: len(vocals)]
         y *= float(np.sqrt(np.mean(vocals ** 2))) / (float(np.sqrt(np.mean(y ** 2))) + 1e-9)
         y = np.clip(y, -0.98, 0.98)
@@ -177,6 +206,8 @@ def main() -> None:
     raw = out / f"_{args.label}-roh.wav"
     convert(src, raw, args.model, pitch, args.f0_method, args.index_rate, args.protect)
     y = load(raw)
+    if not args.no_colour:
+        y = colour(y)
     y = np.pad(y, (0, max(0, n - len(y))))[:n]
     # Pegel wie der Original-Gesang
     y *= float(np.sqrt(np.mean(vocals ** 2))) / (float(np.sqrt(np.mean(y ** 2))) + 1e-9)

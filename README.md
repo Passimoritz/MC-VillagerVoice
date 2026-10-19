@@ -151,3 +151,7 @@ python ci/smoke.py --project paper --version latest --jar target/voiceapi-*.jar 
 
 Die Python-Werkzeuge in `tools/` werden ins Jar gepackt und beim Start nach `plugins/VoiceAPI/tools/` gelegt; sie brauchen die
 NoteAPI-Umgebung (`~/.noteapi/venv`: numpy, scipy, librosa, soundfile) oder ein eigenes Python mit diesen Paketen.
+
+## Symbol in Hostwerk
+
+Die JAR enthält `hostwerk-icon.svg` (in `src/main/resources/`, angemeldet über `hostwerk-icon:` in der `plugin.yml`). Hostwerk zeigt das Symbol in der Plugin-Liste – Anleitung: Hostwerk-README, Abschnitt „Eigenes Plugin-Symbol“.
