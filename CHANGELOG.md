@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.2 (19.10.2026)
+
+- **Villager-Gesang folgt dem Vortrag des Originals** (`villager_sing.py`, `follow`): Versatz des Modells (3–10 ms) samplegenau ausgeglichen,
+  Pegelverlauf alle 25 ms wie das Original (±18 dB, geglättet; wo das Original schweigt, ist auch der Villager still – kein Atmen/Rauschen),
+  scharfe Konsonanten des Originals leise dazu (`--consonants`, Standard 0,5) – Text verständlicher, Einsätze klarer. `--no-follow` = wie bisher.
+  Gemessen mit der NoteAPI-Likeness an 6 NCS-Liedern: Harmonie/Rhythmus/Dynamik 85,3 → 91,3 (Rhythmus 71,7 → 80,1, Dynamik 90,4 → 99,9,
+  Klangfarbe ≈ 70 → 74).
+
 ## 1.3.1 (19.10.2026)
 
 - **KI-Villager-Gesang klingt näher an den Videos**: `villager_sing.py` gleicht das Langzeitspektrum nach der Umwandlung an die gemessene Kurve der

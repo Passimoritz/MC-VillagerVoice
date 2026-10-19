@@ -135,6 +135,9 @@ Villager-Stimme gelernt hat und jeden Gesang in sie umwandelt. Alles läuft auf 
    getrennte Gesangsspur, wandelt sie mit dem Modell (`~/.voiceapi/rvc/models/villager.pth` oder das neueste Trainingsgewicht) und mischt mit
    der Original-Begleitung. Dateien: `<Titel> - 1 Original - mit Begleitung.wav`, `<Titel> - 2 Villager - mit Begleitung.wav`,
    `<Titel> - 2 Villager - nur Gesang.wav`, `<Titel> - Vergleich (erst Original, dann Villager).wav`.
+   Nach der Umwandlung richtet sich der Gesang nach dem Vortrag des Originals (`follow`): Versatz samplegenau ausgeglichen, Pegel alle 25 ms wie
+   das Original (Stille bleibt still), die scharfen Konsonanten des Originals leise dazu (`--consonants 0.5`, `0` = aus; `--no-follow` schaltet
+   alles ab). NoteAPI-Likeness an 6 NCS-Liedern: Harmonie/Rhythmus/Dynamik 85,3 → 91,3 (Dynamik 90 → 100, Rhythmus 72 → 80).
 
 **Im Plugin** (Schnittstelle 3): `VoiceApi.convertSong(id, vocalsWav, progress)` ruft `villager_sing.py --chunks` mit der Umgebung aus `rvc.home`
 auf, legt den Gesang als 4-s-Abschnitte mit 60 ms Überblendung nach `plugins/VoiceAPI/songs/<id>/` und schreibt das Lautpaket neu;
