@@ -62,7 +62,9 @@ def model_files(name: str) -> tuple[Path, Path | None]:
 
 def convert(vocals: Path, out: Path, model: str, pitch: int, f0_method: str = "fcpe", index_rate: float = 0.75, protect: float = 0.33) -> None:
     pth, index = model_files(model)
-    cmd = [str(PYTHON), "core.py", "infer", "--input-path", str(vocals), "--output-path", str(out), "--pth-path", str(pth),
+    # ueber rvc_infer.py: fester Zufall, Rauschen immer von der CPU – gleiches Ergebnis auf jedem Rechner, CPU wie GPU
+    starter = Path(__file__).resolve().parent / "rvc_infer.py"
+    cmd = [str(PYTHON), str(starter), str(APPLIO), "infer", "--input-path", str(vocals), "--output-path", str(out), "--pth-path", str(pth),
            "--pitch", str(pitch), "--f0-method", f0_method, "--index-rate", str(index_rate if index else 0), "--protect", str(protect),
            "--volume-envelope", "1.0", "--export-format", "WAV"]
     if index:

@@ -18,7 +18,7 @@ import java.util.logging.Level;
 public final class VoiceApiPlugin extends JavaPlugin {
 
     private static final List<String> TOOLS = List.of("voicelab.py", "build_voice_pack.py", "compare.py", "villager_sing.py", "villager_dataset.py",
-            "rvc_setup.py", "villager_voice.py", "sing_test.py", "find_hums.py", "hums.json");
+            "rvc_setup.py", "villager_voice.py", "sing_test.py", "find_hums.py", "hums.json", "rvc_infer.py");
 
     private VoicePlayer player;
     private de.passimoritz.voiceapi.song.SongConverter converter;

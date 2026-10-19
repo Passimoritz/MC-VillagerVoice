@@ -6,6 +6,10 @@
   Villager-Videos an (sanft, höchstens ±9 dB je Band; `--no-colour` schaltet es ab). Gemessen an „Thick of It“ gegen das Video desselben Songs:
   Klang-Abstand 44,6 → 31,5, Tonhöhe weiter 0,10 Halbtöne wie das Video.
 - Tonhöhenerkennung der Umwandlung jetzt **FCPE** statt RMVPE: gleich genau, etwa 25 % schneller auf der CPU.
+- **Reproduzierbar**: Umwandlungen laufen über `tools/rvc_infer.py` – fester Zufall, das Rauschen des Modells entsteht immer auf der CPU. Gleiche
+  Eingabe ergibt auf jedem Rechner dasselbe Ergebnis (zwei CPU-Läufe geprüft: bitgenau gleich), und eine GPU bekäme dieselben Zufallszahlen.
+- Training auf der Grafikkarte geprüft und verworfen: Die AMD-ROCm-Pakete blockiert Windows' Smart App Control, DirectML kann die für das
+  Training nötige Fourier-Transformation nicht. Training und Umwandlung bleiben CPU.
 - Symbol für die Hostwerk-Plugin-Liste (`hostwerk-icon.svg`, `hostwerk-icon:` in der `plugin.yml`).
 
 ## 1.3.0 (18.10.2026)
