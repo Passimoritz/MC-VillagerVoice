@@ -1,12 +1,12 @@
-"""Rauchtest auf einem echten Server: laedt ihn herunter, startet ihn mit der VoiceAPI und prueft, dass sie fehlerfrei einschaltet.
+"""Smoke test on a real server: downloads it, starts it with VoiceAPI and checks that the plugin enables without errors.
 
-  python ci/smoke.py --project paper --version latest --jar target/voiceapi-x.jar      Server starten und pruefen
-  python ci/smoke.py --project paper --version latest --resolve                         nur ausgeben: "<version> <java>" (fuer die CI)
-  python ci/smoke.py --server pfad/spigot.jar --jar …                                   einen vorhandenen Server-Jar nehmen (Spigot aus BuildTools)
+  python ci/smoke.py --project paper --version latest --jar target/voiceapi-x.jar      start the server and check
+  python ci/smoke.py --project paper --version latest --resolve                         only print "<version> <java>" (for CI)
+  python ci/smoke.py --server path/spigot.jar --jar …                                   use an existing server jar (Spigot from BuildTools)
 
---version: eine Minecraft-Version (1.20.4), "latest" (neueste stabile) oder "oldest" (aelteste, die das Plugin unterstuetzt: 1.17.1).
-Versionen und noetiges Java kommen aus der PaperMC-API (fill.papermc.io) – keine festen Nummern, damit der Test ohne Pflege gueltig bleibt.
-Nur Python-Standardbibliothek.
+--version: a Minecraft version (1.20.4), "latest" (newest stable) or "oldest" (oldest the plugin supports: 1.17.1).
+Versions and the required Java come from the PaperMC API (fill.papermc.io) – no fixed numbers, so the test stays valid without maintenance.
+Python standard library only.
 """
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ def get(url: str) -> dict:
 
 
 def resolve(project: str, version: str) -> tuple[str, int]:
-    """Version und Mindest-Java."""
+    """Version and minimum Java."""
     info = get(API.format(project=project))
     families = list(info["versions"].values())
     if version == "latest":
@@ -84,13 +84,13 @@ def run(server: Path, jar: Path, timeout: int, java: str) -> int:
             try:
                 print(line, end="", flush=True)
             except (UnicodeError, OSError):
-                pass  # Konsole kann ein Zeichen nicht darstellen: der Test geht weiter
+                pass  # the console cannot show a character: the test goes on
             if re.search(r"Done \(\d", line):
                 done.set()
     threading.Thread(target=reader, daemon=True).start()
     started = done.wait(timeout)
     if started:
-        time.sleep(5)  # Plugins melden sich nach "Done" noch
+        time.sleep(5)  # plugins still report after "Done"
         try:
             proc.stdin.write("stop\n")
             proc.stdin.flush()
@@ -103,21 +103,21 @@ def run(server: Path, jar: Path, timeout: int, java: str) -> int:
     log = "\n".join(lines)
     problems = []
     if not started:
-        problems.append("Server ist nicht hochgefahren")
+        problems.append("server did not start")
     if not re.search(r"Enabling VoiceAPI", log):
-        problems.append("VoiceAPI wurde nicht eingeschaltet")
-    if not re.search(r"VoiceAPI \S+ bereit", log):
-        problems.append("VoiceAPI hat ihre Bereit-Meldung nicht ausgegeben")
+        problems.append("VoiceAPI was not enabled")
+    if not re.search(r"VoiceAPI \S+ (ready|bereit)", log):
+        problems.append("VoiceAPI did not print its ready message")
     for bad in (r"Error occurred while enabling VoiceAPI", r"Could not load '.*voiceapi", r"UnsupportedClassVersionError",
                 r"NoSuchMethodError", r"NoClassDefFoundError", r"\[VoiceAPI\].*Exception", r"Unsupported API version"):
         hit = re.search(bad, log)
         if hit:
-            problems.append("im Log: " + hit.group(0))
+            problems.append("in the log: " + hit.group(0))
     shutil.rmtree(work, ignore_errors=True)
     if problems:
-        print("\nFEHLGESCHLAGEN: " + "; ".join(problems), flush=True)
+        print("\nFAILED: " + "; ".join(problems), flush=True)
         return 1
-    print("\nOK: VoiceAPI laeuft", flush=True)
+    print("\nOK: VoiceAPI is running", flush=True)
     return 0
 
 
@@ -141,7 +141,7 @@ def main() -> None:
         print(version, java)
         return
     if not args.jar:
-        parser.error("--jar fehlt")
+        parser.error("--jar is missing")
     jar = Path(sorted(Path().glob(args.jar))[-1]) if any(c in args.jar for c in "*?") else Path(args.jar)
     if args.server:
         server = Path(args.server)

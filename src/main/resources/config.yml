@@ -1,32 +1,32 @@
-# VoiceAPI – Einstellungen (keine Befehle; Plugins wie NoteAPI nutzen die Schnittstelle)
+# VoiceAPI – settings (no commands; plugins like NoteAPI use the API)
 
 speech:
-  # Sprechtempo (1 = normal, 0.8 langsamer, 1.3 schneller)
+  # speaking rate (1 = normal, 0.8 slower, 1.3 faster)
   rate: 1.0
-  # Grundlautstärke aller Stimmen (0–1)
+  # base volume of all voices (0–1)
   volume: 1.0
-  # Klang-Kategorie, über die Spieler die Sprache regeln: VOICE (Regler „Stimme/Sprache“), RECORDS, PLAYERS, NEUTRAL, MASTER
+  # sound category players control the speech with: VOICE (slider "Voice/Speech"), RECORDS, PLAYERS, NEUTRAL, MASTER
   category: VOICE
-  # Sprache nur mit Ressourcenpaket (Spieler ohne Paket hören nichts; das einbindende Plugin erzwingt das Paket, VoiceApi.needsPack).
-  # false = ohne Paket mit Dorfbewohner- und Block-Lauten sprechen (Notlösung, klingt grob).
+  # speech only with the resource pack (players without the pack hear nothing; the integrating plugin enforces the pack, VoiceApi.needsPack).
+  # false = speak with villager and block sounds without the pack (fallback, sounds rough).
   require-pack: true
 
 sing:
-  # Gesang nur mit Ressourcenpaket: Mit Vanilla-Klängen trifft der Dorfbewohner die Töne nicht (sein Brummen steht nur kurz stabil, das Spiel
-  # wählt zufällig eine von drei Aufnahmen). Spieler ohne Paket hören dann keinen Gesang; das einbindende Plugin soll das Paket erzwingen
-  # (VoiceApi.needsPack). false = trotzdem mit Vanilla-Klängen singen (klingt schief).
+  # singing only with the resource pack: with vanilla sounds the villager does not hit the notes (its hum is only stable for a moment, the
+  # game randomly picks one of three takes). Players without the pack then hear no singing; the integrating plugin should enforce the pack
+  # (VoiceApi.needsPack). false = sing with vanilla sounds anyway (sounds off-key).
   require-pack: true
 
 rvc:
-  # Villager-Gesang aus dem KI-Stimmmodell (RVC, nur CPU – auch auf Linux-Servern ohne Grafikkarte). Einrichten:
+  # villager singing from the AI voice model (RVC, CPU only – also on Linux servers without a graphics card). Set up:
   #   python plugins/VoiceAPI/tools/rvc_setup.py --model villager.pth
-  # Ordner der Umgebung (leer = ~/.voiceapi/rvc: venv, Applio, models)
+  # folder of the environment (empty = ~/.voiceapi/rvc: venv, Applio, models)
   home: ""
-  # Name des Modells in <home>/models/<model>.pth
+  # name of the model in <home>/models/<model>.pth
   model: villager
 
 pack:
-  # Spieler mit dem NoteAPI-Ressourcenpaket (das die VoiceAPI-Laute enthält) hören echte Vokale und Konsonanten statt Dorfbewohner-Lauten
+  # players with the NoteAPI resource pack (which contains the VoiceAPI sounds) hear real vowels and consonants instead of villager sounds
   use: true
-  # Wo das NoteAPI-Paket liegt (leer = plugins/NoteAPI/pack/NoteAPI-Sounds.zip); daraus liest VoiceAPI, ob die Laute enthalten sind
+  # where the NoteAPI pack is (empty = plugins/NoteAPI/pack/NoteAPI-Sounds.zip); VoiceAPI reads from it whether the sounds are included
   file: ""

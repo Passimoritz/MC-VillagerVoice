@@ -4,40 +4,41 @@ import java.util.Locale;
 import java.util.Optional;
 
 /**
- * Wie gesprochen wird: Tempo, Tonlage, Melodie-Umfang, Kraft und Stimmung. Alle Werte sind relativ zur Stimme ({@link Speaker}): {@code pitch}
- * verschiebt ihre natürliche Lage in Halbtönen, {@code range} dehnt oder staucht die Sprachmelodie, {@code energy} macht lauter und härter.
+ * How something is said: tempo, pitch, melody range, power and mood. All values are relative to the voice ({@link Speaker}): {@code pitch}
+ * shifts its natural register in semitones, {@code range} stretches or squeezes the speech melody, {@code energy} makes it louder and harder.
  *
- * @param rate   Sprechtempo (1 = normal; 0,7 langsam, 1,4 schnell)
- * @param pitch  Verschiebung der Tonlage in Halbtönen (−12 … +12)
- * @param range  Umfang der Sprachmelodie (1 = normal; 0 = monoton, 2 = sehr lebhaft)
- * @param energy Kraft (0,5 = leise und weich … 1,5 = laut und hart)
- * @param mood   Stimmung (färbt Melodie, Tempo und Pausen)
+ * @param rate   speaking rate (1 = normal; 0.7 slow, 1.4 fast)
+ * @param pitch  shift of the register in semitones (−12 … +12)
+ * @param range  range of the speech melody (1 = normal; 0 = monotone, 2 = very lively)
+ * @param energy power (0.5 = quiet and soft … 1.5 = loud and hard)
+ * @param mood   mood (colours melody, tempo and pauses)
  */
 public record Style(double rate, double pitch, double range, double energy, Mood mood) {
 
-    /** Die Stimmungen. */
+    /** The moods. */
     public enum Mood {
-        /** Sachlich. */
+        /** Matter-of-fact. */
         NEUTRAL,
-        /** Fröhlich: höher, lebhafter, schneller. */
+        /** Happy: higher, livelier, faster. */
         HAPPY,
-        /** Traurig: tiefer, flacher, langsamer, längere Pausen. */
+        /** Sad: lower, flatter, slower, longer pauses. */
         SAD,
-        /** Wütend: lauter, hart, fallende Akzente. */
+        /** Angry: louder, hard, falling accents. */
         ANGRY,
-        /** Ängstlich: höher, zittrig, schnell, kurze Pausen. */
+        /** Scared: higher, shaky, fast, short pauses. */
         SCARED,
-        /** Ruhig: gleichmäßig, langsam, weich. */
+        /** Calm: even, slow, soft. */
         CALM,
-        /** Aufgeregt: schnell, großer Umfang, laut. */
+        /** Excited: fast, wide range, loud. */
         EXCITED,
-        /** Flüstern: leise, fast monoton. */
+        /** Whisper: quiet, almost monotone. */
         WHISPER,
-        /** Roboter: monoton, gleich lange Silben. */
+        /** Robot: monotone, syllables of equal length. */
         ROBOT,
-        /** Müde: langsam, tief, nachlassend. */
+        /** Tired: slow, low, fading. */
         TIRED;
 
+        /** The mood for a name (English, also the German words). */
         public static Optional<Mood> find(String text) {
             if (text == null) {
                 return Optional.empty();
@@ -69,7 +70,7 @@ public record Style(double rate, double pitch, double range, double energy, Mood
         mood = mood == null ? Mood.NEUTRAL : mood;
     }
 
-    /** Ein Stil nur aus einer Stimmung. */
+    /** A style made only of a mood. */
     public static Style of(Mood mood) {
         return DEFAULT.withMood(mood);
     }
@@ -94,15 +95,16 @@ public record Style(double rate, double pitch, double range, double energy, Mood
         return new Style(rate, pitch, range, energy, newMood);
     }
 
-    /** Der Stil als Text ({@code rate=1.2; pitch=-3; range=1; energy=1; mood=happy}), wie er in {@code .voice}-Dateien steht. */
+    /** The style as text ({@code rate=1.2; pitch=-3; range=1; energy=1; mood=happy}) as written in {@code .voice} files. */
     public String describe() {
         return String.format(Locale.ROOT, "rate=%.2f; pitch=%.1f; range=%.2f; energy=%.2f; mood=%s", rate, pitch, range, energy,
                 mood.name().toLowerCase(Locale.ROOT));
     }
 
     /**
-     * Liest einen Stil aus Text: Paare {@code name=wert} durch Semikolon oder Leerzeichen getrennt; ein einzelnes Wort ist eine Stimmung
-     * ({@code happy}, {@code traurig}). Unbekanntes wird überlesen.
+     * Reads a style from text: pairs {@code name=value} separated by semicolons or spaces; a single word is a mood ({@code happy},
+     * {@code sad}). Unknown parts are skipped; the former German keys ({@code tonlage}, {@code umfang}, {@code kraft}, {@code stimmung})
+     * still work.
      */
     public static Style parse(String text) {
         Style style = DEFAULT;
@@ -132,11 +134,11 @@ public record Style(double rate, double pitch, double range, double energy, Mood
                     case "energy", "kraft", "volume" -> style = style.withEnergy(Double.parseDouble(value));
                     case "mood", "stimmung" -> style = style.withMood(Mood.find(value).orElse(style.mood()));
                     default -> {
-                        // unbekannt: überlesen
+                        // unknown: skip
                     }
                 }
             } catch (NumberFormatException e) {
-                // unlesbarer Wert: überlesen
+                // unreadable value: skip
             }
         }
         return style;

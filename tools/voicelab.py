@@ -1,12 +1,12 @@
-"""Sprachlabor: Sprechstuecke so rendern, wie sie im Spiel klingen – ohne Server, als WAV zum Anhoeren und Vergleichen.
+"""Voice lab: render utterances the way they sound in the game – without a server, as WAV to listen to and compare.
 
-  python voicelab.py setup                                   laedt die Vanilla-Klaenge (Minecraft-Assets) nach ~/.voiceapi/sounds
-  python voicelab.py render cues.json --out stueck.wav       spielt die Klang-Befehle (java -jar voiceapi.jar speak … --cues cues.json)
-                     [--pack NoteAPI-Sounds.zip] [--seed 1]  mit den Paket-Lauten statt der Vanilla-Klaenge; Seed fuer die Zufallswahl
-  python voicelab.py atlas [--out atlas.json]                vermisst alle Vanilla-Klaenge (Einsatz, Tonhoehe, Laenge, Lautheit)
+  python voicelab.py setup                                   downloads the vanilla sounds (Minecraft assets) to ~/.voiceapi/sounds
+  python voicelab.py render cues.json --out piece.wav        plays the sound commands (java -jar voiceapi.jar speak … --cues cues.json)
+                     [--pack NoteAPI-Sounds.zip] [--seed 1]  with the pack sounds instead of the vanilla sounds; seed for the random pick
+  python voicelab.py atlas [--out atlas.json]                measures all vanilla sounds (onset, pitch, length, loudness)
 
-Das Rendern bildet den Minecraft-Client nach: Ein Klang-Ereignis waehlt zufaellig eine seiner Dateien (mit Gewicht, Lautstaerke und
-Tonhoehe aus sounds.json), die Geschwindigkeit (pitch) streckt oder staucht die Datei, ein Stopp bricht sie sofort ab.
+Rendering imitates the Minecraft client: a sound event randomly picks one of its files (with weight, volume and pitch from sounds.json),
+the speed (pitch) stretches or squeezes the file, a stop cuts it off immediately.
 """
 from __future__ import annotations
 
@@ -32,15 +32,15 @@ def log(text: str) -> None:
     print(text, flush=True)
 
 
-# ── Klaenge laden ───────────────────────────────────────────
+# ── Load sounds ─────────────────────────────────────────────
 
 def setup(version: str | None) -> None:
-    """Laedt sounds.json und alle Klang-Dateien, die Sprache braucht, aus dem Mojang-Asset-Index."""
+    """Downloads sounds.json and all sound files speech needs from the Mojang asset index."""
     manifest = json.load(urllib.request.urlopen(MANIFEST))
     wanted = version or manifest["latest"]["release"]
     entry = next((v for v in manifest["versions"] if v["id"] == wanted), None)
     if entry is None:
-        raise SystemExit(f"Version {wanted} nicht im Manifest")
+        raise SystemExit(f"Version {wanted} not in the manifest")
     meta = json.load(urllib.request.urlopen(entry["url"]))
     index = json.load(urllib.request.urlopen(meta["assetIndex"]["url"]))["objects"]
     log(f"Minecraft {wanted}: {len(index)} Assets")
@@ -77,17 +77,17 @@ def setup(version: str | None) -> None:
         dest.write_bytes(fetch(key))
         done += 1
         if done % 200 == 0:
-            log(f"  {done} Dateien …")
-    log(f"fertig: {len(needed)} Klaenge in {SOUNDS}")
+            log(f"  {done} files …")
+    log(f"done: {len(needed)} sounds in {SOUNDS}")
 
 
-# ── Rendern ─────────────────────────────────────────────────
+# ── Render ──────────────────────────────────────────────────
 
 _cache: dict[str, np.ndarray] = {}
 
 
 def read_audio(source) -> np.ndarray:
-    """Eine OGG-Datei (Pfad oder Bytes) als Mono-Float bei SR."""
+    """An OGG file (path or bytes) as mono float at SR."""
     import soundfile as sf
     import io
     import librosa
@@ -99,7 +99,7 @@ def read_audio(source) -> np.ndarray:
 
 
 class Bank:
-    """Die Klaenge: Vanilla aus ~/.voiceapi/sounds, Paket-Laute aus einem Ressourcenpaket (zip)."""
+    """The sounds: vanilla from ~/.voiceapi/sounds, pack sounds from a resource pack (zip)."""
 
     def __init__(self, pack: Path | None, seed: int):
         self.random = random.Random(seed)
@@ -114,7 +114,7 @@ class Bank:
                         self.pack_events[f"{namespace}:{key}"] = value
 
     def pick(self, event: str) -> tuple[np.ndarray, float, float] | None:
-        """Eine zufaellige Datei des Ereignisses: Audio, Lautstaerke- und Tonhoehen-Faktor aus sounds.json."""
+        """A random file of the event: audio, volume and pitch factor from sounds.json."""
         if ":" in event and not event.startswith("minecraft:"):
             spec = self.pack_events.get(event)
             namespace = event.split(":")[0]
@@ -143,13 +143,13 @@ class Bank:
                 else:
                     _cache[key] = read_audio(SOUNDS / f"{name}.ogg")
             except Exception as error:  # noqa: BLE001
-                log(f"  (Klang fehlt: {event} → {name}: {error})")
+                log(f"  (sound missing: {event} → {name}: {error})")
                 return None
         return _cache[key], float(chosen.get("volume", 1.0)), float(chosen.get("pitch", 1.0))
 
 
 def render(cues: dict, bank: Bank) -> np.ndarray:
-    """Mischt die Klang-Befehle: Start bei at (ms), Geschwindigkeit pitch, Lautstaerke volume, Stopp bei stop (ms, -1 = ausklingen)."""
+    """Mixes the sound commands: start at at (ms), speed pitch, volume volume, stop at stop (ms, -1 = let decay)."""
     items = cues["cues"]
     end_ms = max([c["at"] + 3000 for c in items] + [cues.get("lengthMs", 0) + 500])
     out = np.zeros(int(end_ms / 1000 * SR) + SR, dtype=np.float32)
@@ -161,7 +161,7 @@ def render(cues: dict, bank: Bank) -> np.ndarray:
             continue
         audio, vol, base_pitch = picked
         speed = cue["pitch"] * base_pitch
-        # Geschwindigkeit: Datei neu abtasten (schneller = kuerzer und hoeher)
+        # speed: resample the file (faster = shorter and higher)
         n = int(len(audio) / speed)
         idx = np.linspace(0, len(audio) - 1, max(2, n))
         y = np.interp(idx, np.arange(len(audio)), audio) * cue["volume"] * vol
@@ -177,7 +177,7 @@ def render(cues: dict, bank: Bank) -> np.ndarray:
         if stop > start:
             out[start:stop] += y[: stop - start]
     if missing:
-        log("  fehlende Klaenge: " + ", ".join(sorted(missing)))
+        log("  missing sounds: " + ", ".join(sorted(missing)))
     peak = float(np.abs(out).max()) + 1e-9
     if peak > 0.95:
         out *= 0.95 / peak
@@ -193,7 +193,7 @@ def write_wav(path: Path, audio: np.ndarray) -> None:
 # ── Atlas ───────────────────────────────────────────────────
 
 def atlas(out: Path | None) -> None:
-    """Vermisst alle Dateien in ~/.voiceapi/sounds: Dauer, Einsatz, stabile Tonhoehe, Helligkeit, Rauschanteil, Lautheit."""
+    """Measures all files in ~/.voiceapi/sounds: duration, onset, stable pitch, brightness, noisiness, loudness."""
     import librosa
     import warnings
     warnings.filterwarnings("ignore")
@@ -246,10 +246,10 @@ def atlas(out: Path | None) -> None:
             log(f"  {i}/{len(files)}")
     target = out or (HOME / "atlas.json")
     target.write_text(json.dumps(rows, indent=0), encoding="utf-8")
-    log(f"{len(rows)} Klaenge vermessen → {target}")
+    log(f"{len(rows)} sounds measured → {target}")
 
 
-# ── Aufruf ──────────────────────────────────────────────────
+# ── Command line ────────────────────────────────────────────
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -271,7 +271,7 @@ def main() -> None:
         bank = Bank(Path(args.pack) if args.pack else None, args.seed)
         audio = render(cues, bank)
         write_wav(Path(args.out), audio)
-        log(f"{args.out}: {len(audio) / SR:.2f} s, {len(cues['cues'])} Klaenge ({cues.get('renderer', 'vanilla')})")
+        log(f"{args.out}: {len(audio) / SR:.2f} s, {len(cues['cues'])} sounds ({cues.get('renderer', 'vanilla')})")
     elif args.command == "atlas":
         atlas(Path(args.out) if args.out else None)
 

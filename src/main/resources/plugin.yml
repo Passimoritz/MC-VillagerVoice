@@ -4,7 +4,7 @@ main: de.passimoritz.voiceapi.VoiceApiPlugin
 api-version: '1.17'
 folia-supported: true
 author: Passimoritz
-description: Sprache und Gesang aus Dorfbewohner-Lauten (Deutsch, Englisch) für Spiel-Plugins. Keine Befehle – NoteAPI und andere Plugins binden sie ein.
+description: Speech and singing from villager sounds (German, English) for game plugins. No commands – NoteAPI and other plugins integrate it.
 
-# Symbol für Hostwerk (Plugin-Liste) – siehe Hostwerk-README „Eigenes Plugin-Symbol“
+# icon for Hostwerk (plugin list) – see the Hostwerk README
 hostwerk-icon: hostwerk-icon.svg

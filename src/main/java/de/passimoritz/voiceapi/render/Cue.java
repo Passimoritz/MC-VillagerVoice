@@ -1,21 +1,21 @@
 package de.passimoritz.voiceapi.render;
 
 /**
- * Ein Klang, den der Abspieler zu einer Zeit startet – und, wenn {@link #stopMs()} gesetzt ist, wieder stoppt. Das ist der fertige, vom Spiel
- * verstandene Befehl: Klangname, Geschwindigkeit (Tonhöhe), Lautstärke.
+ * A sound the player starts at a time – and, if {@link #stopMs()} is set, stops again. This is the finished command the game understands:
+ * sound name, speed (pitch), volume.
  *
- * @param atMs    Beginn in Millisekunden seit dem Anfang des Stücks (kann durch Vor-Trigger auch vor dem ersten Laut liegen)
- * @param sound   der Name des Klang-Ereignisses ({@code entity.villager.no}, {@code voiceapi:v.a.43})
- * @param pitch   Geschwindigkeit 0,5 … 2,0 (eine Oktave nach unten bzw. oben)
- * @param volume  Lautstärke 0 … 1
- * @param stopMs  wann der Klang gestoppt wird (ms), oder −1 (ausklingen lassen)
- * @param segment die Nummer des Lauts im Stück, aus dem der Klang stammt (für Anzeigen und Tests), −1 ohne
+ * @param atMs    start in milliseconds since the beginning of the utterance (can lie before the first sound because of early triggers)
+ * @param sound   the name of the sound event ({@code entity.villager.no}, {@code voiceapi:v.a.43})
+ * @param pitch   speed 0.5 … 2.0 (one octave down or up)
+ * @param volume  volume 0 … 1
+ * @param stopMs  when the sound is stopped (ms), or −1 (let it decay)
+ * @param segment the index of the sound in the utterance this cue comes from (for display and tests), −1 without
  */
 public record Cue(int atMs, String sound, float pitch, float volume, int stopMs, int segment) {
 
     public Cue {
         if (sound == null || sound.isBlank()) {
-            throw new IllegalArgumentException("Ein Klang braucht einen Namen");
+            throw new IllegalArgumentException("A cue needs a sound name");
         }
         pitch = Float.isNaN(pitch) ? 1f : Math.max(0.5f, Math.min(2.0f, pitch));
         volume = Float.isNaN(volume) ? 0f : Math.max(0f, Math.min(1f, volume));
@@ -24,22 +24,22 @@ public record Cue(int atMs, String sound, float pitch, float volume, int stopMs,
         }
     }
 
-    /** Ob der Klang gestoppt wird. */
+    /** Whether the sound is stopped. */
     public boolean stops() {
         return stopMs >= 0;
     }
 
-    /** Derselbe Klang zu einer anderen Zeit (Stopp verschiebt sich mit). */
+    /** The same cue at another time (the stop moves along). */
     public Cue shifted(int offsetMs) {
         return new Cue(atMs + offsetMs, sound, pitch, volume, stopMs < 0 ? -1 : stopMs + offsetMs, segment);
     }
 
-    /** Derselbe Klang mit früherem Stopp. */
+    /** The same cue with another stop. */
     public Cue stoppedAt(int newStopMs) {
         return new Cue(atMs, sound, pitch, volume, newStopMs, segment);
     }
 
-    /** Derselbe Klang mit anderer Lautstärke (Faktor). */
+    /** The same cue with another volume (factor). */
     public Cue scaled(double factor) {
         return new Cue(atMs, sound, pitch, (float) (volume * factor), stopMs, segment);
     }

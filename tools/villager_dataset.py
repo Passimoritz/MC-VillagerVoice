@@ -1,12 +1,12 @@
-"""Trainingsdaten fuer das Villager-Stimmmodell (RVC): alle Dorfbewohner-Laute aus den Minecraft-Assets, so aufbereitet, dass das Modell die
-Stimme ueber den ganzen Gesangsumfang lernt.
+"""Training data for the villager voice model (RVC): all villager sounds from the Minecraft assets, prepared so the model learns the voice
+across the whole singing range.
 
-  python villager_dataset.py --out ordner/ [--speaker villager]
+  python villager_dataset.py --out folder/ [--speaker villager]
 
-- Quelle: ~/.voiceapi/sounds/mob/villager/*.ogg (voicelab.py setup laedt sie).
-- Jede Aufnahme wird in mehreren Tonhoehen abgelegt (-7 … +12 Halbtoene, wie das Spiel sie per Geschwindigkeit spielt) – so kennt das Modell
-  den Dorfbewohner auch in hohen und tiefen Lagen, die er von Natur aus nie singt.
-- Leichte Varianten (Tempo ±8 %, Pegel) gegen Auswendiglernen; Stille an den Raendern abgeschnitten, Pegel angeglichen.
+- Source: ~/.voiceapi/sounds/mob/villager/*.ogg (voicelab.py setup downloads them).
+- Every take is stored at several pitches (-7 … +12 semitones, the way the game plays them via speed) – so the model knows the villager in
+  high and low registers it never sings naturally.
+- Slight variants (tempo ±8 %, level) against memorising; silence at the edges cut, levels matched.
 """
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ def load(name: str) -> np.ndarray:
     y = data.mean(axis=1).astype(np.float32)
     if rate != SR:
         y = librosa.resample(y, orig_sr=rate, target_sr=SR)
-    # Stille an den Raendern weg
+    # remove silence at the edges
     env = np.abs(y)
     thr = env.max() * 0.02
     idx = np.where(env > thr)[0]
@@ -43,7 +43,7 @@ def load(name: str) -> np.ndarray:
 
 
 def variant(y: np.ndarray, semitones: float, tempo: float) -> np.ndarray:
-    """Tonhoehe wie im Spiel (Geschwindigkeit, Formanten wandern mit) und Tempo getrennt davon."""
+    """Pitch like in the game (speed, the formants move along) and tempo separately."""
     import librosa
     speed = 2 ** (semitones / 12)
     idx = np.arange(0, len(y) - 1, speed)
@@ -68,12 +68,12 @@ def main() -> None:
         for s in SHIFTS:
             for t in TEMPI:
                 z = variant(y, s, t)
-                # kleine Stille dazwischen hilft dem Zerschneiden beim Vorverarbeiten
+                # a little silence in between helps the slicing during preprocessing
                 z = np.concatenate([np.zeros(int(0.05 * SR), dtype=np.float32), z, np.zeros(int(0.05 * SR), dtype=np.float32)])
                 sf.write(str(out / f"{Path(name).name}_{s:+d}_{int(t * 100)}.wav"), z, SR)
                 total += len(z) / SR
                 count += 1
-    print(f"{count} Dateien, {total / 60:.1f} min in {out}")
+    print(f"{count} files, {total / 60:.1f} min in {out}")
 
 
 if __name__ == "__main__":

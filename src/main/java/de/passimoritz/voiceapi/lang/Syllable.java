@@ -5,10 +5,10 @@ import de.passimoritz.voiceapi.Compat;
 import java.util.List;
 
 /**
- * Eine Silbe: ihre Laute und ihre Betonung.
+ * A syllable: its sounds and its stress.
  *
- * @param phonemes die Laute in Sprechfolge (mindestens einer; normalerweise genau ein tragender Vokal)
- * @param stress   0 = unbetont, 1 = Nebenbetonung, 2 = Hauptbetonung des Wortes
+ * @param phonemes the sounds in speaking order (at least one; normally exactly one carrying vowel)
+ * @param stress   0 = unstressed, 1 = secondary stress, 2 = primary stress of the word
  */
 public record Syllable(List<Phoneme> phonemes, int stress) {
 
@@ -21,7 +21,7 @@ public record Syllable(List<Phoneme> phonemes, int stress) {
         return stress == 2;
     }
 
-    /** Der tragende Vokal (oder der erste klingende Laut, wenn die Silbe keinen hat). */
+    /** The carrying vowel (or the first voiced sound if the syllable has none). */
     public Phoneme nucleus() {
         for (Phoneme phoneme : phonemes) {
             if (phoneme.isVocalic()) {
@@ -36,7 +36,7 @@ public record Syllable(List<Phoneme> phonemes, int stress) {
         return Compat.first(phonemes);
     }
 
-    /** Dieselbe Silbe mit anderer Betonung. */
+    /** The same syllable with another stress. */
     public Syllable stressed(int newStress) {
         return new Syllable(phonemes, newStress);
     }

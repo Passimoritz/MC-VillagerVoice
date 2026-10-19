@@ -7,23 +7,23 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Ein fertiges Sprechstück: der Text, die Sprache, die Stimme und die Laute mit Zeit, Tonhöhe und Lautstärke – alles, was zum Abspielen nötig ist.
- * Es entsteht aus Text ({@link VoiceApi#speak}), aus Text und Melodie ({@link VoiceApi#sing}) oder aus einer {@code .voice}-Datei
- * ({@link UtteranceFile}). Die Laute sind nach der Zeit geordnet und überlappen sich nicht.
+ * A finished utterance: the text, the language, the voice and the sounds with time, pitch and volume – everything needed for playback.
+ * It is made from text ({@link VoiceApi#speak}), from text and melody ({@link VoiceApi#sing}) or from a {@code .voice} file
+ * ({@link UtteranceFile}). The sounds are ordered by time and do not overlap.
  *
- * @param id       die Kennung in der Bibliothek (leer bei Stücken, die nur im Code entstehen)
- * @param title    der Name, wie er angezeigt wird
- * @param text     der gesprochene Text
- * @param language die Sprache
- * @param speaker  die Stimme ({@link Speaker#id()})
- * @param style    der Stil, mit dem das Stück gebaut wurde
- * @param segments die Laute, nach {@link Segment#startMs()} geordnet
- * @param sung     ob das Stück gesungen ist (Tonhöhen aus einer Melodie): dann hält der Renderer die Tonhöhe strenger (nur der gehaltene Laut,
- *                 keine Grunz- und Schrei-Einsätze, deren Tonhöhe nicht stimmt)
+ * @param id       the id in the library (empty for utterances that only exist in code)
+ * @param title    the name as displayed
+ * @param text     the spoken text
+ * @param language the language
+ * @param speaker  the voice ({@link Speaker#id()})
+ * @param style    the style the utterance was built with
+ * @param segments the sounds, ordered by {@link Segment#startMs()}
+ * @param sung     whether the utterance is sung (pitches from a melody): then the renderer holds the pitch more strictly (only the held sound,
+ *                 no grunt and scream onsets whose pitch is off)
  */
 public record Utterance(String id, String title, String text, Language language, String speaker, Style style, List<Segment> segments, boolean sung) {
 
-    /** Ein gesprochenes Stück. */
+    /** A spoken utterance. */
     public Utterance(String id, String title, String text, Language language, String speaker, Style style, List<Segment> segments) {
         this(id, title, text, language, speaker, style, segments, false);
     }
@@ -31,7 +31,7 @@ public record Utterance(String id, String title, String text, Language language,
     public Utterance {
         id = id == null ? "" : id;
         text = text == null ? "" : text;
-        title = title == null || title.isBlank() ? (text.isBlank() ? (id.isBlank() ? "Ohne Titel" : id) : shorten(text)) : title;
+        title = title == null || title.isBlank() ? (text.isBlank() ? (id.isBlank() ? "Untitled" : id) : shorten(text)) : title;
         language = language == null ? Language.ENGLISH : language;
         speaker = speaker == null || speaker.isBlank() ? Speaker.VILLAGER.id() : speaker.toLowerCase(Locale.ROOT);
         style = style == null ? Style.DEFAULT : style;
@@ -45,7 +45,7 @@ public record Utterance(String id, String title, String text, Language language,
         return one.length() > 40 ? one.substring(0, 39).strip() + "…" : one;
     }
 
-    /** Die Länge in Millisekunden (Ende des letzten Lauts). */
+    /** The length in milliseconds (end of the last sound). */
     public int lengthMs() {
         int end = 0;
         for (Segment segment : segments) {
@@ -54,7 +54,7 @@ public record Utterance(String id, String title, String text, Language language,
         return end;
     }
 
-    /** Die Dauer in Sekunden. */
+    /** The duration in seconds. */
     public double seconds() {
         return lengthMs() / 1000.0;
     }
@@ -63,7 +63,7 @@ public record Utterance(String id, String title, String text, Language language,
         return segments.isEmpty();
     }
 
-    /** Wie viele Wörter das Stück spricht. */
+    /** How many words the utterance speaks. */
     public int words() {
         int max = -1;
         for (Segment segment : segments) {
@@ -72,27 +72,27 @@ public record Utterance(String id, String title, String text, Language language,
         return max + 1;
     }
 
-    /** Die Stimme des Stücks. */
+    /** The voice of the utterance. */
     public Speaker voice() {
         return Speaker.find(speaker).orElse(Speaker.VILLAGER);
     }
 
-    /** Dasselbe Stück mit anderer Kennung und anderem Titel. */
+    /** The same utterance with another id and title. */
     public Utterance named(String newId, String newTitle) {
         return new Utterance(newId, newTitle, text, language, speaker, style, segments, sung);
     }
 
-    /** Dasselbe Stück mit anderer Stimme. */
+    /** The same utterance with another voice. */
     public Utterance spokenBy(Speaker newSpeaker) {
         return new Utterance(id, title, text, language, newSpeaker.id(), style, segments, sung);
     }
 
-    /** Dasselbe Stück, um Halbtöne verschoben. */
+    /** The same utterance, shifted by semitones. */
     public Utterance transposed(double semitones) {
         return new Utterance(id, title, text, language, speaker, style, segments.stream().map(s -> s.transposed(semitones)).toList(), sung);
     }
 
-    /** Dasselbe Stück, gedehnt oder gestaucht (Faktor 2 = doppelt so lang). */
+    /** The same utterance, stretched or squeezed (factor 2 = twice as long). */
     public Utterance stretched(double factor) {
         List<Segment> changed = new ArrayList<>();
         for (Segment segment : segments) {
@@ -102,12 +102,12 @@ public record Utterance(String id, String title, String text, Language language,
         return new Utterance(id, title, text, language, speaker, style, changed, sung);
     }
 
-    /** Dasselbe Stück ab einem späteren Beginn (alle Laute um {@code offsetMs} verschoben). */
+    /** The same utterance starting later (all sounds shifted by {@code offsetMs}). */
     public Utterance delayed(int offsetMs) {
         return new Utterance(id, title, text, language, speaker, style, segments.stream().map(s -> s.at(s.startMs() + offsetMs)).toList(), sung);
     }
 
-    /** Zwei Stücke hintereinander (mit einer Pause dazwischen). */
+    /** Two utterances one after the other (with a pause in between). */
     public Utterance then(Utterance next, int gapMs) {
         List<Segment> all = new ArrayList<>(segments);
         int offset = lengthMs() + Math.max(0, gapMs);
@@ -119,7 +119,7 @@ public record Utterance(String id, String title, String text, Language language,
         return new Utterance(id, title, (text + " " + next.text).strip(), language, speaker, style, all, sung || next.sung);
     }
 
-    /** Die Lautschrift des Stücks (Laute durch Wortgrenzen getrennt), für Anzeigen. */
+    /** The phonetic transcription of the utterance (sounds separated at word boundaries), for display. */
     public String transcription() {
         StringBuilder out = new StringBuilder();
         int word = -2;
@@ -138,7 +138,7 @@ public record Utterance(String id, String title, String text, Language language,
         return out.toString();
     }
 
-    /** Eine Kennung aus einem beliebigen Text: Kleinbuchstaben, Ziffern und Bindestriche, höchstens 40 Zeichen. */
+    /** An id from any text: lower-case letters, digits and dashes, at most 40 characters. */
     public static String slug(String text) {
         String lower = text == null ? "" : text.toLowerCase(Locale.ROOT)
                 .replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss");

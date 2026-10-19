@@ -1,14 +1,14 @@
-"""Vergleicht Renderings mit dem Original (z. B. echter Gesang vs. Dorfbewohner-Gesang vs. Gesang mit Paket-Lauten).
+"""Compares renderings with the original (e.g. real singing vs. villager singing vs. singing with the pack sounds).
 
-  python compare.py original.wav render1.wav [render2.wav …] [--labels "Villager,Paket"] [--out bericht.json] [--listen vergleich.wav]
+  python compare.py original.wav render1.wav [render2.wav …] [--labels "Villager,Pack"] [--out report.json] [--listen comparison.wav]
 
-Kennzahlen je Rendering (alle 0 … 1, hoeher = aehnlicher):
-  melody     Tonhoehen-Verlauf (Korrelation der Kontur ohne Lage, Oktaven zaehlen gleich) und mittlerer Fehler in Halbtoenen (mod 12)
-  rhythm     Korrelation der Lautstaerke-Verlaeufe (Onsets) und Ueberdeckung der Aktivitaet (wann wird gesungen)
-  timbre     Aehnlichkeit der Klangfarbe (MFCC-Statistik, Kosinus) und Helligkeit (Spektral-Schwerpunkt)
-  voice      wie sehr ein Klassifikator (PANNs, falls eingerichtet) Gesang/Sprache hoert
-  score      gewichteter Gesamtwert
---listen schreibt Original und Renderings hintereinander in eine Datei zum Anhoeren.
+Metrics per rendering (all 0 … 1, higher = more similar):
+  melody     pitch curve (correlation of the contour without register, octaves count as equal) and mean error in semitones (mod 12)
+  rhythm     correlation of the onset curves and overlap of activity (when is something sung)
+  timbre     similarity of the timbre (MFCC statistics, cosine) and brightness (spectral centroid)
+  voice      how much a classifier (PANNs, if set up) hears singing/speech
+  score      weighted total
+--listen writes the original and the renderings one after the other into one file to listen to.
 """
 from __future__ import annotations
 
@@ -37,8 +37,8 @@ def same_length(a: np.ndarray, b: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
 
 def pitch_track(y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Tonhoehe je Frame (MIDI) und ob dort ein Ton klingt. yin mit kurzen Fenstern (auch kurze Silben zaehlen), Stimmhaftigkeit aus
-    Flachheit des Spektrums und Lautstaerke – pyin haelt die kurzen, gestoppten Dorfbewohner-Laute sonst fuer unstimmhaft."""
+    """Pitch per frame (MIDI) and whether a note sounds there. yin with short windows (short syllables count too), voicing from spectral
+    flatness and loudness – pyin would otherwise take the short, stopped villager sounds for unvoiced."""
     import librosa
     hop = 256
     f0 = librosa.yin(y, fmin=50, fmax=1100, sr=SR, frame_length=1024, hop_length=hop)
@@ -59,7 +59,7 @@ def melody(a: np.ndarray, b: np.ndarray) -> dict:
         return {"contour": 0.0, "error_semitones": 12.0, "frames": int(both.sum())}
     x = ma[:n][both]
     z = mb[:n][both]
-    # Kontur ohne Lage: Oktaven sind egal (die Stimme faltet in ihren Umfang)
+    # contour without register: octaves do not matter (the voice folds into its range)
     diff = (z - x + 6) % 12 - 6
     offset = np.median(diff)
     error = np.abs(((diff - offset) + 6) % 12 - 6)
@@ -101,7 +101,7 @@ _tagger = None
 
 
 def voice(y: np.ndarray) -> dict:
-    """Was ein auf AudioSet trainiertes Netz hoert (PANNs); leer, wenn nicht eingerichtet."""
+    """What a network trained on AudioSet hears (PANNs); empty if not set up."""
     global _tagger
     try:
         import librosa
@@ -154,14 +154,14 @@ def main() -> None:
     for label, render in zip(labels, renders):
         report[label] = compare(original, render)
         c = report[label]
-        print(f"{label:16s} score {c['score']:.3f} | Melodie {c['melody'].get('score', 0):.3f} (Kontur {c['melody'].get('contour', 0):.2f}, "
-              f"Fehler {c['melody'].get('error_semitones', 0):.2f} HT) | Rhythmus {c['rhythm']['score']:.3f} | Klangfarbe {c['timbre']['score']:.3f}"
-              + (f" | Stimme {c['voice_like']:.2f}" if c['voice_like'] is not None else ""))
+        print(f"{label:16s} score {c['score']:.3f} | melody {c['melody'].get('score', 0):.3f} (contour {c['melody'].get('contour', 0):.2f}, "
+              f"error {c['melody'].get('error_semitones', 0):.2f} st) | rhythm {c['rhythm']['score']:.3f} | timbre {c['timbre']['score']:.3f}"
+              + (f" | voice {c['voice_like']:.2f}" if c['voice_like'] is not None else ""))
     if args.out:
         Path(args.out).write_text(json.dumps(report, indent=1), encoding="utf-8")
     if args.listen:
         listen(original, renders, Path(args.listen))
-        print(f"zum Anhoeren: {args.listen}")
+        print(f"to listen: {args.listen}")
 
 
 if __name__ == "__main__":

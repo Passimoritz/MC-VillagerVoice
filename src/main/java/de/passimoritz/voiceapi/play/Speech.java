@@ -16,14 +16,14 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * Ein laufendes Sprechstück: stoppen, nachsehen, wie weit es ist, und mithören, wann welches Wort beginnt (für Untertitel).
+ * A running utterance: stop it, look up how far it is, and follow when which word starts (for subtitles).
  * <p>
- * Die Zuhörer und der Ort werden einmal je Server-Tick im Hauptthread abgefragt; die Sprach-Uhr (eigener Thread, 5 ms) spielt die Klänge
- * aus dem letzten Stand. Beobachter und {@code whenDone} laufen im Hauptthread.
+ * The listeners and the place are queried once per server tick on the main thread; the speech clock (own thread, 5 ms) plays the sounds
+ * from the latest state. Observers and {@code whenDone} run on the main thread.
  */
 public final class Speech {
 
-    /** Ein Zuhörer-Stand: Spieler, Ort (Ohr oder Sprecher) und ob er das Paket hört. */
+    /** A listener state: player, place (ear or speaker) and whether the player hears the pack. */
     record Ear(Player player, Location place, boolean pack) {
     }
 
@@ -36,16 +36,16 @@ public final class Speech {
     final Runnable whenDone;
     final long id;
 
-    /** Nächster Klang je Liste. */
+    /** Next sound per list. */
     int vanillaIndex;
     int packIndex;
-    /** Ausstehende Stopps (Klang, Zeit, Paket?), nach Zeit sortiert eingefügt. */
+    /** Pending stops (sound, time, pack?), inserted sorted by time. */
     final List<PendingStop> stops = new ArrayList<>();
     volatile List<Ear> ears = List.of();
     volatile long startNanos = -1;
     final AtomicBoolean done = new AtomicBoolean();
     final AtomicBoolean stopped = new AtomicBoolean();
-    /** Das zuletzt gemeldete Wort (für die Beobachter). */
+    /** The last reported word (for the observers). */
     volatile int lastWord = -1;
     volatile int wordDue = -1;
     final List<BiConsumer<Integer, String>> wordObservers = new CopyOnWriteArrayList<>();
@@ -72,13 +72,13 @@ public final class Speech {
         return utterance;
     }
 
-    /** Wie viele Millisekunden das Stück läuft (0 vor dem Start). */
+    /** How many milliseconds the utterance has been playing (0 before the start). */
     public int elapsedMs() {
         long start = startNanos;
         return start < 0 ? 0 : (int) ((System.nanoTime() - start) / 1_000_000L);
     }
 
-    /** Die Länge des Stücks in Millisekunden (inklusive Vorlauf der Klänge). */
+    /** The length of the utterance in milliseconds (including the lead of the sounds). */
     public int lengthMs() {
         int end = utterance.lengthMs();
         for (Cue cue : vanilla.isEmpty() ? pack : vanilla) {
@@ -91,12 +91,12 @@ public final class Speech {
         return !done.get();
     }
 
-    /** Stoppt das Stück (laufende Klänge werden abgebrochen; {@code whenDone} wird aufgerufen). */
+    /** Stops the utterance (running sounds are cut; {@code whenDone} is called). */
     public void stop() {
         stopped.set(true);
     }
 
-    /** Ruft, wenn ein neues Wort beginnt: Nummer des Wortes und das Wort selbst (im Hauptthread). */
+    /** Called when a new word starts: index of the word and the word itself (on the main thread). */
     public Speech onWord(BiConsumer<Integer, String> observer) {
         if (observer != null) {
             wordObservers.add(observer);
@@ -104,7 +104,7 @@ public final class Speech {
         return this;
     }
 
-    /** Ruft, wenn ein Laut beginnt (im Hauptthread, gebündelt je Tick: nur der jüngste). */
+    /** Called when a sound starts (on the main thread, bundled per tick: only the latest). */
     public Speech onSegment(java.util.function.Consumer<Segment> observer) {
         if (observer != null) {
             segmentObservers.add(observer);
@@ -112,7 +112,7 @@ public final class Speech {
         return this;
     }
 
-    /** Das Wort mit einer Nummer, aus dem Text des Stücks. */
+    /** The word with an index, from the text of the utterance. */
     String wordText(int index) {
         if (index < 0) {
             return "";
@@ -121,12 +121,12 @@ public final class Speech {
         return index < words.length ? words[index] : "";
     }
 
-    /** Ob ein Spieler zuhört. */
+    /** Whether a player listens. */
     boolean hears(Player player) {
         return listeners == null || listeners.test(player);
     }
 
-    /** Die Kennung des Zuhörer-Filters (für die Statistik). */
+    /** The id of the listener filter (for statistics). */
     UUID key() {
         return new UUID(id, 0);
     }

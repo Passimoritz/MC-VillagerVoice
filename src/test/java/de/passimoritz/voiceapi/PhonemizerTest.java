@@ -23,21 +23,21 @@ class PhonemizerTest {
 
     @Test
     void germanVowelLengthFollowsSpelling() {
-        assertEquals("ˈhaː.bən", de("haben"));      // offene Silbe: lang
-        assertEquals("ˈva.sɐ", de("wasser"));      // Doppelkonsonant: kurz, Murmel-r am Ende
-        assertEquals("ˈʃtuːl", de("stuhl"));       // Dehnungs-h, st am Anfang = ʃt
-        assertEquals("ˈboːt", de("boot"));         // Doppelvokal
-        assertEquals("ˈliː.bə", de("liebe"));      // ie, Murmel-e
+        assertEquals("ˈhaː.bən", de("haben"));      // open syllable: long
+        assertEquals("ˈva.sɐ", de("wasser"));      // double consonant: short, vocalic r at the end
+        assertEquals("ˈʃtuːl", de("stuhl"));       // lengthening h, st at the start = ʃt
+        assertEquals("ˈboːt", de("boot"));         // double vowel
+        assertEquals("ˈliː.bə", de("liebe"));      // ie, schwa
     }
 
     @Test
     void germanConsonantRules() {
         assertEquals("ˈʃuː.lə", de("schule"));
-        assertEquals("ˈbuːx", de("buch"));          // ach-Laut nach u
-        assertEquals("ˈmɪlç", de("milch"));         // ich-Laut nach Konsonant
+        assertEquals("ˈbuːx", de("buch"));          // ach sound after u
+        assertEquals("ˈmɪlç", de("milch"));         // ich sound after a consonant
         assertEquals("ˈkøː.nɪç", de("könig"));      // -ig = ɪç
         assertEquals("ˈveː.nɪç", de("wenig"));
-        assertEquals("ˈtaːk", de("tag"));           // Auslautverhärtung
+        assertEquals("ˈtaːk", de("tag"));           // final devoicing
         assertEquals("ˈtsaɪt", de("zeit"));         // z = ts, ei = aɪ
         assertEquals("ˈhaʊs", de("haus"));
         assertEquals("ˈkvɛ.lə", de("quelle"));
@@ -63,13 +63,13 @@ class PhonemizerTest {
     void englishLexiconAndRules() {
         assertEquals("ðə", en("the"));
         assertEquals("ˈwʌn", en("one"));
-        assertEquals("ˈneɪm", en("name"));          // stummes e: langer Vokal
+        assertEquals("ˈneɪm", en("name"));          // silent e: long vowel
         assertEquals("ˈkæt", en("cat"));
         assertEquals("ˈʃɪp", en("ship"));
         assertEquals("ˈkɪŋ", en("king"));
         assertEquals("ˈstɔːrm", en("storm").replace("ɔːr", "ɔːr"));
         assertEquals("ˈθɪŋk", en("think"));
-        assertEquals("ˈdʒʌmpt", en("jumped"));      // Stamm + -ed nach stimmlosem Laut = t
+        assertEquals("ˈdʒʌmpt", en("jumped"));      // stem + -ed after a voiceless sound = t
         assertEquals("ˈkæts", en("cats"));
         assertEquals("ˈdɔgz", en("dogs"));
     }
@@ -103,7 +103,7 @@ class PhonemizerTest {
             }
         }
         for (Word word : Language.ENGLISH.phonemizer().read("The quick brown fox jumps over the lazy dog while strangers watch")) {
-            // Funktionswörter (the) dürfen unbetont sein, alle anderen haben genau eine Hauptbetonung
+            // function words (the) may be unstressed, all others have exactly one primary stress
             long stressed = word.syllables().stream().filter(s -> s.stress() == 2).count();
             assertTrue(stressed == 1 || stressed == 0 && word.syllables().size() == 1, word.toString());
         }

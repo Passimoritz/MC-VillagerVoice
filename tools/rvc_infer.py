@@ -1,13 +1,13 @@
-"""Startet Applios Umwandlung (core.py infer …) reproduzierbar: gleiche Eingabe → gleiches Ergebnis, auf jedem Rechner und auf CPU wie GPU.
+"""Runs Applio's conversion (core.py infer …) reproducibly: same input → same result, on every machine and on CPU or GPU.
 
-  python rvc_infer.py <Applio-Ordner> infer --input-path … --output-path … (alle Argumente wie core.py)
+  python rvc_infer.py <Applio folder> infer --input-path … --output-path … (all arguments like core.py)
 
-RVC mischt beim Erzeugen Rauschen ein (torch.randn_like im Synthesizer), ohne festen Startwert – derselbe Gesang klingt dann bei jedem Lauf minimal
-anders, und eine GPU wuerfelt anders als die CPU. Hier wird
-- der Zufall fest gesaet (Python, NumPy, Torch) und
-- torch.randn_like/torch.randn so ersetzt, dass das Rauschen immer auf der CPU mit einem eigenen, festen Generator entsteht und erst danach aufs
-  Geraet wandert. So bekommen CPU und GPU exakt dieselben Zufallszahlen; uebrig bleiben nur Rundungsunterschiede der Rechenwerke.
-VOICEAPI_DEVICE=cpu erzwingt die CPU (auch wenn eine GPU da ist).
+RVC mixes in noise while generating (torch.randn_like in the synthesizer), without a fixed seed – the same singing then sounds minimally
+different on every run, and a GPU rolls different dice than the CPU. Here
+- the randomness is seeded (Python, NumPy, Torch) and
+- torch.randn_like/torch.randn are replaced so the noise is always made on the CPU with its own fixed generator and only then moves to the
+  device. So CPU and GPU get exactly the same random numbers; only rounding differences of the hardware remain.
+VOICEAPI_DEVICE=cpu forces the CPU (even if a GPU is present).
 """
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ SEED = 1234
 
 def main() -> None:
     if len(sys.argv) < 2:
-        raise SystemExit("Aufruf: rvc_infer.py <Applio-Ordner> <core.py-Argumente>")
+        raise SystemExit("Usage: rvc_infer.py <Applio folder> <core.py arguments>")
     applio = os.path.abspath(sys.argv[1])
     if os.environ.get("VOICEAPI_DEVICE", "").lower() == "cpu":
         os.environ["CUDA_VISIBLE_DEVICES"] = ""

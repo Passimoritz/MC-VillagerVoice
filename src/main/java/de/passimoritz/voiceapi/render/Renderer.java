@@ -11,23 +11,23 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Macht aus einem Sprechstück die Klang-Befehle fürs Spiel. Zwei Renderer: {@link VanillaRenderer} (Dorfbewohner- und Block-Laute, ohne
- * Ressourcenpaket) und {@link PackRenderer} (die Laute des VoiceAPI-Pakets im NoteAPI-Ressourcenpaket).
+ * Turns an utterance into the sound commands for the game. Two renderers: {@link VanillaRenderer} (villager and block sounds, without a
+ * resource pack) and {@link PackRenderer} (the sounds of the VoiceAPI pack in the NoteAPI resource pack).
  */
 public interface Renderer {
 
-    /** Der Name des Renderers (für Anzeigen). */
+    /** The name of the renderer (for display). */
     String name();
 
-    /** Die Klang-Befehle eines Stücks, nach der Zeit geordnet, der erste bei 0 ms. */
+    /** The sound commands of an utterance, ordered by time, the first at 0 ms. */
     List<Cue> render(Utterance utterance);
 
-    /** Gesamt-Lautstärke, mit der Vokale spielen: lässt Luft, damit leisere Klänge angehoben werden können. */
+    /** Overall volume vowels play at: leaves headroom so quieter sounds can be raised. */
     float MASTER = 0.6f;
 
     /**
-     * Räumt eine Liste auf: ordnet nach der Zeit, verschiebt alles, damit der erste Befehl bei 0 ms liegt, und zieht Stopps vor, wenn derselbe
-     * Klang vor dem Stopp erneut startet – ein Stopp trifft im Spiel alle laufenden Klänge dieses Namens, also auch den neuen.
+     * Tidies a list: orders it by time, shifts everything so the first command is at 0 ms, and moves stops earlier if the same sound starts
+     * again before the stop – in the game a stop hits all running sounds of that name, including the new one.
      */
     static List<Cue> finish(List<Cue> cues) {
         if (cues.isEmpty()) {
@@ -40,7 +40,7 @@ public interface Renderer {
         for (Cue cue : sorted) {
             shifted.add(offset == 0 ? cue : cue.shifted(offset));
         }
-        // Stopps vor dem nächsten Start desselben Klangs
+        // stops before the next start of the same sound
         Map<String, Integer> last = new HashMap<>();
         for (int i = shifted.size() - 1; i >= 0; i--) {
             Cue cue = shifted.get(i);

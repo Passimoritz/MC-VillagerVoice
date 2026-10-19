@@ -3,9 +3,9 @@ package de.passimoritz.voiceapi.lang;
 import java.util.Locale;
 import java.util.Optional;
 
-/** Die Sprachen, die VoiceAPI spricht. */
+/** The languages VoiceAPI speaks. */
 public enum Language {
-    GERMAN("de", "Deutsch"),
+    GERMAN("de", "German"),
     ENGLISH("en", "English");
 
     private final String code;
@@ -16,7 +16,7 @@ public enum Language {
         this.label = label;
     }
 
-    /** Das Kürzel ({@code de}, {@code en}). */
+    /** The code ({@code de}, {@code en}). */
     public String code() {
         return code;
     }
@@ -25,12 +25,12 @@ public enum Language {
         return label;
     }
 
-    /** Der Übersetzer von Schrift in Laute. */
+    /** The translator from spelling to sounds. */
     public Phonemizer phonemizer() {
         return this == GERMAN ? GermanPhonemizer.INSTANCE : EnglishPhonemizer.INSTANCE;
     }
 
-    /** Die Sprache zu einem Kürzel oder Namen ({@code de}, {@code deutsch}, {@code en}, {@code english} …). */
+    /** The language for a code or name ({@code de}, {@code german}, {@code deutsch}, {@code en}, {@code english} …). */
     public static Optional<Language> find(String text) {
         if (text == null) {
             return Optional.empty();
@@ -44,8 +44,8 @@ public enum Language {
     }
 
     /**
-     * Rät die Sprache eines Textes: Deutsch bei Umlauten/ß und typischen deutschen Wörtern, sonst nach dem Anteil typischer Wörter beider Sprachen
-     * (Englisch, wenn unentschieden).
+     * Guesses the language of a text: German for umlauts/ß and typical German words, otherwise by the share of typical words of both
+     * languages (English on a tie).
      */
     public static Language guess(String text) {
         if (text == null || text.isBlank()) {

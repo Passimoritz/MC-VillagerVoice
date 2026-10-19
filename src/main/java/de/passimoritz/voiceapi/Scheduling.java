@@ -7,13 +7,13 @@ import java.lang.reflect.Method;
 import java.util.function.Consumer;
 
 /**
- * Aufgaben „im Hauptthread“ auf jedem Server: Spigot/Paper/Purpur mit dem Bukkit-Scheduler, Folia (keine Hauptschleife, kein Bukkit-Scheduler) mit
- * dem Global-Region-Scheduler. Folia wird zur Laufzeit erkannt und per Reflexion angesprochen – so läuft dasselbe Jar überall, auch auf
- * künftigen Servern, ohne gegen deren API zu übersetzen.
+ * Tasks "on the main thread" on every server: Spigot/Paper/Purpur through the Bukkit scheduler, Folia (no main loop, no Bukkit scheduler)
+ * through the global region scheduler. Folia is detected at runtime and called via reflection – so the same jar runs everywhere, also on
+ * future servers, without compiling against their API.
  */
 public final class Scheduling {
 
-    /** Eine laufende Wiederholung, die sich stoppen lässt. */
+    /** A running repetition that can be stopped. */
     public interface Repeating {
         void cancel();
     }
@@ -32,12 +32,12 @@ public final class Scheduling {
         }
     }
 
-    /** Ob der Server Folia (oder ein Folia-Abkömmling) ist. */
+    /** Whether the server is Folia (or a Folia fork). */
     public static boolean isFolia() {
         return FOLIA;
     }
 
-    /** Führt eine Aufgabe beim nächsten Tick im „Hauptthread“ aus (Folia: im globalen Region-Thread). */
+    /** Runs a task on the next tick on the "main thread" (Folia: on the global region thread). */
     public static void run(Plugin plugin, Runnable task) {
         if (!plugin.isEnabled()) {
             return;
@@ -49,13 +49,13 @@ public final class Scheduling {
                 run.invoke(scheduler, plugin, (Consumer<Object>) ignored -> task.run());
                 return;
             } catch (ReflectiveOperationException e) {
-                throw new IllegalStateException("Folia-Scheduler nicht erreichbar", e);
+                throw new IllegalStateException("Folia scheduler not reachable", e);
             }
         }
         Bukkit.getScheduler().runTask(plugin, task);
     }
 
-    /** Wiederholt eine Aufgabe jeden Tick im „Hauptthread“ (Folia: im globalen Region-Thread). */
+    /** Repeats a task every tick on the "main thread" (Folia: on the global region thread). */
     public static Repeating everyTick(Plugin plugin, Runnable task) {
         if (FOLIA) {
             try {
@@ -67,11 +67,11 @@ public final class Scheduling {
                     try {
                         cancel.invoke(handle);
                     } catch (ReflectiveOperationException e) {
-                        // schon beendet
+                        // already finished
                     }
                 };
             } catch (ReflectiveOperationException e) {
-                throw new IllegalStateException("Folia-Scheduler nicht erreichbar", e);
+                throw new IllegalStateException("Folia scheduler not reachable", e);
             }
         }
         int id = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, task, 1L, 1L);

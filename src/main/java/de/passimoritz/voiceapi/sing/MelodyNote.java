@@ -3,12 +3,13 @@ package de.passimoritz.voiceapi.sing;
 import de.passimoritz.voiceapi.Compat;
 
 /**
- * Ein Ton einer Melodie, auf den gesungen wird.
+ * A note of a melody that is sung to.
  *
- * @param startMs Beginn in Millisekunden
- * @param durMs   Dauer in Millisekunden
- * @param pitch   Tonhöhe als MIDI-Nummer (das mittlere C ist 60); die Stimme rückt ihn um ganze Oktaven in ihren Umfang
- * @param volume  Lautstärke 0 … 1
+ * @param startMs start in milliseconds
+ * @param durMs   duration in milliseconds
+ * @param pitch   pitch as a MIDI number (middle C is 60); the voice moves it by whole octaves into its range
+ * @param volume  volume 0 … 1
+ * @param word    the word of the text this note belongs to (0-based), −1 = syllables are distributed in order
  */
 public record MelodyNote(int startMs, int durMs, double pitch, float volume, int word) {
 
@@ -20,17 +21,17 @@ public record MelodyNote(int startMs, int durMs, double pitch, float volume, int
         word = Math.max(-1, word);
     }
 
-    /** Ein Ton ohne Zuordnung zu einem Wort (die Silben werden der Reihe nach verteilt). */
+    /** A note without a word (the syllables are distributed in order). */
     public MelodyNote(int startMs, int durMs, double pitch, float volume) {
         this(startMs, durMs, pitch, volume, -1);
     }
 
-    /** Ein Ton mit voller Lautstärke. */
+    /** A note at the default volume. */
     public MelodyNote(int startMs, int durMs, double pitch) {
         this(startMs, durMs, pitch, 0.85f, -1);
     }
 
-    /** Derselbe Ton, einem Wort des Textes zugeordnet (0-basiert): seine Silben bekommen genau diese Töne. */
+    /** The same note, assigned to a word of the text (0-based): its syllables get exactly these notes. */
     public MelodyNote forWord(int index) {
         return new MelodyNote(startMs, durMs, pitch, volume, index);
     }

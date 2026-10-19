@@ -1,15 +1,15 @@
 package de.passimoritz.voiceapi.lang;
 
 /**
- * Die Laute, aus denen VoiceAPI Sprache baut – ein gemeinsamer Vorrat für Deutsch und Englisch (Zeichen nach IPA).
+ * The sounds VoiceAPI builds speech from – one shared inventory for German and English (IPA symbols).
  * <p>
- * Jeder Laut weiß, was er ist ({@link Kind}), ob er stimmhaft ist, wie lang er von Natur aus klingt und – bei Vokalen – wie hell
- * ({@link #brightness()}: u = 0 … i = 1) und wie offen ({@link #openness()}: i/u = 0 … a = 1) der Mund ist. Aus Helligkeit und Offenheit wählt
- * der Renderer den Dorfbewohner-Laut und seine Tonhöhe, mit der ein Spieler den Vokal am ehesten erkennt.
+ * Every sound knows what it is ({@link Kind}), whether it is voiced, how long it naturally lasts and – for vowels – how bright
+ * ({@link #brightness()}: u = 0 … i = 1) and how open ({@link #openness()}: i/u = 0 … a = 1) the mouth is. From brightness and openness the
+ * renderer picks the villager sound and pitch with which a player most likely recognises the vowel.
  */
 public enum Phoneme {
 
-    // ── Vokale ──────────────────────────────────────────── Zeichen, Art, stimmhaft, Helligkeit, Offenheit, Dauer ms
+    // ── Vowels ──────────────────────────────────────────── symbol, kind, voiced, brightness, openness, duration ms
     A("a", Kind.VOWEL, true, 0.45, 1.00, 95),
     AA("aː", Kind.VOWEL, true, 0.45, 1.00, 175),
     E("ɛ", Kind.VOWEL, true, 0.72, 0.60, 90),
@@ -25,27 +25,27 @@ public enum Phoneme {
     OEE("øː", Kind.VOWEL, true, 0.60, 0.35, 160),
     UE("ʏ", Kind.VOWEL, true, 0.68, 0.20, 75),
     UEE("yː", Kind.VOWEL, true, 0.75, 0.05, 150),
-    /** Englisches a in „cat“. */
+    /** English a in "cat". */
     AEE("æ", Kind.VOWEL, true, 0.62, 0.85, 120),
-    /** Englisches u in „cup“. */
+    /** English u in "cup". */
     AH("ʌ", Kind.VOWEL, true, 0.40, 0.75, 100),
-    /** Englisches aw in „law“, o in „thought“. */
+    /** English aw in "law", o in "thought". */
     AW("ɔː", Kind.VOWEL, true, 0.20, 0.70, 170),
-    /** Englisches er in „bird“. */
+    /** English er in "bird". */
     ERR("ɜː", Kind.VOWEL, true, 0.50, 0.45, 165),
-    /** Murmel-e („bitte“, „about“). */
+    /** Schwa ("bitte", "about"). */
     SCHWA("ə", Kind.VOWEL, true, 0.45, 0.45, 60),
-    /** Vokalisches r („Vater“, „better“). */
+    /** Vocalic r ("Vater", "better"). */
     ER("ɐ", Kind.VOWEL, true, 0.42, 0.65, 70),
 
-    // ── Diphthonge (gleiten vom ersten zum zweiten Vokal) ──
+    // ── Diphthongs (glide from the first to the second vowel) ──
     AI("aɪ", Kind.DIPHTHONG, true, 0.45, 1.00, 180, A, I),
     AU("aʊ", Kind.DIPHTHONG, true, 0.45, 1.00, 180, A, U),
     OI("ɔʏ", Kind.DIPHTHONG, true, 0.22, 0.60, 180, O, UE),
     EI("eɪ", Kind.DIPHTHONG, true, 0.85, 0.35, 170, EE, I),
     OU("oʊ", Kind.DIPHTHONG, true, 0.18, 0.35, 170, OO, U),
 
-    // ── Verschlusslaute ──
+    // ── Plosives ──
     P("p", Kind.PLOSIVE, false, 0.3, 0, 70),
     B("b", Kind.PLOSIVE, true, 0.3, 0, 60),
     T("t", Kind.PLOSIVE, false, 0.8, 0, 70),
@@ -53,7 +53,7 @@ public enum Phoneme {
     K("k", Kind.PLOSIVE, false, 0.5, 0, 75),
     G("g", Kind.PLOSIVE, true, 0.5, 0, 60),
 
-    // ── Reibelaute ──
+    // ── Fricatives ──
     F("f", Kind.FRICATIVE, false, 0.5, 0, 95),
     V("v", Kind.FRICATIVE, true, 0.5, 0, 70),
     S("s", Kind.FRICATIVE, false, 1.0, 0, 105),
@@ -63,41 +63,41 @@ public enum Phoneme {
     TH("θ", Kind.FRICATIVE, false, 0.6, 0, 90),
     DH("ð", Kind.FRICATIVE, true, 0.6, 0, 60),
     H("h", Kind.FRICATIVE, false, 0.4, 0, 70),
-    /** ach-Laut. */
+    /** German "ach" sound. */
     X("x", Kind.FRICATIVE, false, 0.3, 0, 100),
-    /** ich-Laut. */
+    /** German "ich" sound. */
     XI("ç", Kind.FRICATIVE, false, 0.8, 0, 95),
 
-    // ── Affrikaten ──
+    // ── Affricates ──
     TS("ts", Kind.AFFRICATE, false, 1.0, 0, 120),
     PF("pf", Kind.AFFRICATE, false, 0.4, 0, 120),
     CH("tʃ", Kind.AFFRICATE, false, 0.7, 0, 120),
     DJ("dʒ", Kind.AFFRICATE, true, 0.7, 0, 100),
 
-    // ── Nasale ──
+    // ── Nasals ──
     M("m", Kind.NASAL, true, 0.2, 0, 75),
     N("n", Kind.NASAL, true, 0.5, 0, 70),
     NG("ŋ", Kind.NASAL, true, 0.3, 0, 85),
 
-    // ── Liquide und Gleitlaute ──
+    // ── Liquids and glides ──
     L("l", Kind.LIQUID, true, 0.6, 0, 65),
     R("r", Kind.LIQUID, true, 0.4, 0, 60),
     W("w", Kind.GLIDE, true, 0.1, 0, 60),
     Y("j", Kind.GLIDE, true, 1.0, 0, 55),
 
-    /** Pause (zwischen Wörtern, an Satzzeichen). */
+    /** Pause (between words, at punctuation). */
     SIL("_", Kind.PAUSE, false, 0, 0, 0);
 
-    /** Was für ein Laut es ist. */
+    /** What kind of sound it is. */
     public enum Kind {
         VOWEL, DIPHTHONG, PLOSIVE, FRICATIVE, AFFRICATE, NASAL, LIQUID, GLIDE, PAUSE;
 
-        /** Vokale und Diphthonge tragen die Silbe. */
+        /** Vowels and diphthongs carry the syllable. */
         public boolean isVocalic() {
             return this == VOWEL || this == DIPHTHONG;
         }
 
-        /** Nasale, Liquide und Gleitlaute: stimmhaft und klingend, ohne Vokal zu sein. */
+        /** Nasals, liquids and glides: voiced and resonant without being a vowel. */
         public boolean isSonorant() {
             return this == NASAL || this == LIQUID || this == GLIDE;
         }
@@ -127,7 +127,7 @@ public enum Phoneme {
         this.to = to;
     }
 
-    /** Das IPA-Zeichen (so steht der Laut in {@code .voice}-Dateien). */
+    /** The IPA symbol (as the sound is written in {@code .voice} files). */
     public String symbol() {
         return symbol;
     }
@@ -140,22 +140,22 @@ public enum Phoneme {
         return voiced;
     }
 
-    /** Wie hell der Laut klingt (0 = u/dunkel … 1 = i/hell); bei Konsonanten die Helligkeit des Geräuschs. */
+    /** How bright the sound is (0 = u/dark … 1 = i/bright); for consonants the brightness of the noise. */
     public double brightness() {
         return brightness;
     }
 
-    /** Wie offen der Mund ist (0 = geschlossen … 1 = a). */
+    /** How open the mouth is (0 = closed … 1 = a). */
     public double openness() {
         return openness;
     }
 
-    /** Die natürliche Dauer in Millisekunden bei normalem Tempo. */
+    /** The natural duration in milliseconds at normal tempo. */
     public int baseMillis() {
         return baseMillis;
     }
 
-    /** Ob der Laut eine Silbe tragen kann. */
+    /** Whether the sound can carry a syllable. */
     public boolean isVocalic() {
         return kind.isVocalic();
     }
@@ -176,32 +176,32 @@ public enum Phoneme {
         return kind == Kind.PAUSE;
     }
 
-    /** Ein Konsonant, der ohne Stimme nur Geräusch ist (Verschluss, Reibung, Affrikate ohne Stimme). */
+    /** A consonant that is only noise without voice (plosive, fricative, affricate without voice). */
     public boolean isNoise() {
         return !voiced && isConsonant();
     }
 
-    /** Stimmhafte Konsonanten, die wie ein kurzer Vokal klingen (Nasale, Liquide, Gleitlaute). */
+    /** Voiced consonants that sound like a short vowel (nasals, liquids, glides). */
     public boolean isSonorant() {
         return kind.isSonorant();
     }
 
-    /** Der Vokal, mit dem ein Diphthong beginnt (bei Vokalen der Vokal selbst, sonst {@code null}). */
+    /** The vowel a diphthong starts with (for vowels the vowel itself, otherwise {@code null}). */
     public Phoneme start() {
         return from != null ? from : isVowel() ? this : null;
     }
 
-    /** Der Vokal, zu dem ein Diphthong gleitet (bei Vokalen der Vokal selbst, sonst {@code null}). */
+    /** The vowel a diphthong glides to (for vowels the vowel itself, otherwise {@code null}). */
     public Phoneme end() {
         return to != null ? to : isVowel() ? this : null;
     }
 
-    /** Ein langer Vokal (ː) oder Diphthong. */
+    /** A long vowel (ː) or diphthong. */
     public boolean isLong() {
         return symbol.endsWith("ː") || isDiphthong();
     }
 
-    /** Der Laut zu einem IPA-Zeichen aus einer Datei, oder {@code null}. */
+    /** The sound for an IPA symbol from a file, or {@code null}. */
     public static Phoneme bySymbol(String text) {
         for (Phoneme phoneme : values()) {
             if (phoneme.symbol.equals(text)) {

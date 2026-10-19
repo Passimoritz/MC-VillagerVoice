@@ -11,21 +11,21 @@ import java.util.Set;
 import static de.passimoritz.voiceapi.lang.Phoneme.*;
 
 /**
- * Deutsch: Schrift zu Lauten nach den Regeln der deutschen Rechtschreibung (Vokallänge aus Dehnungs-h, Doppelvokal, Folgekonsonanten; sch, ch
- * als ach- oder ich-Laut, st/sp am Anfang, Auslautverhärtung, Murmel-e in Endsilben, vokalisches r), dazu ein kleines Wörterbuch für die
- * häufigen Ausnahmen (kurzer Vokal vor einem Konsonanten: „mit“, „das“; Fremdwörter mit v: „Vase“). Betonung: erste Silbe, nach den
- * unbetonten Vorsilben (ge-, be-, ver-, er-, ent-, zer-) die zweite; Endungen -ieren, -ion, -tät, -ei tragen die Betonung.
+ * German: spelling to sounds following the rules of German orthography (vowel length from the lengthening h, double vowels, following
+ * consonants; sch, ch as "ach" or "ich" sound, st/sp at the start, final devoicing, schwa in final syllables, vocalic r), plus a small
+ * dictionary for the common exceptions (short vowel before one consonant: "mit", "das"; loan words with v: "Vase"). Stress: first syllable,
+ * after the unstressed prefixes (ge-, be-, ver-, er-, ent-, zer-) the second; the endings -ieren, -ion, -tät, -ei carry the stress.
  */
 public final class GermanPhonemizer implements Phonemizer {
 
     public static final GermanPhonemizer INSTANCE = new GermanPhonemizer();
 
-    /** Erlaubte Anlaute mit zwei oder drei Konsonanten (als IPA-Zeichenfolgen). */
+    /** Allowed onsets with two or three consonants (as IPA strings). */
     private static final Set<String> ONSETS = Set.of(
             "pl", "pr", "bl", "br", "tr", "dr", "kl", "kr", "kn", "kv", "gl", "gr", "gn", "fl", "fr", "vr", "ʃl", "ʃm", "ʃn", "ʃp", "ʃt", "ʃr",
             "ʃv", "ʃpr", "ʃtr", "ʃpl", "tsv", "pfl", "pfr", "ps", "pn", "tv", "sk", "sl", "sp", "st", "str", "spr", "skl", "skr");
 
-    /** Wörter, bei denen die Regeln daneben lägen: Schreibung → Lautschrift. */
+    /** Words the rules would get wrong: spelling → transcription. */
     private static final Map<String, List<Syllable>> LEXICON = new HashMap<>();
 
     static {
@@ -81,7 +81,7 @@ public final class GermanPhonemizer implements Phonemizer {
         return Phonemizer.stress(parts, stressedSyllable(word, parts));
     }
 
-    /** Welche Silbe die Hauptbetonung trägt. */
+    /** Which syllable carries the primary stress. */
     private static int stressedSyllable(String word, List<List<Phoneme>> parts) {
         if (parts.size() < 2) {
             return 0;
@@ -96,7 +96,7 @@ public final class GermanPhonemizer implements Phonemizer {
         int stressed = 0;
         for (String prefix : new String[]{"ge", "be", "ver", "zer", "er", "ent", "emp", "miss"}) {
             if (word.startsWith(prefix) && word.length() > prefix.length() + 2 && parts.size() > 1) {
-                // die Vorsilbe ist genau die erste Silbe
+                // the prefix is exactly the first syllable
                 stressed = 1;
                 break;
             }
@@ -104,7 +104,7 @@ public final class GermanPhonemizer implements Phonemizer {
         return stressed;
     }
 
-    /** Läuft Buchstabe für Buchstabe durch ein Wort. */
+    /** Walks through a word letter by letter. */
     private static final class Walk {
         private final String w;
         private final List<Phoneme> out = new ArrayList<>();
@@ -162,7 +162,7 @@ public final class GermanPhonemizer implements Phonemizer {
             return out;
         }
 
-        /** Die Länge einer unbetonten Vorsilbe (ge-, be-, ver- …), nach der s, st, sp wieder wie am Wortanfang klingen. */
+        /** The length of an unstressed prefix (ge-, be-, ver- …) after which s, st, sp sound like at the start of a word again. */
         private int prefixLength() {
             for (String prefix : new String[]{"ge", "be", "ver", "zer", "er", "ent", "emp", "ab", "an", "auf", "aus", "ein", "vor", "zu", "um", "mit", "nach", "über", "unter"}) {
                 if (w.startsWith(prefix) && w.length() > prefix.length() + 2) {
@@ -172,14 +172,14 @@ public final class GermanPhonemizer implements Phonemizer {
             return -1;
         }
 
-        // ── Vokale ──
+        // ── Vowels ──
 
         private void vowel() {
             vowelsSeen++;
             boolean lastSyllable = vowelsSeen == vowelCount;
             char c = ch(0);
             char n = ch(1);
-            // Diphthonge
+            // diphthongs
             if (c == 'e' && (n == 'i' || n == 'y') || c == 'a' && (n == 'i' || n == 'y')) {
                 add(AI);
                 i += 2;
@@ -196,13 +196,13 @@ public final class GermanPhonemizer implements Phonemizer {
                 return;
             }
             if (c == 'i' && n == 'g' && i + 2 == w.length() && vowelCount > 1) {
-                // -ig am Wortende: ɪç (König, wenig)
+                // -ig at the end of a word: ɪç (König, wenig)
                 add(I, XI);
                 i += 2;
                 return;
             }
             if (c == 'i' && n == 'e') {
-                // ie = langes i; "ie" am Ende mit Folge-Vokal ("Familie") = i + ə
+                // ie = long i; "ie" at the end with a following vowel ("Familie") = i + ə
                 add(II);
                 i += 2;
                 if (ch(0) == 'h') {
@@ -210,7 +210,7 @@ public final class GermanPhonemizer implements Phonemizer {
                 }
                 return;
             }
-            // Dehnungs-h: Vokal + h + (Konsonant oder Ende), nicht h + Vokal
+            // lengthening h: vowel + h + (consonant or end), not h + vowel
             boolean dehnung = n == 'h' && !isVowelLetter(ch(2)) && ch(2) != '\0' || n == 'h' && ch(2) == '\0';
             boolean doubled = n == c && (c == 'a' || c == 'e' || c == 'o');
             int consonantsAfter = consonantsAfter(dehnung ? 2 : 1);
@@ -221,12 +221,12 @@ public final class GermanPhonemizer implements Phonemizer {
             } else if (consonantsAfter == 0) {
                 longVowel = true;
             } else if (consonantsAfter == 1) {
-                // offene Silbe (Konsonant + Vokal) = lang; am Wortende meist lang ("Tag", "gut"); Ausnahmen im Wörterbuch
+                // open syllable (consonant + vowel) = long; at the end of a word mostly long ("Tag", "gut"); exceptions in the dictionary
                 longVowel = !(endsWord && vowelCount > 1);
             } else {
                 longVowel = false;
             }
-            // Endsilben mit e: Murmel-e
+            // final syllables with e: schwa
             if (c == 'e' && !doubled && !dehnung && lastSyllable && vowelCount > 1 && !w.endsWith("ee")) {
                 String rest = w.substring(i + 1);
                 if (rest.isEmpty() || rest.matches("[nlmst]{1,2}") || rest.equals("r") || rest.equals("rn") || rest.equals("rs") || rest.equals("rt")) {
@@ -240,7 +240,7 @@ public final class GermanPhonemizer implements Phonemizer {
                     return;
                 }
             }
-            // unbetonte Vorsilben: ge-, be- mit Murmel-e
+            // unstressed prefixes: ge-, be- with schwa
             if (c == 'e' && i == 1 && (w.startsWith("ge") || w.startsWith("be")) && vowelCount > 1 && !isVowelLetter(ch(1))) {
                 add(SCHWA);
                 i++;
@@ -262,14 +262,14 @@ public final class GermanPhonemizer implements Phonemizer {
             if (dehnung) {
                 i++;
             }
-            // vokalisches r nach langem Vokal am Silbenende ("Uhr", "Tor", "wir"): r → ɐ
+            // vocalic r after a long vowel at the end of a syllable ("Uhr", "Tor", "wir"): r → ɐ
             if (ch(0) == 'r' && longVowel && !isVowelLetter(ch(1))) {
                 add(ER);
                 i++;
             }
         }
 
-        /** Wie viele Konsonanten-Buchstaben auf die Stelle folgen, bis der nächste Vokal kommt (ck, sch, ch, ß zählen wie ein Laut). */
+        /** How many consonant letters follow the position until the next vowel (ck, sch, ch, ß count as one sound). */
         private int consonantsAfter(int offset) {
             int k = i + offset;
             int count = 0;
@@ -279,7 +279,7 @@ public final class GermanPhonemizer implements Phonemizer {
                 } else if (w.startsWith("ch", k) || w.startsWith("ck", k) || w.startsWith("ph", k) || w.startsWith("th", k) || w.startsWith("qu", k)) {
                     k += 2;
                 } else if (w.charAt(k) == 'h' && k > i && count == 0 && offset == 1) {
-                    // stummes h nach Vokal zählt nicht
+                    // a silent h after a vowel does not count
                     k++;
                     continue;
                 } else {
@@ -290,14 +290,14 @@ public final class GermanPhonemizer implements Phonemizer {
             return count;
         }
 
-        // ── Konsonanten ──
+        // ── Consonants ──
 
         private void consonant(boolean start) {
             char c = ch(0);
             char n = ch(1);
             boolean beforeVowel = isVowelLetter(n);
             boolean wordEnd = i + 1 >= w.length();
-            // Mehrbuchstaben zuerst
+            // multi-letter spellings first
             if (at("tsch")) {
                 add(CH);
                 i += 4;
@@ -382,7 +382,7 @@ public final class GermanPhonemizer implements Phonemizer {
                 vowelsSeen++;
                 return;
             }
-            // Doppelkonsonanten: ein Laut (ss bleibt stimmlos)
+            // double consonants: one sound (ss stays voiceless)
             boolean doubledS = false;
             if (n == c && "bdfgklmnprst".indexOf(c) >= 0) {
                 doubledS = c == 's';
@@ -417,7 +417,7 @@ public final class GermanPhonemizer implements Phonemizer {
                 case 'j' -> add(Y);
                 case 'y' -> add(Y);
                 case 'h' -> {
-                    // h vor Vokal am Silbenanfang klingt, nach Vokal ist es stumm (Dehnung) – außer vor Vokal in Fugen ("gehen": stumm)
+                    // h before a vowel at the start of a syllable is heard, after a vowel it is silent (lengthening) – also before a vowel in joints ("gehen": silent)
                     if (beforeVowel && (out.isEmpty() || !Compat.last(out).isVocalic())) {
                         add(H);
                     }
@@ -426,7 +426,7 @@ public final class GermanPhonemizer implements Phonemizer {
                 case 'n' -> add(N);
                 case 'l' -> add(L);
                 case 'r' -> {
-                    // r nach Vokal am Silben-/Wortende: vokalisch (ɐ), sonst Zungen-r
+                    // r after a vowel at the end of a syllable/word: vocalic (ɐ), otherwise a tongue r
                     if (!beforeVowel && !out.isEmpty() && Compat.last(out).isVocalic() && Compat.last(out) != ER) {
                         add(ER);
                     } else {
@@ -434,14 +434,14 @@ public final class GermanPhonemizer implements Phonemizer {
                     }
                 }
                 default -> {
-                    // fremde Zeichen überspringen
+                    // skip foreign characters
                 }
             }
             i++;
         }
     }
 
-    // ── Zahlen ──
+    // ── Numbers ──
 
     private static final String[] ONES = {"null", "eins", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun", "zehn", "elf", "zwölf",
             "dreizehn", "vierzehn", "fünfzehn", "sechzehn", "siebzehn", "achtzehn", "neunzehn"};

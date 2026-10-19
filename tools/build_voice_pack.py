@@ -1,15 +1,17 @@
-"""Baut die VoiceAPI-Laute fuer das NoteAPI-Ressourcenpaket: echte Vokale und Konsonanten statt Dorfbewohner-Laute.
+"""Builds the VoiceAPI sounds for the NoteAPI resource pack: real vowels and consonants instead of villager sounds, plus the sung hum of
+every voice.
 
-Die Laute entstehen durch Formant-Synthese (ein Stimmton aus Glottis-Impulsen laeuft durch die Resonanzen des Mundraums – wie bei den klassischen
-Sprachsynthesizern), die Konsonanten aus geformtem Rauschen und kurzen Verschluss-Bursts. Jeder Vokal wird fuer jeden Grundton (alle STEP
-Halbtoene von ROOT_LOW bis ROOT_HIGH) eigens erzeugt, damit das Spiel ihn hoechstens zwei Halbtoene strecken muss und die Formanten (= der
-Vokal) erhalten bleiben. Hoehere Grundtoene bekommen etwas hoehere Formanten (kleinerer Sprecher).
+The vowels come from formant synthesis (a voice tone of glottal pulses runs through the resonances of the mouth – like the classic speech
+synthesizers), the consonants from shaped noise and short plosive bursts. Every vowel is generated for every root (every STEP semitones
+from ROOT_LOW to ROOT_HIGH) so the game has to stretch it by at most two semitones and the formants (= the vowel) stay intact. Higher roots
+get slightly higher formants (a smaller speaker). The hums are the real vanilla recordings of each voice, pulled onto the semitone.
 
-Namen wie de.passimoritz.voiceapi.pack.VoicePack:  voiceapi:v.<vokal>.<grundton>, voiceapi:c.<laut>.<grundton>, voiceapi:c.<laut>
+Names like de.passimoritz.voiceapi.pack.VoicePack:  voiceapi:v.<vowel>.<root>, voiceapi:c.<sound>.<root>, voiceapi:c.<sound>,
+voiceapi:hum.<voice>.<root>.<length>[g]
 
-Aufruf:  python build_voice_pack.py --out VoiceAPI-Sounds.zip            eigenstaendiges Paket (nur die Laute)
-         python build_voice_pack.py --merge plugins/NoteAPI/pack/NoteAPI-Sounds.zip   die Laute in das NoteAPI-Paket mischen
-         python build_voice_pack.py --preview ordner/                     die Laute als WAV zum Anhoeren
+Usage:   python build_voice_pack.py --out VoiceAPI-Sounds.zip            standalone pack (only the sounds)
+         python build_voice_pack.py --merge plugins/NoteAPI/pack/NoteAPI-Sounds.zip   mix the sounds into the NoteAPI pack
+         python build_voice_pack.py --preview folder/                     the sounds as WAV to listen to
 """
 from __future__ import annotations
 
@@ -26,15 +28,15 @@ from pathlib import Path
 import numpy as np
 
 SR = 44100
-PACK_FORMAT = 97  # Minecraft 26.3 (nur zur Information; das Paket gilt fuer alle Versionen, siehe pack_meta)
+PACK_FORMAT = 97  # Minecraft 26.3 (for information only; the pack is valid for all versions, see pack_meta)
 PACK_FORMAT_OLDEST = 7  # Minecraft 1.17
-PACK_FORMAT_OPEN = 9999  # offenes oberes Ende: kuenftige Versionen nehmen das Paket ohne Warnung
+PACK_FORMAT_OPEN = 9999  # open upper end: future versions accept the pack without a warning
 SOUND_FORMAT = 2  # muss zu VoicePack.FORMAT passen
 STEP, ROOT_LOW, ROOT_HIGH = 4, 33, 85
 VOWEL_MS, SONORANT_MS = 1500, 400
 ROOTS = list(range(ROOT_LOW, ROOT_HIGH + 1, STEP))
 
-# Vokal -> Formanten F1..F4 (Hz, maennliche Stimme); Bandbreiten unten
+# vowel -> formants F1..F4 (Hz, male voice); bandwidths below
 VOWELS = {
     "a": (730, 1090, 2440, 3400), "e": (530, 1840, 2480, 3300), "ee": (390, 2300, 2700, 3400), "i": (390, 1990, 2550, 3400),
     "ii": (270, 2290, 3010, 3600), "o": (570, 840, 2410, 3300), "oo": (380, 750, 2500, 3300), "u": (440, 1020, 2240, 3300),
@@ -43,7 +45,7 @@ VOWELS = {
     "er": (490, 1350, 1690, 3300), "schwa": (500, 1500, 2500, 3300), "r": (650, 1300, 2500, 3300),
 }
 BANDWIDTHS = (70, 100, 140, 200)
-# klingende Konsonanten: Formanten, Bandbreiten, Pegel (dB zum Vokal), Gleiten zum Schwa nach dem Anfang
+# voiced consonants: formants, bandwidths, level (dB relative to the vowel), glide to schwa after the start
 SONORANTS = {
     "m": ((250, 1000, 2200, 3300), (120, 300, 300, 300), -7, False),
     "n": ((250, 1700, 2600, 3300), (120, 300, 300, 300), -7, False),
@@ -54,25 +56,25 @@ SONORANTS = {
     "j": ((270, 2200, 3000, 3600), (70, 120, 200, 300), -5, True),
 }
 NOISES = ["p", "b", "t", "d", "k", "g", "f", "v", "s", "z", "sh", "zh", "th", "dh", "h", "x", "xi", "ts", "pf", "ch", "dj"]
-# Gesang: das echte Hmm einer Stimme (Vanilla-Klang aus ~/.voiceapi/sounds, von voicelab.py setup): Datei, stabiler Ausschnitt (s), Tonhoehe (MIDI)
-# je Stimme mehrere Aufnahmen: Datei, Beginn (kurz vor dem Einsatz, mit natuerlichem Anstieg), Ende, stabile Mitte (Schleife), Tonhoehe (MIDI)
-# (Pegel- und Tonhoehenverlauf der Aufnahmen gemessen: Schleife nur dort, wo Pegel und Ton stehen – vor dem natuerlichen Abfall)
+# singing: the real hum of a voice (vanilla sound from ~/.voiceapi/sounds, from voicelab.py setup)
+# several takes per voice: file, start (shortly before the onset, with the natural rise), end, stable middle (loop), pitch (MIDI)
+# (level and pitch curves of the takes measured: loop only where level and pitch are stable – before the natural decay)
 HUMS = {"villager": [("mob/villager/idle2", 0.32, 0.72, 0.40, 0.70, 42.6), ("mob/villager/idle1", 0.18, 0.48, 0.28, 0.46, 45.0),
                      ("mob/villager/no1", 0.10, 0.42, 0.16, 0.40, 43.2)]}
-# die anderen Stimmen: stabile Stellen, gefunden von tools/find_hums.py (tools/hums.json); je Stimme die besten 2 Aufnahmen (Paketgroesse)
+# the other voices: stable spots found by tools/find_hums.py (tools/hums.json); the best 2 takes per voice (pack size)
 _HUMS_FILE = Path(__file__).resolve().parent / "hums.json"
 if _HUMS_FILE.exists():
     for _speaker, _takes in json.loads(_HUMS_FILE.read_text(encoding="utf-8")).items():
         if _speaker != "villager" and _takes:
             HUMS[_speaker] = [tuple(t) for t in _takes[:2]]
-# zwei Laengen (ms gesamt, ms gehalten): kurz fuer kurze Toene (Luft dazwischen wie in den Videos), lang fuer gehaltene
-HUM_RMS_DB = -20.0  # Lautheit des gehaltenen Hmm (dBFS)
-HUM_LENGTHS = {"s": (350, 200), "m": (520, 340), "l": (750, 480), "x": (1700, 1450)}  # x: gehaltene Toene ohne Neuanschlag
+# lengths (ms in total, ms held): short for short notes (air in between like in the videos), long for held ones
+HUM_RMS_DB = -20.0  # loudness of the held hum (dBFS)
+HUM_LENGTHS = {"s": (350, 200), "m": (520, 340), "l": (750, 480), "x": (1700, 1450)}  # x: held notes without a new attack
 SOUNDS = Path.home() / ".voiceapi" / "sounds"
-VOWEL_DB = -14.0  # Ziel-Pegel (RMS dBFS) der Vokale
+VOWEL_DB = -14.0  # target level (RMS dBFS) of the vowels
 
-CREDITS = """VoiceAPI-Laute
-Formant-Synthese (tools/build_voice_pack.py), keine Aufnahmen. Frei verwendbar.
+CREDITS = """VoiceAPI sounds
+Vowels and consonants: formant synthesis (tools/build_voice_pack.py), no recordings. Hums: Minecraft's own villager sounds.
 """
 
 
@@ -80,14 +82,14 @@ def log(text: str) -> None:
     print(text, flush=True)
 
 
-# ── Bausteine ───────────────────────────────────────────────
+# ── Building blocks ─────────────────────────────────────────
 
 def midi_hz(midi: float) -> float:
     return 440.0 * 2 ** ((midi - 69) / 12)
 
 
 def resonator(y: np.ndarray, freq: float, bw: float) -> np.ndarray:
-    """Zweipoliger Resonator (Formant), Verstaerkung 1 in der Mitte."""
+    """Two-pole resonator (formant), gain 1 at the centre."""
     from scipy.signal import lfilter
     r = np.exp(-np.pi * bw / SR)
     theta = 2 * np.pi * min(freq, SR * 0.45) / SR
@@ -97,14 +99,14 @@ def resonator(y: np.ndarray, freq: float, bw: float) -> np.ndarray:
 
 
 def glottis(f0: np.ndarray, n: int, breath: float = 0.02, rng: np.random.Generator | None = None) -> np.ndarray:
-    """Stimmton: Impulsfolge mit der Tonhoehe f0 (je Sample), -12 dB/Oktave gefaerbt, mit etwas Hauch."""
+    """Voice tone: pulse train at pitch f0 (per sample), coloured -12 dB/octave, with a little breath."""
     from scipy.signal import lfilter
     rng = rng or np.random.default_rng(1)
     phase = np.cumsum(f0 / SR)
     pulses = np.zeros(n, dtype=np.float32)
     idx = np.where(np.diff(np.floor(phase)) > 0)[0] + 1
     pulses[idx[idx < n]] = 1.0
-    # Glottis-Spektrum: zwei einpolige Tiefpaesse
+    # glottal spectrum: two one-pole low-passes
     tilt = lfilter([1 - 0.97], [1, -0.97], pulses)
     tilt = lfilter([1 - 0.9], [1, -0.9], tilt)
     noise = rng.standard_normal(n).astype(np.float32) * breath * (0.5 + 0.5 * tilt / (np.abs(tilt).max() + 1e-9))
@@ -112,7 +114,7 @@ def glottis(f0: np.ndarray, n: int, breath: float = 0.02, rng: np.random.Generat
 
 
 def radiate(y: np.ndarray) -> np.ndarray:
-    """Abstrahlung vom Mund: +6 dB/Oktave (erste Differenz)."""
+    """Radiation from the mouth: +6 dB/octave (first difference)."""
     return np.concatenate([[0.0], np.diff(y)]).astype(np.float32)
 
 
@@ -121,7 +123,7 @@ def vowel_tract(source: np.ndarray, formants, bandwidths, scale: float = 1.0, ga
     for k, (f, bw) in enumerate(zip(formants, bandwidths)):
         part = resonator(y, f * scale, bw)
         y = part if gains is None else part * gains[k]
-    # feste hohe Formanten fuer Natuerlichkeit
+    # fixed high formant for naturalness
     y = resonator(y, 4500 * scale, 300)
     return radiate(y)
 
@@ -167,18 +169,18 @@ def band(y: np.ndarray, low: float | None, high: float | None, order: int = 4) -
 
 
 def size_scale(root: int) -> float:
-    """Hoehere Stimmen haben kuerzere Vokaltrakte: Formanten etwas hoeher."""
+    """Higher voices have shorter vocal tracts: formants a little higher."""
     return float(np.clip(1.0 + 0.15 * (root - 50) / 12.0, 0.92, 1.35))
 
 
-# ── Laute ───────────────────────────────────────────────────
+# ── Sounds ──────────────────────────────────────────────────
 
 def vowel(key: str, root: int, ms: int = VOWEL_MS) -> np.ndarray:
     rng = np.random.default_rng(root * 31 + hash(key) % 1000)
     n = int(ms / 1000 * SR)
     t = np.arange(n) / SR
     f0 = midi_hz(root)
-    # Vibrato setzt nach 250 ms ein, dazu leichter Jitter
+    # vibrato starts after 250 ms, plus slight jitter
     vib = np.where(t > 0.25, np.sin(2 * np.pi * 5.3 * t) * 0.22 * np.clip((t - 0.25) / 0.3, 0, 1), 0.0)
     jitter = np.cumsum(rng.standard_normal(n) * 0.0004)
     jitter -= np.linspace(jitter[0], jitter[-1], n)
@@ -197,7 +199,7 @@ def sonorant(key: str, root: int, ms: int = SONORANT_MS) -> np.ndarray:
     src = glottis(np.full(n, f0, dtype=np.float32), n, breath=0.02, rng=rng)
     scale = size_scale(root)
     if glide:
-        # w/j: 70 ms der eigene Klang, dann oeffnet sich der Mund zum Schwa
+        # w/j: 70 ms of its own sound, then the mouth opens to schwa
         head = int(0.07 * SR)
         ramp = int(0.06 * SR)
         a = vowel_tract(src, formants, bandwidths, scale)
@@ -207,7 +209,7 @@ def sonorant(key: str, root: int, ms: int = SONORANT_MS) -> np.ndarray:
     else:
         y = vowel_tract(src, formants, bandwidths, scale)
         if key == "r":
-            # Zaepfchen-r: Flattern bei 26 Hz mit etwas Reibung
+            # uvular r: flutter at 26 Hz with a little friction
             t = np.arange(n) / SR
             y = y * (0.55 + 0.45 * np.cos(2 * np.pi * 26 * t)) + band(noise(n, rng), 600, 2000) * 0.05
     y *= envelope(n, 10, 40)
@@ -215,18 +217,18 @@ def sonorant(key: str, root: int, ms: int = SONORANT_MS) -> np.ndarray:
 
 
 def buzz(n: int, rng: np.random.Generator, f0: float = 115.0, formants=(300, 1100, 2300, 3300)) -> np.ndarray:
-    """Stimmton fuer stimmhafte Konsonanten (feste Tonhoehe, kurz)."""
+    """Voicing for voiced consonants (fixed pitch, short)."""
     src = glottis(np.full(n, f0, dtype=np.float32), n, breath=0.01, rng=rng)
     return vowel_tract(src, formants, (120, 200, 250, 300))
 
 
 def aspiration(n: int, rng: np.random.Generator, formants=VOWELS["schwa"]) -> np.ndarray:
-    """Hauch: Rauschen durch den Mundraum."""
+    """Breath: noise through the mouth."""
     return vowel_tract(noise(n, rng) * 0.3, formants, (200, 250, 300, 350))
 
 
 def burst(kind: str, rng: np.random.Generator) -> np.ndarray:
-    """Der Verschluss-Burst eines Plosivs."""
+    """The release burst of a plosive."""
     if kind == "p":
         y = band(noise(int(0.014 * SR), rng), None, 1200)
     elif kind == "t":
@@ -303,32 +305,32 @@ def consonant(key: str) -> np.ndarray:
 
 
 def flatten_pitch(piece: np.ndarray, midi: float) -> np.ndarray:
-    """Zieht die Tonhoehe des Ausschnitts auf einen festen Ton: Je 10 ms wird die gemessene Tonhoehe durch Umabtasten auf den Zielton gebracht
-    (das Original brummt eine Spur unsauber – gesungen muss es auf dem Halbton sitzen wie in den bekannten Videos)."""
+    """Pulls the pitch of the excerpt onto a fixed note: every 10 ms the measured pitch is brought to the target by resampling (the original
+    hums slightly off – sung, it has to sit on the semitone like in the well-known videos)."""
     import librosa
     hop = int(0.01 * SR)
     target = midi_hz(midi)
-    # Suchbereich um die Lage der Stimme (Zombie ~75 Hz … Katze/Allay ~900 Hz)
+    # search range around the register of the voice (zombie ~75 Hz … cat/allay ~900 Hz)
     f0 = librosa.yin(piece, fmin=max(40.0, target / 1.6), fmax=min(2000.0, target * 1.6), sr=SR, frame_length=2048, hop_length=hop)
-    # Ausreisser der Messung (Oktavfehler, Rauschen) nicht mitziehen: nur Werte nahe am Ziel gelten, dann glaetten
+    # do not follow measurement outliers (octave errors, noise): only values near the target count, then smooth
     f0 = np.where((f0 > target * 0.62) & (f0 < target * 1.5), f0, target)
     from scipy.signal import medfilt
     f0 = medfilt(f0, 7)
     kernel = np.ones(5) / 5
     f0 = np.convolve(np.pad(f0, 2, mode="edge"), kernel, mode="valid")
-    # stetige Lesegeschwindigkeit (je Sample interpoliert): Ziel / gemessen – kein Sprung an Frame-Grenzen, also keine Klicks
+    # continuous read speed (interpolated per sample): target / measured – no jump at frame boundaries, so no clicks
     frame_pos = np.arange(len(f0)) * hop + hop / 2
     speed_per_sample = np.interp(np.arange(len(piece)), frame_pos, target / f0)
-    # Leseposition im Original: Integral der Geschwindigkeit ueber die Ausgabe-Samples
+    # read position in the original: integral of the speed over the output samples
     read = np.cumsum(speed_per_sample)
     read = read[read < len(piece) - 1]
     return np.interp(read, np.arange(len(piece)), piece).astype(np.float32)
 
 
 def hum(speaker: str, root: int, length: str = "l", take: int = 0, legato: bool = False) -> np.ndarray:
-    """Ein gesungenes Hmm wie in den bekannten Videos: die Original-Aufnahme mit ihrem natuerlichen Einsatz, auf den Halbton gezogen, die
-    stabile Mitte nahtlos verlaengert, dann langsam nachlassend; auf den Grundton gebracht, indem die Aufnahme schneller laeuft (so wird der
-    Dorfbewohner hoeher und heller – genau der Klang der Videos)."""
+    """A sung hum like in the well-known videos: the original recording with its natural onset, pulled onto the semitone, the stable middle
+    extended seamlessly, then slowly fading; brought to the root by playing the recording faster (so the villager gets higher and brighter
+    – exactly the sound of the videos)."""
     import soundfile as sf
     import librosa
     file, start, end, mid_a, mid_b, midi = HUMS[speaker][take % len(HUMS[speaker])]
@@ -337,19 +339,19 @@ def hum(speaker: str, root: int, length: str = "l", take: int = 0, legato: bool 
     if rate != SR:
         y = librosa.resample(y, orig_sr=rate, target_sr=SR)
     whole = flatten_pitch(y[int(start * SR): int(end * SR)], midi)
-    # auf den Grundton: Geschwindigkeit (erst umrechnen, dann in Zielzeit zusammensetzen – so bleibt der Ton gleich lang)
+    # to the root: speed (convert first, then assemble in target time – so the note keeps its length)
     speed = 2 ** ((root - midi) / 12)
 
     def faster(part):
         idx = np.arange(0, len(part) - 1, speed)
         return np.interp(idx, np.arange(len(part)), part).astype(np.float32)
-    # Legato: ohne den natuerlichen Einsatz – gleich aus dem gehaltenen Teil, mit kurzer Einblendung (kein Neuansatz, die Phrase bindet)
+    # legato: without the natural onset – straight from the held part, with a short fade-in (no new attack, the phrase is tied)
     head = faster(whole[int((mid_a - start) * SR): int((mid_b - start) * SR)] if legato else whole[: int((mid_b - start) * SR)])
     loop = faster(whole[int((mid_a - start) * SR): int((mid_b - start) * SR)])
     tail = faster(whole[int((mid_b - start) * SR):])
     ms, sustain_ms = HUM_LENGTHS[length]
     total = int(ms / 1000 * SR)
-    # bei hohen Grundtoenen laeuft die Aufnahme sehr schnell und die Schleife wird kurz: Ueberblendung entsprechend kuerzer
+    # at high roots the recording runs very fast and the loop gets short: crossfade correspondingly shorter
     fade = max(64, min(int(0.05 * SR), len(loop) // 3))
     out = head.copy()
     while len(out) < total + fade and len(loop) > 2 * fade:
@@ -357,32 +359,31 @@ def hum(speaker: str, root: int, length: str = "l", take: int = 0, legato: bool 
         b = loop[:fade] * np.linspace(0, 1, fade)
         out = np.concatenate([out[:-fade], a + b, loop[fade:]])
     out = np.pad(out, (0, max(0, total - len(out))))[:total]
-    # natuerliches Ausklingen nach dem gehaltenen Teil (die Stimme laesst los)
+    # natural decay after the held part (the voice lets go)
     sustain = int(sustain_ms / 1000 * SR)
     release = np.ones(total, dtype=np.float32)
     release[sustain:] = np.linspace(1, 0, total - sustain) ** 1.6
     out *= release
-    # leicht nachlassend wie eine Stimme, die den Ton haelt
+    # slightly fading like a voice holding the note
     t = np.arange(len(out)) / SR
     out *= np.where(t < 0.12, 1.0, 10 ** (-4 / 20 * np.clip((t - 0.12) / 0.4, 0, 1)))
     out *= envelope(len(out), 28 if legato else 3, 20)
-    # Klang wie in den Videos: unter 300 Hz etwa 20 dB duenner, der Formant um 900 Hz betont, oben weicher (die schneller laufende Aufnahme
-    # wird sonst zu spitz)
+    # sound like in the videos: about 20 dB thinner below 300 Hz, the formant around 900 Hz emphasised, softer at the top (the faster
+    # running recording otherwise gets too sharp)
     out = band(out, 150, None, 2)
     out = out + 0.3 * band(out, 600, 1300, 2)
     soft = band(out, None, 2600, 2)
     out = soft + 0.4 * (out - soft)
-    # Pegel ueber die Spitze (kein Limiter: der verzerrt das Hmm hoerbar), alle Grundtoene und Aufnahmen gleich laut
-    # Pegel nach der Lautheit des gehaltenen Teils (50–300 ms), nicht nach der Spitze: so sind alle Stimmen, Aufnahmen und Grundtoene gleich laut
+    # level by the loudness of the held part (50–300 ms), not by the peak: so all voices, takes and roots are equally loud
     body = out[int(0.05 * SR): int(0.3 * SR)]
     out = out * (10 ** (HUM_RMS_DB / 20) / (float(np.sqrt(np.mean(body ** 2))) + 1e-9))
     return soft_limit(out, knee=0.75, ceiling=0.97)
 
 
-# ── Paket ───────────────────────────────────────────────────
+# ── Pack ────────────────────────────────────────────────────
 
 def ogg(y: np.ndarray, work: Path) -> bytes:
-    """Kodiert als OGG Vorbis: mit soundfile, sonst mit ffmpeg."""
+    """Encodes as OGG Vorbis: with soundfile, otherwise with ffmpeg."""
     try:
         import soundfile as sf
         buffer = io.BytesIO()
@@ -398,7 +399,7 @@ def ogg(y: np.ndarray, work: Path) -> bytes:
 
 
 def all_sounds():
-    """Alle Laute: (Schluessel in sounds.json, Dateipfad ohne .ogg, Erzeuger)."""
+    """All sounds: (key in sounds.json, file path without .ogg, generator)."""
     for key in VOWELS:
         for root in ROOTS:
             yield f"v.{key}.{root}", f"v/{key}/{root}", (lambda k=key, r=root: vowel(k, r))
@@ -416,7 +417,7 @@ def all_sounds():
 
 
 def build_entries(progress) -> dict[str, bytes]:
-    """Erzeugt alle Dateien des Pakets (Pfad im Zip -> Inhalt)."""
+    """Generates all files of the pack (path in the zip -> content)."""
     entries: dict[str, bytes] = {}
     sounds: dict[str, dict] = {}
     items = list(all_sounds())
@@ -424,7 +425,7 @@ def build_entries(progress) -> dict[str, bytes]:
         work = Path(tmp)
         for i, (key, path, make) in enumerate(items):
             entries[f"assets/voiceapi/sounds/{path}.ogg"] = ogg(make(), work)
-            # mehrere Aufnahmen desselben Klangs (Hmm): das Spiel waehlt zufaellig – alle sind auf denselben Ton gezogen
+            # several takes of the same sound (hum): the game picks one at random – all are pulled onto the same note
             sounds.setdefault(key, {"sounds": []})["sounds"].append({"name": f"voiceapi:{path}", "stream": False})
             if i % 40 == 0:
                 progress(i, len(items))
@@ -436,22 +437,22 @@ def build_entries(progress) -> dict[str, bytes]:
 
 
 def pack_meta(description: str) -> dict:
-    """pack.mcmeta, die jede Minecraft-Version ab 1.17 annimmt – auch kuenftige, ohne Pflege: altes Feld pack_format (bis 1.20.1),
-    supported_formats (1.20.2 – 1.21.8) und min_format/max_format (ab 1.21.9) mit offenem oberen Ende. Die Laute (sounds.json, OGG) haben
-    seit 1.9 dasselbe Format."""
+    """pack.mcmeta that every Minecraft version from 1.17 accepts – future ones too, without maintenance: the old field pack_format (up to
+    1.20.1), supported_formats (1.20.2 – 1.21.8) and min_format/max_format (from 1.21.9) with an open upper end. The sounds (sounds.json,
+    OGG) have had the same format since 1.9."""
     return {"pack": {"pack_format": PACK_FORMAT_OLDEST, "supported_formats": {"min_inclusive": PACK_FORMAT_OLDEST, "max_inclusive": PACK_FORMAT_OPEN},
                      "min_format": PACK_FORMAT_OLDEST, "max_format": PACK_FORMAT_OPEN, "description": description}}
 
 
 def write_standalone(target: Path, entries: dict[str, bytes]) -> None:
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as pack:
-        pack.writestr("pack.mcmeta", json.dumps(pack_meta("VoiceAPI: Sprache mit echten Lauten"), indent=1))
+        pack.writestr("pack.mcmeta", json.dumps(pack_meta("VoiceAPI: speech and singing with real sounds"), indent=1))
         for name, data in entries.items():
             pack.writestr(name, data)
 
 
 def merge(target: Path, entries: dict[str, bytes]) -> None:
-    """Mischt die Laute in ein vorhandenes Paket (z. B. NoteAPI-Sounds.zip): alles Alte bleibt, voiceapi-Eintraege werden ersetzt."""
+    """Mixes the sounds into an existing pack (e.g. NoteAPI-Sounds.zip): everything old stays, voiceapi entries are replaced."""
     tmp = target.with_suffix(".tmp.zip")
     with zipfile.ZipFile(target) as old, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as new:
         for info in old.infolist():
@@ -473,39 +474,39 @@ def preview(folder: Path) -> None:
         sf.write(str(folder / f"c-{key}-45.wav"), sonorant(key, 45), SR)
     for key in NOISES:
         sf.write(str(folder / f"c-{key}.wav"), consonant(key), SR)
-    # ein Satz aus Rohlauten: "ba na na" bei 45
     for root in (45, 57):
         for take in range(len(HUMS["villager"])):
             for length in HUM_LENGTHS:
                 sf.write(str(folder / f"hum-villager-{root}-{length}{take}.wav"), hum("villager", root, length, take), SR)
+    # a word from raw sounds: "ba na na" at 45
     bits = [consonant("b"), vowel("a", 45, 180), sonorant("n", 45, 70), vowel("a", 45, 160), sonorant("n", 45, 70), vowel("a", 45, 300)]
     sf.write(str(folder / "banana.wav"), np.concatenate(bits), SR)
-    log(f"Hoerproben in {folder}")
+    log(f"samples in {folder}")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--out", help="eigenstaendiges Paket schreiben")
-    parser.add_argument("--merge", help="in dieses Paket mischen (NoteAPI-Sounds.zip)")
-    parser.add_argument("--preview", help="Hoerproben als WAV in diesen Ordner")
+    parser.add_argument("--out", help="write a standalone pack")
+    parser.add_argument("--merge", help="mix into this pack (NoteAPI-Sounds.zip)")
+    parser.add_argument("--preview", help="samples as WAV into this folder")
     args = parser.parse_args()
     if args.preview:
         preview(Path(args.preview))
     if not args.out and not args.merge:
         if not args.preview:
-            parser.error("--out, --merge oder --preview")
+            parser.error("--out, --merge or --preview")
         return
-    entries = build_entries(lambda i, n: log(f"  {i}/{n} Laute"))
+    entries = build_entries(lambda i, n: log(f"  {i}/{n} sounds"))
     size = sum(len(v) for v in entries.values())
     if args.out:
         write_standalone(Path(args.out), entries)
-        log(f"Paket: {args.out} ({len(entries)} Dateien, {size // 1024} KB)")
+        log(f"pack: {args.out} ({len(entries)} files, {size // 1024} KB)")
     if args.merge:
         target = Path(args.merge)
         if not target.exists():
-            raise SystemExit(f"Paket fehlt: {target}")
+            raise SystemExit(f"pack missing: {target}")
         merge(target, entries)
-        log(f"Laute in {target} gemischt ({len(entries)} Dateien, {size // 1024} KB) – NoteAPI: /music pack reload")
+        log(f"sounds mixed into {target} ({len(entries)} files, {size // 1024} KB) – NoteAPI: /music pack reload")
 
 
 if __name__ == "__main__":

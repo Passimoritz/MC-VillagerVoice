@@ -9,9 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Sprache aus den Lauten des VoiceAPI-Ressourcenpakets (im NoteAPI-Paket): echte Vokale und Konsonanten statt Dorfbewohner-Laute. Jeder
- * Vokal spielt vom Sample des nächstgelegenen Grundtons, höchstens zwei Halbtöne gestreckt; Diphthonge und Gleiten in zwei Stufen; am Ende
- * des Lauts wird das Sample gestoppt. Konsonanten sind fertige Samples; klingende (m, n, l …) in der Tonhöhe der Silbe.
+ * Speech from the sounds of the VoiceAPI resource pack (in the NoteAPI pack): real vowels and consonants instead of villager sounds. Every
+ * vowel plays from the sample of the nearest root, stretched by at most two semitones; diphthongs and glides in two steps; at the end of the
+ * sound the sample is stopped. Consonants are finished samples; voiced ones (m, n, l …) at the pitch of the syllable.
  */
 public final class PackRenderer implements Renderer {
 
@@ -40,11 +40,11 @@ public final class PackRenderer implements Renderer {
             Phoneme phoneme = segment.phoneme();
             float volume = segment.volume() * MASTER;
             if (utterance.sung()) {
-                // Gesang: das echte Hmm der Stimme auf der Tonhöhe des Tons, keine Geräusche (wie die bekannten Dorfbewohner-Videos);
-                // die Hmm-Samples sind über die Spitze normiert (leiser als die Vokale), darum ohne MASTER. Schließt der Ton direkt an den
-                // vorigen an, wird er gebunden (weicher Einsatz ohne Neuansatz).
+                // singing: the real hum of the voice at the pitch of the note, no noises (like the well-known villager videos);
+                // the hum samples have their own loudness normalisation, hence no MASTER. If the note follows the previous one directly,
+                // it is tied (soft onset without a new attack).
                 if (phoneme.isVocalic() || phoneme.isSonorant()) {
-                    // gebunden: schließt an oder überlappt (Singer.smooth setzt gebundene Töne früher ein)
+                    // tied: follows directly or overlaps (Singer.smooth starts tied notes earlier)
                     boolean legato = lastVoicedEnd > 0 && segment.startMs() - lastVoicedEnd <= VoicePack.LEGATO_GAP_MS;
                     hum(cues, utterance.speaker(), segment.midPitch(), segment.startMs(), segment.endMs(), segment.volume(), i, legato);
                     lastVoicedEnd = segment.endMs();
@@ -75,8 +75,8 @@ public final class PackRenderer implements Renderer {
     }
 
     /**
-     * Ein gesungener Ton: das Hmm wird am Tonbeginn angestoßen und klingt von selbst aus (kein Stopp – der Ausklang liegt unter dem nächsten
-     * Ton, wie in den bekannten Videos); hält der Ton länger als das Sample, wird es neu angesetzt.
+     * A sung note: the hum is triggered at the start of the note and decays by itself (no stop – the decay lies under the next note, like in
+     * the well-known videos); if the note lasts longer than the sample, it is retriggered.
      */
     private static void hum(List<Cue> cues, String speaker, double pitch, int from, int to, float volume, int index, boolean legato) {
         if (to <= from) {
@@ -87,8 +87,8 @@ public final class PackRenderer implements Renderer {
         int at = from;
         boolean soft = legato;
         while (true) {
-            // die Länge, die ungefähr mit dem Ton endet (klingt von selbst aus, Luft bis zum nächsten Ton); nie hart stoppen;
-            // Fortsetzungen eines langen Tons sind immer gebunden
+            // the length that ends about with the note (decays by itself, air until the next note); never stop hard;
+            // continuations of a long note are always tied
             cues.add(new Cue(at, VoicePack.humSound(speaker, root, VoicePack.humLength(to - at), soft), rate, volume, -1, index));
             at += VoicePack.HUM_RETRIGGER_MS;
             soft = true;

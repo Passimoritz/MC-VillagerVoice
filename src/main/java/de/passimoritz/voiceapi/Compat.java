@@ -7,15 +7,15 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 /**
- * Kleine Hilfen, damit die VoiceAPI auf jedem Server läuft: Java 17 (Minecraft 1.17–1.20.4) bis heute, alte und neue Gson-Versionen. Hier steht
- * nichts Versionsabhängiges außer dem, was zur Laufzeit erkannt wird.
+ * Small helpers so VoiceAPI runs on every server: Java 17 (Minecraft 1.17–1.20.4) up to today, old and new Gson versions. Nothing in here
+ * depends on a version except what is detected at runtime.
  */
 public final class Compat {
 
     private Compat() {
     }
 
-    // ── Zahlen (Math.clamp gibt es erst ab Java 21) ──
+    // ── Numbers (Math.clamp only exists from Java 21) ──
 
     public static int clamp(long value, int min, int max) {
         return (int) Math.max(min, Math.min(max, value));
@@ -29,7 +29,7 @@ public final class Compat {
         return Math.max(min, Math.min(max, value));
     }
 
-    // ── Listen (getFirst/getLast/removeFirst/removeLast gibt es erst ab Java 21) ──
+    // ── Lists (getFirst/getLast/removeFirst/removeLast only exist from Java 21) ──
 
     public static <T> T first(List<T> list) {
         if (list.isEmpty()) {
@@ -59,7 +59,7 @@ public final class Compat {
         return list.remove(list.size() - 1);
     }
 
-    // ── JSON: JsonParser.parseString gibt es erst ab Gson 2.8.6 (Spigot 1.17 hat 2.8.0); new JsonParser().parse ist in neuen Versionen veraltet ──
+    // ── JSON: JsonParser.parseString only exists from Gson 2.8.6 (Spigot 1.17 ships 2.8.0); new JsonParser().parse is deprecated in new versions ──
 
     private static final Method PARSE_STRING = findParseString();
 
@@ -71,7 +71,7 @@ public final class Compat {
         }
     }
 
-    /** Liest JSON mit der Gson-Version, die der Server mitbringt. */
+    /** Parses JSON with whatever Gson version the server ships. */
     @SuppressWarnings("deprecation")
     public static JsonElement json(String text) {
         if (PARSE_STRING != null) {

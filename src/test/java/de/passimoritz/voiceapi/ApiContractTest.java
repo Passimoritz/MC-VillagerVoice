@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Was die NoteAPI per Reflexion bzw. gegen ein schlankes voiceapi-Jar nutzt – darf sich nicht ändern, ohne der NoteAPI Bescheid zu geben.
+ * What NoteAPI uses via reflection or against a slim voiceapi jar – must not change without telling NoteAPI.
  */
 class ApiContractTest {
 
@@ -23,7 +23,7 @@ class ApiContractTest {
         SingOptions parsed = SingOptions.parse("volume=0.7; dynamics=0.2; legato=200; overlap=40; glide=2; glideMs=50; minNote=60");
         assertEquals(new SingOptions(0.7, 0.2, 200, 40, 2.0, 50, 60), parsed);
         assertEquals(parsed, SingOptions.parse(parsed.describe()));
-        // deutsche Schlüssel und Unbekanntes
+        // German keys and unknown keys
         assertEquals(0.5, SingOptions.parse("lautstaerke=0.5 foo=1 dynamik=x").volume(), 1e-9);
         assertEquals(SingOptions.DEFAULT, SingOptions.parse(""));
     }

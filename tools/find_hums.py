@@ -1,10 +1,10 @@
-"""Sucht in den Vanilla-Klängen jeder Stimme die Stellen, an denen sie einen Ton hält – die Grundlage für ihr gesungenes „Hmm“ im Paket
-(HUMS in build_voice_pack.py). Je Aufnahme: der längste stimmhafte Abschnitt mit ruhiger Tonhöhe (höchstens ±0,6 Halbtöne), etwas Anlauf
-davor (der natürliche Einsatz), Ausklang danach, die stabile Mitte als Schleife und die Tonhöhe (MIDI). Je Stimme die besten drei.
+"""Finds the spots in each voice's vanilla sounds where it holds a note – the basis for its sung "Hmm" in the pack (HUMS in
+build_voice_pack.py). Per take: the longest voiced stretch with a steady pitch (at most ±0.6 semitones), a little run-up before it (the
+natural onset), the decay after it, the stable middle as a loop and the pitch (MIDI). The best three per voice.
 
-  python tools/find_hums.py [--write]       (--write: das Ergebnis als hums.json neben das Skript, build_voice_pack.py liest es)
+  python tools/find_hums.py [--write]       (--write: the result as hums.json next to the script, build_voice_pack.py reads it)
 
-Braucht numpy, librosa, soundfile (die NoteAPI-Umgebung ~/.noteapi/venv) und die Vanilla-Klänge in ~/.voiceapi/sounds (voicelab.py setup).
+Needs numpy, librosa, soundfile (the NoteAPI environment ~/.noteapi/venv) and the vanilla sounds in ~/.voiceapi/sounds (voicelab.py setup).
 """
 import argparse
 import json
@@ -14,7 +14,7 @@ import numpy as np
 
 SOUNDS = Path.home() / ".voiceapi" / "sounds"
 SR = 22050
-# je Stimme: Ordner und Anfänge der Dateinamen, die nach Stimme klingen (keine Schritte, Treffer, Tode …)
+# per voice: folder and file name prefixes that sound like a voice (no steps, hits, deaths …)
 SPEAKERS = {
     "trader": ("mob/wandering_trader", ["idle", "no", "yes", "haggle"]),
     "witch": ("entity/witch", ["ambient", "celebrate"]),
@@ -86,7 +86,7 @@ def main() -> None:
                 run["file"] = f"{folder}/{file.stem}"
                 candidates.append(run)
         candidates.sort(key=lambda r: -r["score"])
-        # die besten drei, deren Tonhöhen nah beieinander liegen (sonst springt das Spiel zwischen Lagen)
+        # the best three whose pitches are close together (otherwise the game jumps between registers)
         chosen = []
         for c in candidates:
             if not chosen or abs(c["midi"] - chosen[0]["midi"]) <= 4:
@@ -94,11 +94,11 @@ def main() -> None:
             if len(chosen) == 3:
                 break
         found[speaker] = chosen
-        print(f"{speaker:8s} " + " | ".join(f"{c['file'].split('/')[-1]} {c['stable']*1000:.0f} ms @ {c['midi']}" for c in chosen) if chosen else f"{speaker}: nichts")
+        print(f"{speaker:8s} " + " | ".join(f"{c['file'].split('/')[-1]} {c['stable']*1000:.0f} ms @ {c['midi']}" for c in chosen) if chosen else f"{speaker}: nothing")
     if args.write:
         out = {sp: [[c["file"], c["start"], c["end"], c["mid_a"], c["mid_b"], c["midi"]] for c in runs] for sp, runs in found.items() if runs}
         (Path(__file__).parent / "hums.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
-        print("hums.json geschrieben")
+        print("hums.json written")
 
 
 if __name__ == "__main__":

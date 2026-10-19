@@ -14,41 +14,40 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Die Laute des VoiceAPI-Ressourcenpakets – dieselben Namen wie {@code tools/build_voice_pack.py}, das sie baut:
+ * The sounds of the VoiceAPI resource pack – the same names as {@code tools/build_voice_pack.py}, which builds them:
  * <ul>
- *   <li>Vokale: {@code voiceapi:v.<vokal>.<grundton>} – jeder Vokal als gehaltener Klang (Formant-Synthese), ein Sample alle {@value #STEP}
- *   Halbtöne von {@value #ROOT_LOW} bis {@value #ROOT_HIGH}; das Spiel streckt höchstens zwei Halbtöne, so bleiben die Formanten (und damit der
- *   Vokal) erkennbar.</li>
- *   <li>Klingende Konsonanten (m, n, ŋ, l, r, w, j): {@code voiceapi:c.<laut>.<grundton>}, ebenso je Grundton.</li>
- *   <li>Geräusch-Konsonanten: {@code voiceapi:c.<laut>} ohne Tonhöhe.</li>
- *   <li>Gesang: {@code voiceapi:hum.<stimme>.<grundton>} – das echte „Hmm“ der Stimme je Grundton, auf den Halbton gezogen, mit natürlichem
- *   Einsatz, {@value #HUM_MS} ms lang und natürlich ausklingend (mehrere Aufnahmen je Ton, das Spiel wählt). Jeder Ton wird einzeln
- *   angestoßen und klingt aus statt gestoppt zu werden – so singen die bekannten Dorfbewohner-Videos. Stimmen ohne Hmm-Samples singen mit dem
- *   Dorfbewohner-Hmm.</li>
+ *   <li>Vowels: {@code voiceapi:v.<vowel>.<root>} – every vowel as a held sound (formant synthesis), one sample every {@value #STEP}
+ *   semitones from {@value #ROOT_LOW} to {@value #ROOT_HIGH}; the game stretches by at most two semitones, so the formants (and with them the
+ *   vowel) stay recognisable.</li>
+ *   <li>Voiced consonants (m, n, ŋ, l, r, w, j): {@code voiceapi:c.<sound>.<root>}, also per root.</li>
+ *   <li>Noise consonants: {@code voiceapi:c.<sound>} without pitch.</li>
+ *   <li>Singing: {@code voiceapi:hum.<voice>.<root>.<length>} – the real "Hmm" of the voice per root, pulled to the semitone, with a natural
+ *   onset and a natural decay (several takes per note, the game picks one). Every note is triggered on its own and decays instead of being
+ *   stopped – that is how the well-known villager videos sing. Voices without hum samples sing with the villager hum.</li>
  * </ul>
- * Das Paket wird in das NoteAPI-Ressourcenpaket gemischt ({@code build_voice_pack.py --merge}); {@code assets/voiceapi/voiceapi.json}
- * nennt das Format, damit das Plugin ein unpassendes Paket erkennt.
+ * The pack is mixed into the NoteAPI resource pack (NoteAPI does it by itself); {@code assets/voiceapi/voiceapi.json} names the format so
+ * the plugin recognises an unsuitable pack.
  */
 public final class VoicePack {
 
-    /** Wie die Klänge heißen; muss zu {@code SOUND_FORMAT} in build_voice_pack.py passen. */
+    /** How the sounds are named; must match {@code SOUND_FORMAT} in build_voice_pack.py. */
     public static final int FORMAT = 2;
-    /** Halbtöne zwischen zwei Grundtönen. */
+    /** Semitones between two roots. */
     public static final int STEP = 4;
     public static final int ROOT_LOW = 33;
     public static final int ROOT_HIGH = 85;
-    /** So lang (ms) ist ein Vokal-Sample. */
+    /** Length (ms) of a vowel sample. */
     public static final int VOWEL_MS = 1500;
-    /** So lang (ms) ist ein Sample eines klingenden Konsonanten. */
+    /** Length (ms) of a voiced consonant sample. */
     public static final int SONORANT_MS = 400;
-    /** So lang (ms) ist ein Hmm-Sample. */
+    /** Length (ms) of the standard hum sample. */
     public static final int HUM_MS = 750;
-    /** Drei Längen (ms gesamt): kurz, mittel, lang – ein Ton bekommt die längste, die ungefähr mit ihm endet; so bleibt zwischen den Tönen
-     * Luft wie in den Videos, und nichts muss hart gestoppt werden. */
+    /** Four lengths (ms in total): short, medium, long, extra long – a note gets the longest one that ends about with it; so there is air
+     * between the notes like in the videos, and nothing has to be stopped hard. */
     public static final int[] HUM_LENGTHS_MS = {350, 520, 750, 1700};
     public static final String[] HUM_LENGTH_KEYS = {"s", "m", "l", "x"};
 
-    /** Die Länge des Hmm für einen Ton dieser Dauer. */
+    /** The hum length for a note of this duration. */
     public static String humLength(int durMs) {
         for (int i = 0; i < HUM_LENGTHS_MS.length - 1; i++) {
             if (durMs < HUM_LENGTHS_MS[i] + 90) {
@@ -57,35 +56,35 @@ public final class VoicePack {
         }
         return HUM_LENGTH_KEYS[HUM_LENGTH_KEYS.length - 1];
     }
-    /** Nach so vielen Millisekunden setzt ein langer Ton das Hmm neu an (bevor das Sample ausgeklungen ist). */
+    /** After this many milliseconds a long note retriggers the hum (before the sample has decayed). */
     public static final int HUM_RETRIGGER_MS = 1450;
-    /** Die Stimmen, für die das Paket echte Hmm-Samples hat (wie {@code HUMS} in build_voice_pack.py). */
+    /** The voices the pack has real hum samples for (like {@code HUMS} in build_voice_pack.py). */
     public static final java.util.Set<String> HUM_SPEAKERS = java.util.Set.of("villager", "trader", "witch", "allay", "piglin", "zombie", "evoker",
             "goat", "cat");
 
-    /** Der Klang des Hmm einer Stimme bei einer Tonhöhe und Länge (Stimmen ohne eigenes Sample: der Dorfbewohner). */
+    /** The hum sound of a voice at a root and length (voices without their own sample: the villager). */
     public static String humSound(String speaker, int root, String length) {
         return humSound(speaker, root, length, false);
     }
 
     /**
-     * Der Klang des Hmm; {@code legato}: die Variante ohne Neuansatz (weicher Einsatz aus dem gehaltenen Teil) für Töne, die direkt an den
-     * vorigen anschließen – so wird eine Phrase gebunden statt gestottert.
+     * The hum sound; {@code legato}: the variant without a new attack (soft onset from the held part) for notes that follow the previous one
+     * directly – so a phrase is tied instead of stuttered.
      */
     public static String humSound(String speaker, int root, String length, boolean legato) {
         return "voiceapi:hum." + (HUM_SPEAKERS.contains(speaker) ? speaker : "villager") + "." + root + "." + length + (legato ? "g" : "");
     }
 
-    /** Schließt ein Ton höchstens so viele Millisekunden nach dem Ende des vorigen an, wird er gebunden gesungen. */
+    /** A note that starts at most this many milliseconds after the end of the previous one is sung tied. */
     public static final int LEGATO_GAP_MS = 45;
 
-    /** Der Pfad des Format-Steckbriefs im Paket. */
+    /** The path of the format marker in the pack. */
     public static final String MARKER = "assets/voiceapi/voiceapi.json";
 
     private VoicePack() {
     }
 
-    /** Der Name des Vokals im Paket ({@code a}, {@code ii}, {@code schwa} …), oder {@code null}, wenn der Laut keiner ist. */
+    /** The name of the vowel in the pack ({@code a}, {@code ii}, {@code schwa} …), or {@code null} if the sound is not a vowel. */
     public static String vowelKey(Phoneme phoneme) {
         return switch (phoneme) {
             case A, AA -> "a";
@@ -111,7 +110,7 @@ public final class VoicePack {
         };
     }
 
-    /** Der Name eines Konsonanten im Paket, oder {@code null}. */
+    /** The name of a consonant in the pack, or {@code null}. */
     public static String consonantKey(Phoneme phoneme) {
         return switch (phoneme) {
             case P -> "p";
@@ -146,33 +145,33 @@ public final class VoicePack {
         };
     }
 
-    /** Der Grundton, der einer Tonhöhe am nächsten liegt. */
+    /** The root closest to a pitch. */
     public static int root(double midi) {
         int root = ROOT_LOW + (int) Math.round((midi - ROOT_LOW) / STEP) * STEP;
         return Math.max(ROOT_LOW, Math.min(ROOT_HIGH, root));
     }
 
-    /** Die Geschwindigkeit, mit der ein Sample des Grundtons die Tonhöhe trifft. */
+    /** The speed at which a sample of the root hits the pitch. */
     public static float rate(double midi, int root) {
         return (float) Compat.clamp(Math.pow(2.0, (midi - root) / 12.0), 0.5, 2.0);
     }
 
-    /** Der Klang eines Vokals bei einer Tonhöhe. */
+    /** The sound of a vowel at a root. */
     public static String vowelSound(String key, int root) {
         return "voiceapi:v." + key + "." + root;
     }
 
-    /** Der Klang eines klingenden Konsonanten bei einer Tonhöhe. */
+    /** The sound of a voiced consonant at a root. */
     public static String sonorantSound(String key, int root) {
         return "voiceapi:c." + key + "." + root;
     }
 
-    /** Der Klang eines Geräusch-Konsonanten. */
+    /** The sound of a noise consonant. */
     public static String noiseSound(String key) {
         return "voiceapi:c." + key;
     }
 
-    /** Alle Grundtöne. */
+    /** All roots. */
     public static List<Integer> roots() {
         List<Integer> roots = new ArrayList<>();
         for (int root = ROOT_LOW; root <= ROOT_HIGH; root += STEP) {
@@ -181,7 +180,7 @@ public final class VoicePack {
         return roots;
     }
 
-    /** Alle Klangnamen, die das Paket haben muss (für den Abgleich mit einer gebauten Datei). */
+    /** All sound names the pack must have (to compare with a built file). */
     public static List<String> sounds() {
         List<String> all = new ArrayList<>();
         for (String speaker : HUM_SPEAKERS) {
@@ -217,9 +216,9 @@ public final class VoicePack {
     }
 
     /**
-     * Das Format der VoiceAPI-Laute in einem Paket ({@code assets/voiceapi/voiceapi.json}), −1 wenn sie fehlen.
+     * The format of the VoiceAPI sounds in a pack ({@code assets/voiceapi/voiceapi.json}), −1 if they are missing.
      *
-     * @throws IOException wenn die Datei nicht zu lesen ist
+     * @throws IOException if the file cannot be read
      */
     public static int formatIn(Path zip) throws IOException {
         if (zip == null || !Files.isRegularFile(zip)) {
@@ -236,7 +235,7 @@ public final class VoicePack {
         }
     }
 
-    /** Ob ein Paket die Laute dieser Plugin-Version enthält. */
+    /** Whether a pack contains the sounds of this plugin version. */
     public static boolean matches(Path zip) {
         try {
             return formatIn(zip) == FORMAT;

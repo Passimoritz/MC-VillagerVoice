@@ -27,16 +27,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Das Werkzeug ohne Server: {@code java -jar voiceapi.jar <Befehl> …}
+ * The tool without a server: {@code java -jar voiceapi.jar <command> …}
  * <pre>
- * speak "Hallo Welt" [--lang de|en] [--speaker villager] [--style "rate=1.1; mood=happy"] [--out hallo.voice] [--cues hallo.json] [--pack]
- * sing  "Text" --melody melodie.json [--lang …] [--speaker …] [--out …] [--cues …] [--pack]
- * render stueck.voice --cues stueck.json [--pack]        die Klang-Befehle einer Datei (für tools/voicelab.py)
- * read  "Text" [--lang …]                                 zeigt, wie der Text gelesen wird (Silben, Betonung)
- * sounds                                                  alle Vanilla-Klänge, die der Renderer braucht
+ * speak "Hello world" [--lang de|en] [--speaker villager] [--style "rate=1.1; mood=happy"] [--out hello.voice] [--cues hello.json] [--pack]
+ * sing  "Text" --melody melody.json [--lang …] [--speaker …] [--out …] [--cues …] [--pack]
+ * render piece.voice --cues piece.json [--pack]          the sound commands of a file (for tools/voicelab.py)
+ * read  "Text" [--lang …]                                 shows how the text is read (syllables, stress)
+ * sounds                                                  all vanilla sounds the renderer needs
  * </pre>
- * Die Cue-Datei ist JSON: {@code {"speaker": "villager", "lengthMs": 1234, "cues": [{"at": 0, "sound": "…", "pitch": 1.0, "volume": 0.5, "stop": 120}, …]}}.
- * Eine Melodie-Datei ist JSON: {@code [{"start": 0, "dur": 400, "pitch": 60, "volume": 0.8, "word": 0}, …]} ({@code word}: optional die Nummer des Wortes, dem der Ton gehört; oder die NoteAPI-Form {@code "tick"} mit 50 ms).
+ * The cue file is JSON: {@code {"speaker": "villager", "lengthMs": 1234, "cues": [{"at": 0, "sound": "…", "pitch": 1.0, "volume": 0.5, "stop": 120}, …]}}.
+ * A melody file is JSON: {@code [{"start": 0, "dur": 400, "pitch": 60, "volume": 0.8, "word": 0}, …]} ({@code word}: optionally the index of the word the note belongs to; or the NoteAPI form {@code "tick"} with 50 ms).
  */
 public final class VoiceTool {
 
@@ -48,14 +48,14 @@ public final class VoiceTool {
         try {
             System.exit(run(args, out));
         } catch (Exception e) {
-            out.println("Fehler: " + e.getMessage());
+            out.println("Error: " + e.getMessage());
             System.exit(2);
         }
     }
 
     static int run(String[] args, PrintStream out) throws IOException {
         if (args.length == 0 || args[0].equals("--help") || args[0].equals("-h")) {
-            out.println("VoiceAPI-Werkzeug: speak | sing | render | read | sounds (siehe README)");
+            out.println("VoiceAPI tool: speak | sing | render | read | sounds (see README)");
             return 0;
         }
         String command = args[0];
@@ -67,20 +67,20 @@ public final class VoiceTool {
         String cuesPath = option(rest, "--cues");
         String melodyPath = option(rest, "--melody");
         boolean pack = rest.remove("--pack");
-        Language language = lang == null ? null : Language.find(lang).orElseThrow(() -> new IllegalArgumentException("Unbekannte Sprache: " + lang));
-        Speaker speaker = speakerName == null ? Speaker.VILLAGER : Speaker.find(speakerName).orElseThrow(() -> new IllegalArgumentException("Unbekannte Stimme: " + speakerName));
+        Language language = lang == null ? null : Language.find(lang).orElseThrow(() -> new IllegalArgumentException("Unknown language: " + lang));
+        Speaker speaker = speakerName == null ? Speaker.VILLAGER : Speaker.find(speakerName).orElseThrow(() -> new IllegalArgumentException("Unknown voice: " + speakerName));
         Style style = Style.parse(styleText);
         switch (command) {
             case "speak", "sing" -> {
                 String text = String.join(" ", rest);
                 if (text.isBlank()) {
-                    throw new IllegalArgumentException("Kein Text");
+                    throw new IllegalArgumentException("No text");
                 }
                 Language found = language == null ? Language.guess(text) : language;
                 Utterance utterance;
                 if (command.equals("sing")) {
                     if (melodyPath == null) {
-                        throw new IllegalArgumentException("sing braucht --melody <datei.json>");
+                        throw new IllegalArgumentException("sing needs --melody <file.json>");
                     }
                     utterance = Singer.sing(text, found, speaker, melody(Files.readString(Path.of(melodyPath), StandardCharsets.UTF_8)), style);
                 } else {
@@ -90,17 +90,17 @@ public final class VoiceTool {
                 out.println(found.label() + ", " + speaker.label() + ": " + utterance.transcription() + "  (" + utterance.lengthMs() + " ms)");
                 if (outPath != null) {
                     Files.writeString(Path.of(outPath), UtteranceFile.write(utterance), StandardCharsets.UTF_8);
-                    out.println("gespeichert: " + outPath);
+                    out.println("saved: " + outPath);
                 }
                 if (cuesPath != null) {
                     writeCues(utterance, pack, Path.of(cuesPath));
-                    out.println("Klang-Befehle: " + cuesPath);
+                    out.println("sound commands: " + cuesPath);
                 }
                 return 0;
             }
             case "render" -> {
                 if (rest.isEmpty()) {
-                    throw new IllegalArgumentException("render braucht eine .voice-Datei");
+                    throw new IllegalArgumentException("render needs a .voice file");
                 }
                 Path file = Path.of(Compat.first(rest));
                 String id = file.getFileName().toString().replace(UtteranceFile.EXTENSION, "");
@@ -112,7 +112,7 @@ public final class VoiceTool {
                     }
                 } else {
                     writeCues(utterance, pack, Path.of(cuesPath));
-                    out.println("Klang-Befehle: " + cuesPath);
+                    out.println("sound commands: " + cuesPath);
                 }
                 return 0;
             }
@@ -130,7 +130,7 @@ public final class VoiceTool {
                 }
                 return 0;
             }
-            default -> throw new IllegalArgumentException("Unbekannter Befehl: " + command);
+            default -> throw new IllegalArgumentException("Unknown command: " + command);
         }
     }
 
@@ -148,7 +148,7 @@ public final class VoiceTool {
         return value;
     }
 
-    /** Schreibt die Klang-Befehle als JSON (für voicelab.py). */
+    /** Writes the sound commands as JSON (for voicelab.py). */
     public static void writeCues(Utterance utterance, boolean pack, Path file) throws IOException {
         Files.writeString(file, cuesJson(utterance, pack), StandardCharsets.UTF_8);
     }
@@ -172,7 +172,7 @@ public final class VoiceTool {
         return text.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ");
     }
 
-    /** Liest eine Melodie aus JSON ({@code start/dur/pitch/volume} in ms, oder {@code tick/pitch} mit 50 ms je Tick). */
+    /** Reads a melody from JSON ({@code start/dur/pitch/volume} in ms, or {@code tick/pitch} with 50 ms per tick). */
     public static List<MelodyNote> melody(String json) {
         List<MelodyNote> notes = new ArrayList<>();
         Matcher objects = Pattern.compile("\\{[^{}]*}").matcher(json);

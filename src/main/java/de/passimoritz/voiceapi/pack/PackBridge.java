@@ -13,10 +13,10 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 
 /**
- * Die Anbindung an das Ressourcenpaket der NoteAPI: VoiceAPI hat kein eigenes Paket, seine Laute werden in {@code NoteAPI-Sounds.zip}
- * gemischt ({@code tools/build_voice_pack.py --merge}). Diese Klasse weiß, ob die Paketdatei die Laute enthält ({@link #available()}) und
- * welcher Spieler das Paket geladen hat – das fragt sie die NoteAPI ({@code MusicApi.player().hasRealSound(uuid)}, ohne Abhängigkeit zur
- * Übersetzungszeit), oder ein Plugin bestimmt es selbst ({@link #probe(Predicate)}).
+ * The connection to NoteAPI's resource pack: VoiceAPI has no pack of its own, its sounds are mixed into {@code NoteAPI-Sounds.zip}
+ * (NoteAPI does that by itself, or {@code tools/build_voice_pack.py --merge}). This class knows whether the pack file contains the sounds
+ * ({@link #available()}) and which player has loaded the pack – it asks NoteAPI for that ({@code MusicApi.player().hasRealSound(uuid)},
+ * without a compile-time dependency), or a plugin decides it itself ({@link #probe(Predicate)}).
  */
 public final class PackBridge {
 
@@ -36,7 +36,7 @@ public final class PackBridge {
         this.plugin = plugin;
     }
 
-    /** Übernimmt die Einstellungen ({@code pack.use}, {@code pack.file}). */
+    /** Takes over the settings ({@code pack.use}, {@code pack.file}). */
     public void configure(boolean use, String path) {
         enabled = use;
         file = path == null || path.isBlank() ? plugin.getDataFolder().toPath().getParent().resolve("NoteAPI").resolve("pack").resolve("NoteAPI-Sounds.zip")
@@ -45,12 +45,12 @@ public final class PackBridge {
         refresh();
     }
 
-    /** Die Paketdatei, in der die Laute erwartet werden. */
+    /** The pack file in which the sounds are expected. */
     public Path file() {
         return file;
     }
 
-    /** Prüft die Paketdatei neu (höchstens alle 30 Sekunden, außer erzwungen). */
+    /** Checks the pack file again (at most every 30 seconds). */
     public synchronized void refresh() {
         long now = System.currentTimeMillis();
         if (now - checkedAt < RECHECK_MS) {
@@ -59,13 +59,13 @@ public final class PackBridge {
         checkedAt = now;
         boolean found = enabled && file != null && Files.isRegularFile(file) && VoicePack.matches(file);
         if (found != available) {
-            plugin.getLogger().info(found ? "VoiceAPI-Laute im Ressourcenpaket gefunden: " + file
-                    : "Ressourcenpaket ohne VoiceAPI-Laute (" + file + ") – Spieler hören Dorfbewohner-Laute. tools/build_voice_pack.py --merge baut sie hinein.");
+            plugin.getLogger().info(found ? "VoiceAPI sounds found in the resource pack: " + file
+                    : "Resource pack without VoiceAPI sounds (" + file + ") – players hear villager sounds. NoteAPI mixes them in by itself.");
         }
         available = found;
     }
 
-    /** Ob die Paketdatei die Laute dieser Plugin-Version enthält. */
+    /** Whether the pack file contains the sounds of this plugin version. */
     public boolean available() {
         if (System.currentTimeMillis() - checkedAt >= RECHECK_MS) {
             refresh();
@@ -73,12 +73,12 @@ public final class PackBridge {
         return available;
     }
 
-    /** Legt fest, welche Spieler die Paket-Laute hören ({@code null}: die NoteAPI fragen). */
+    /** Decides which players hear the pack sounds ({@code null}: ask NoteAPI). */
     public void probe(Predicate<Player> newProbe) {
         probe = newProbe;
     }
 
-    /** Ob ein Spieler die Paket-Laute hört: Paket vorhanden und beim Spieler geladen. */
+    /** Whether a player hears the pack sounds: the pack exists and the player has loaded it. */
     public boolean hears(Player player) {
         if (!available()) {
             return false;
@@ -88,14 +88,14 @@ public final class PackBridge {
             try {
                 return custom.test(player);
             } catch (RuntimeException e) {
-                plugin.getLogger().log(Level.WARNING, "Paket-Abfrage eines Plugins", e);
+                plugin.getLogger().log(Level.WARNING, "A plugin's pack probe failed", e);
                 return false;
             }
         }
         return noteApiHasPack(player.getUniqueId());
     }
 
-    /** Fragt die NoteAPI, ob der Spieler ihr Paket geladen hat (per Reflexion: VoiceAPI braucht die NoteAPI nicht zum Übersetzen). */
+    /** Asks NoteAPI whether the player has loaded its pack (via reflection: VoiceAPI does not need NoteAPI to compile). */
     private boolean noteApiHasPack(UUID player) {
         Method method = hasRealSound;
         Object target = musicPlayer;
@@ -114,7 +114,7 @@ public final class PackBridge {
                     target = music;
                 }
             } catch (ReflectiveOperationException | RuntimeException e) {
-                plugin.getLogger().log(Level.FINE, "NoteAPI-Paketstand nicht abfragbar", e);
+                plugin.getLogger().log(Level.FINE, "Cannot ask NoteAPI for the pack state", e);
             }
         }
         if (method == null || target == null) {

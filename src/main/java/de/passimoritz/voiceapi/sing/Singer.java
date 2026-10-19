@@ -16,34 +16,34 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Singt einen Text auf eine Melodie: Jede Silbe bekommt einen Ton (oder mehrere – ein Melisma – wenn die Melodie mehr Töne hat als der Text
- * Silben; mehrere Silben teilen sich einen Ton, wenn es umgekehrt ist). Die Konsonanten am Silbenanfang werden <em>vor</em> den Ton gezogen,
- * damit der Vokal genau auf dem Schlag liegt (so singen auch Menschen); die am Ende sitzen im letzten Stück des Tons. Die Tonhöhe des Vokals
- * ist die des Tons, in den Umfang der Stimme gerückt ({@link Speaker#fit}).
+ * Sings a text to a melody: every syllable gets a note (or several – a melisma – if the melody has more notes than the text has syllables;
+ * several syllables share a note if it is the other way round). The consonants at the start of a syllable are pulled <em>before</em> the
+ * note so the vowel lands exactly on the beat (that is how people sing too); those at the end sit in the last part of the note. The pitch of
+ * the vowel is that of the note, moved into the range of the voice ({@link Speaker#fit}).
  */
 public final class Singer {
 
     private Singer() {
     }
 
-    /** Eine Silbe mit ihrem Wort. */
+    /** A syllable with its word. */
     private record Unit(Syllable syllable, int word, boolean lastInWord, Word.Break after) {
     }
 
     /**
-     * Baut ein gesungenes Stück.
+     * Builds a sung utterance.
      *
-     * @param text     der Text (Silben in Reihenfolge der Töne)
-     * @param language die Sprache
-     * @param speaker  die Stimme
-     * @param melody   die Töne (werden nach der Zeit geordnet)
-     * @param style    Tonlage ({@code pitch}, Halbtöne) und Kraft ({@code energy}); Tempo und Stimmung spielen beim Singen keine Rolle
+     * @param text     the text (syllables in the order of the notes)
+     * @param language the language
+     * @param speaker  the voice
+     * @param melody   the notes (ordered by time)
+     * @param style    pitch ({@code pitch}, semitones) and power ({@code energy}); tempo and mood do not matter when singing
      */
     public static Utterance sing(String text, Language language, Speaker speaker, List<MelodyNote> melody, Style style) {
         return sing(text, language, speaker, melody, style, SingOptions.DEFAULT);
     }
 
-    /** Wie {@link #sing(String, Language, Speaker, List, Style)}, mit eigenen Optionen (Binden, Überlappen, Gleiten, Dynamik, Lautstärke). */
+    /** Like {@link #sing(String, Language, Speaker, List, Style)}, with own options (tying, overlapping, gliding, dynamics, volume). */
     public static Utterance sing(String text, Language language, Speaker speaker, List<MelodyNote> melody, Style style, SingOptions options) {
         SingOptions o = options == null ? SingOptions.DEFAULT : options;
         Utterance raw = singRaw(text, language, speaker, melody, style);
@@ -51,8 +51,8 @@ public final class Singer {
     }
 
     /**
-     * Glättet den Gesang nach den Optionen: sehr kurze Töne gehen im vorigen auf, kleine Lücken werden gebunden (der Ton klingt bis zum
-     * nächsten), gebundene Töne überlappen den vorigen, große Sprünge bekommen einen kurzen Zwischenton, die Lautstärke wird gestaucht.
+     * Smooths the singing according to the options: very short notes merge into the previous one, small gaps are tied (the note sounds until
+     * the next one), tied notes overlap the previous one, big jumps get a short passing note, the volume is compressed.
      */
     static List<Segment> smooth(List<Segment> segments, SingOptions o) {
         List<Segment> voiced = new ArrayList<>();
@@ -65,7 +65,7 @@ public final class Singer {
             }
         }
         voiced.sort(Comparator.comparingInt(Segment::startMs));
-        // 1. zu kurze Töne in den vorigen
+        // 1. notes that are too short go into the previous one
         List<Segment> merged = new ArrayList<>();
         for (Segment s : voiced) {
             if (!merged.isEmpty() && s.durMs() < o.minNoteMs() && s.startMs() - Compat.last(merged).endMs() <= o.legatoMs()) {
@@ -75,7 +75,7 @@ public final class Singer {
                 merged.add(s);
             }
         }
-        // 2. Lautstärke: mittlere Lautstärke, Abweichungen nach dynamics, dann volume
+        // 2. volume: mean volume, deviations scaled by dynamics, then volume
         double mean = merged.stream().mapToDouble(Segment::volume).average().orElse(0.8);
         List<Segment> out = new ArrayList<>(others);
         for (int i = 0; i < merged.size(); i++) {
@@ -92,7 +92,7 @@ public final class Singer {
             if (boundIn) {
                 start = Math.max(previous.startMs() + 1, start - o.overlapMs());
             }
-            // 3. Gleiten: großer Sprung in einen gebundenen Ton → kurzer Zwischenton auf halber Höhe
+            // 3. glide: big jump into a tied note → short passing note halfway
             if (boundIn && o.glideSemitones() > 0 && Math.abs(s.pitch() - previous.pitchEnd()) >= o.glideSemitones() && end - start > o.glideMs() * 2) {
                 float mid = (float) ((s.pitch() + previous.pitchEnd()) / 2.0);
                 out.add(new Segment(start, o.glideMs(), s.phoneme(), mid, mid, volume * 0.85f, s.word(), s.stressed()));
@@ -119,9 +119,9 @@ public final class Singer {
         if (units.isEmpty() || notes.isEmpty()) {
             return new Utterance("", "", text, language, speaker.id(), style, segments, true);
         }
-        // eine Oktavlage für die ganze Melodie (so hoch wie möglich im Umfang der Stimme – wie die bekannten Dorfbewohner-Videos)
+        // one octave register for the whole melody (as high as possible in the range of the voice – like the well-known villager videos)
         double shift = octaveShift(notes, speaker, style.pitch());
-        // Töne auf Silben verteilen: Töne mit Wort-Zuordnung bleiben bei den Silben ihres Wortes
+        // distribute notes to syllables: notes assigned to a word stay with that word's syllables
         List<List<MelodyNote>> perUnit = notes.stream().anyMatch(n -> n.word() >= 0) ? distributeByWord(units, notes) : distribute(units, notes);
         double energy = style.energy();
         int previousEnd = 0;
@@ -144,7 +144,7 @@ public final class Singer {
             boolean stressed = unit.syllable().isStressed();
             float loud = (float) Math.min(1.0, first.volume() * energy * (stressed ? 1.0 : 0.9));
             double firstPitch = clamp(speaker, first.pitch() + shift);
-            // Anlaut-Konsonanten vor dem Ton (nicht in die vorige Silbe hinein)
+            // onset consonants before the note (not into the previous syllable)
             int onsetTotal = 0;
             for (int i = 0; i < (nucleus < 0 ? phonemes.size() : nucleus); i++) {
                 onsetTotal += consonantMs(phonemes.get(i));
@@ -161,13 +161,13 @@ public final class Singer {
                 previousEnd = Math.max(previousEnd, at);
                 continue;
             }
-            // Auslaut-Konsonanten am Ende des letzten Tons
+            // coda consonants at the end of the last note
             int codaTotal = 0;
             for (int i = nucleus + 1; i < phonemes.size(); i++) {
                 codaTotal += consonantMs(phonemes.get(i));
             }
-            // Legato: Der Vokal klingt bis zum nächsten Ton weiter, wenn der bald folgt (erkannte Töne sind oft kürzer als gesungen);
-            // die Auslaut-Konsonanten nehmen höchstens ein Drittel des Tons
+            // legato: the vowel sounds on until the next note if it follows soon (detected notes are often shorter than sung);
+            // the coda consonants take at most a third of the note
             int noteEnd = last.endMs();
             int nextStart = nextNoteStart(perUnit, u);
             if (nextStart > noteEnd && nextStart - noteEnd <= LEGATO_GAP_MS) {
@@ -177,18 +177,18 @@ public final class Singer {
             int vowelEnd = noteEnd - Math.min(codaTotal, Math.max(0, noteLength / 3));
             int vowelStart = first.startMs();
             Phoneme vowel = phonemes.get(nucleus);
-            // ein Vokal-Abschnitt je Ton (Melisma); kurze Lücken zwischen Tönen bleiben Vokal
+            // one vowel segment per note (melisma); short gaps between notes stay vowel
             for (int n = 0; n < group.size(); n++) {
                 MelodyNote note = group.get(n);
                 int from = n == 0 ? vowelStart : note.startMs();
-                // bis zum nächsten Ton, aber nur über kleine Lücken hinweg (eine Pause bleibt eine Pause)
+                // until the next note, but only across small gaps (a rest stays a rest)
                 int to = n == group.size() - 1 ? vowelEnd : Math.min(vowelEnd, Math.min(group.get(n + 1).startMs(), note.endMs() + LEGATO_GAP_MS));
                 if (to <= from) {
                     continue;
                 }
                 double pitch = clamp(speaker, note.pitch() + shift);
                 float volume = (float) Math.min(1.0, note.volume() * energy * (stressed ? 1.0 : 0.9));
-                // Diphthong: nur der erste Ton gleitet, weitere Töne halten den zweiten Vokal
+                // diphthong: only the first note glides, further notes hold the second vowel
                 Phoneme sung = n == 0 ? vowel : (vowel.end() != null ? vowel.end() : vowel);
                 segments.add(new Segment(from, to - from, sung, (float) pitch, (float) pitch, volume, unit.word(), stressed));
             }
@@ -205,14 +205,13 @@ public final class Singer {
         return new Utterance("", "", text, language, speaker.id(), style, segments, true);
     }
 
-    /** Bis zu so viele Millisekunden Lücke zum nächsten Ton werden gebunden; größere Lücken bleiben – jeder Ton wird einzeln angestoßen wie
-     * in den bekannten Videos. */
+    /** Gaps of up to this many milliseconds to the next note are tied; larger gaps stay – every note is triggered on its own like in the
+     * well-known videos. */
     private static final int LEGATO_GAP_MS = 50;
 
     /**
-     * Die Verschiebung (ganze Oktaven plus die Tonlage des Stils), mit der die Melodie in den Umfang der Stimme passt – so hoch wie möglich,
-     * ohne dass mehr als jeder zehnte Ton oben anstößt. Eine gemeinsame Lage für alle Töne hält die Melodie zusammen (einzeln gefaltete Töne
-     * springen Oktaven).
+     * The shift (whole octaves plus the pitch of the style) that fits the melody into the range of the voice. One shared register for all
+     * notes keeps the melody together (notes folded one by one would jump octaves).
      */
     static double octaveShift(List<MelodyNote> notes, Speaker speaker, double stylePitch) {
         if (notes.isEmpty()) {
@@ -220,16 +219,16 @@ public final class Singer {
         }
         double[] pitches = notes.stream().mapToDouble(n -> n.pitch() + stylePitch).sorted().toArray();
         double median = pitches[pitches.length / 2];
-        // die Oktave, in der die Mitte der Melodie der Gesangslage der Stimme am nächsten kommt (im Zweifel die höhere: hell wie in den Videos)
+        // the octave in which the middle of the melody comes closest to the singing register of the voice (if in doubt the higher one: bright like in the videos)
         return stylePitch + Math.round((speaker.singingPitch() + 2.0 - median) / 12.0) * 12.0;
     }
 
-    /** Gesang spielt aus dem Paket, dessen Grundtöne weit reichen: nur grob begrenzen. */
+    /** Singing plays from the pack, whose roots reach far: only clamp roughly. */
     private static double clamp(Speaker speaker, double midi) {
         return Compat.clamp(midi, 30.0, 90.0);
     }
 
-    /** Der Beginn des ersten Tons nach der Silbe {@code index}, oder −1. */
+    /** The start of the first note after the syllable {@code index}, or −1. */
     private static int nextNoteStart(List<List<MelodyNote>> perUnit, int index) {
         for (int u = index + 1; u < perUnit.size(); u++) {
             if (!perUnit.get(u).isEmpty()) {
@@ -239,12 +238,12 @@ public final class Singer {
         return -1;
     }
 
-    /** Wie lang ein Konsonant beim Singen ist (kürzer als beim Sprechen). */
+    /** How long a consonant is when singing (shorter than when speaking). */
     private static int consonantMs(Phoneme phoneme) {
         return Math.max(25, (int) (phoneme.baseMillis() * 0.75));
     }
 
-    /** Verteilt je Wort dessen Töne auf dessen Silben (Töne ohne Wort gehen zum vorigen Wort; Wörter ohne Töne bleiben stumm). */
+    /** Distributes each word's notes to its syllables (notes without a word go to the previous word; words without notes stay silent). */
     static List<List<MelodyNote>> distributeByWord(List<Unit> units, List<MelodyNote> notes) {
         List<List<MelodyNote>> result = new ArrayList<>();
         for (int i = 0; i < units.size(); i++) {
@@ -285,8 +284,8 @@ public final class Singer {
     }
 
     /**
-     * Verteilt die Töne auf die Silben: bei mehr Tönen als Silben bekommen betonte Silben und Silben vor einer Pause die zusätzlichen Töne
-     * (Melisma); bei weniger Tönen teilen sich benachbarte Silben einen Ton (er wird aufgeteilt).
+     * Distributes the notes to the syllables: with more notes than syllables, stressed syllables and syllables before a pause get the extra
+     * notes (melisma); with fewer notes, neighbouring syllables share a note (it is split).
      */
     static List<List<MelodyNote>> distribute(List<Unit> units, List<MelodyNote> notes) {
         List<List<MelodyNote>> result = new ArrayList<>();
@@ -295,7 +294,7 @@ public final class Singer {
         }
         if (notes.size() >= units.size()) {
             int extra = notes.size() - units.size();
-            // Gewichte: betont 3, letzte Silbe vor Satzgrenze 2, sonst 1
+            // weights: stressed 3, last syllable before a sentence boundary 2, otherwise 1
             int[] weight = new int[units.size()];
             int total = 0;
             for (int i = 0; i < units.size(); i++) {
@@ -309,7 +308,7 @@ public final class Singer {
                 count[i] = 1 + extra * weight[i] / total;
                 given += count[i] - 1;
             }
-            // Rest der Reihe nach an die schwersten Silben
+            // the rest in turn to the heaviest syllables
             for (int i = 0; given < extra; i = (i + 1) % units.size()) {
                 if (weight[i] >= 3 || given + units.size() > extra) {
                     count[i]++;
@@ -327,7 +326,7 @@ public final class Singer {
             }
             return result;
         }
-        // weniger Töne: Silben gleichmäßig auf Töne verteilen, jeder Ton wird in Teile geschnitten
+        // fewer notes: spread syllables evenly over the notes, every note is cut into parts
         double perNote = units.size() / (double) notes.size();
         int u = 0;
         for (int n = 0; n < notes.size(); n++) {

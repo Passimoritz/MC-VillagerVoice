@@ -14,24 +14,24 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Macht aus Wörtern Sprache: gibt jedem Laut seine Zeit, seine Tonhöhe und seine Lautstärke.
+ * Turns words into speech: gives every sound its time, its pitch and its volume.
  * <ul>
- *   <li><b>Dauer</b>: die natürliche Länge des Lauts, gedehnt in betonten Silben und am Ende einer Phrase, gestaucht in unbetonten;
- *   das Tempo des Stils skaliert alles.</li>
- *   <li><b>Melodie</b>: jeder Satz beginnt etwas höher und sinkt bis zum Ende (Deklination); betonte Silben bekommen einen Akzent-Gipfel,
- *   der innerhalb des Vokals wieder abfällt; am Satzende fällt die Stimme (Punkt), steigt (Frage) oder bleibt offen (Komma, Auslassung).
- *   Hervorgehobene Wörter bekommen einen höheren Gipfel.</li>
- *   <li><b>Lautstärke</b>: betont lauter, unbetont leiser, Satzende leiser; Geräusch-Konsonanten leiser als Vokale.</li>
- *   <li><b>Stimmung</b> ({@link Style.Mood}): färbt Tonlage, Umfang, Tempo, Kraft und Pausen.</li>
+ *   <li><b>Duration</b>: the natural length of the sound, stretched in stressed syllables and at the end of a phrase, squeezed in unstressed
+ *   ones; the tempo of the style scales everything.</li>
+ *   <li><b>Melody</b>: every sentence starts a little higher and sinks towards the end (declination); stressed syllables get an accent peak
+ *   that falls again within the vowel; at the end of a sentence the voice falls (full stop), rises (question) or stays open (comma,
+ *   ellipsis). Emphasised words get a higher peak.</li>
+ *   <li><b>Volume</b>: stressed louder, unstressed quieter, end of sentence quieter; noise consonants quieter than vowels.</li>
+ *   <li><b>Mood</b> ({@link Style.Mood}): colours pitch, range, tempo, power and pauses.</li>
  * </ul>
- * Kleine, aus dem Text abgeleitete Zufallsschwankungen (immer dieselben für denselben Text) nehmen der Stimme das Maschinelle.
+ * Small random variations derived from the text (always the same for the same text) take the mechanical feel out of the voice.
  */
 public final class Prosody {
 
     private Prosody() {
     }
 
-    /** Die Pausen (Millisekunden) nach einer Grenze bei normalem Tempo. */
+    /** The pauses (milliseconds) after a boundary at normal tempo. */
     private static int pauseAfter(Word.Break found) {
         return switch (found) {
             case NONE -> 30;
@@ -43,7 +43,7 @@ public final class Prosody {
         };
     }
 
-    /** Die Stimmungs-Färbung: Verschiebung der Tonlage, Umfang, Tempo, Kraft und Pausen als Faktoren. */
+    /** The mood colouring: pitch shift, range, tempo, power and pauses as factors. */
     private record Colour(double pitch, double range, double rate, double energy, double pauses, double jitter, boolean flat) {
 
         static Colour of(Style.Mood mood) {
@@ -63,12 +63,12 @@ public final class Prosody {
     }
 
     /**
-     * Baut die Laute eines Textes.
+     * Builds the sounds of a text.
      *
-     * @param words   die Wörter mit Silben und Grenzen
-     * @param style   der Stil
-     * @param speaker die Stimme (ihre natürliche Tonlage)
-     * @return die Laute, nach der Zeit geordnet
+     * @param words   the words with syllables and boundaries
+     * @param style   the style
+     * @param speaker the voice (its natural pitch)
+     * @return the sounds, ordered by time
      */
     public static List<Segment> compile(List<Word> words, Style style, Speaker speaker) {
         List<Segment> out = new ArrayList<>();
@@ -83,7 +83,7 @@ public final class Prosody {
         Random random = new Random(seed(words));
         int time = 0;
         int sentenceStart = 0;
-        // Sätze: von Satzanfang bis zu einer Grenze, die den Satz beendet
+        // sentences: from the start of a sentence to a boundary that ends it
         while (sentenceStart < words.size()) {
             int sentenceEnd = sentenceStart;
             while (sentenceEnd < words.size() - 1 && !words.get(sentenceEnd).after().endsSentence()) {
@@ -91,7 +91,7 @@ public final class Prosody {
             }
             List<Word> sentence = words.subList(sentenceStart, sentenceEnd + 1);
             Word.Break ending = Compat.last(sentence).after();
-            // Silben des Satzes zählen (für die Deklination)
+            // count the syllables of the sentence (for the declination)
             int syllables = 0;
             for (Word word : sentence) {
                 syllables += word.syllables().size();
@@ -121,7 +121,7 @@ public final class Prosody {
                     boolean stressed = syllable.isStressed() && !function || word.emphasis() && (syllable.isStressed() || word.syllables().size() == 1);
                     boolean nuclear = index == lastStressedIndex;
                     double position = syllables <= 1 ? 1.0 : index / (double) (syllables - 1);
-                    // Deklination: von +2,5 auf −2,5 Halbtöne
+                    // declination: from +2.5 to −2.5 semitones
                     double line = colour.flat() ? 0 : (2.5 - 5.0 * position) * range;
                     double accent = 0;
                     double fall = 0;
@@ -146,7 +146,7 @@ public final class Prosody {
                                     fall = -3.0 * range;
                                 }
                                 default -> {
-                                    // Komma/Auslassung: offen
+                                    // comma/ellipsis: open
                                 }
                             }
                         }
@@ -162,7 +162,7 @@ public final class Prosody {
                                 }
                                 case COMMA -> accent += 1.0 * range;
                                 default -> {
-                                    // offen
+                                    // open
                                 }
                             }
                         }
@@ -170,7 +170,7 @@ public final class Prosody {
                     double jitter = colour.jitter() * (random.nextDouble() * 2 - 1);
                     double pitchStart = base + line + accent + jitter;
                     double pitchEnd = pitchStart - fall;
-                    // Dauer-Faktoren
+                    // duration factors
                     double stretch = 1.0;
                     if (stressed) {
                         stretch *= word.emphasis() ? 1.5 : 1.3;
@@ -187,7 +187,7 @@ public final class Prosody {
                         stretch = 1.0;
                     }
                     stretch *= 1.0 + 0.05 * (random.nextDouble() * 2 - 1);
-                    // Lautstärke
+                    // volume
                     double loud = 0.78 * energy;
                     if (stressed) {
                         loud *= word.emphasis() ? 1.3 : 1.15;
@@ -211,7 +211,7 @@ public final class Prosody {
         return out;
     }
 
-    /** Baut die Laute einer Silbe ab {@code time}; liefert die Zeit nach der Silbe. */
+    /** Builds the sounds of a syllable from {@code time}; returns the time after the syllable. */
     private static int syllable(List<Segment> out, Syllable syllable, int time, double pitchStart, double pitchEnd, double stretch, double loud,
                                 int word, boolean stressed, boolean flat) {
         List<Phoneme> phonemes = syllable.phonemes();
@@ -225,7 +225,7 @@ public final class Prosody {
         for (int i = 0; i < phonemes.size(); i++) {
             Phoneme phoneme = phonemes.get(i);
             double factor = stretch;
-            // Konsonanten dehnen sich weniger als Vokale
+            // consonants stretch less than vowels
             if (!phoneme.isVocalic()) {
                 factor = 1.0 + (stretch - 1.0) * 0.4;
             }
@@ -263,7 +263,7 @@ public final class Prosody {
         return time;
     }
 
-    /** Funktionswörter (Artikel, Pronomen, Präpositionen …) sprechen leiser und ohne Akzent. */
+    /** Function words (articles, pronouns, prepositions …) are spoken quieter and without accent. */
     static boolean isFunctionWord(Word word) {
         String text = word.text().toLowerCase(java.util.Locale.ROOT);
         return FUNCTION_WORDS.contains(" " + text + " ");
@@ -273,7 +273,7 @@ public final class Prosody {
             + "ist sind war es er sie wir ihr ich du dich mich sich ja so wie als dass ob the a an and or but to of in on at for from with by is are was were "
             + "it he she we they i you me him her us them this that as if so than ";
 
-    /** Ein Startwert aus dem Text: derselbe Text schwankt immer gleich. */
+    /** A seed from the text: the same text always varies the same way. */
     private static long seed(List<Word> words) {
         long hash = 1125899906842597L;
         for (Word word : words) {

@@ -12,8 +12,8 @@ import java.util.List;
 import java.util.logging.Level;
 
 /**
- * Das Plugin: schaltet die {@link VoiceApi} ein, lädt die Bibliothek, startet die Sprach-Uhr und packt die Werkzeuge
- * ({@code plugins/VoiceAPI/tools/*.py}) aus. Keine Befehle – die NoteAPI (oder ein anderes Plugin) bietet die Sprache an.
+ * The plugin: enables {@link VoiceApi}, loads the library, starts the speech clock and unpacks the tools
+ * ({@code plugins/VoiceAPI/tools/*.py}). No commands – NoteAPI (or another plugin) offers the voices.
  */
 public final class VoiceApiPlugin extends JavaPlugin {
 
@@ -46,7 +46,7 @@ public final class VoiceApiPlugin extends JavaPlugin {
                 songs.writePack(base, soundPack);
             }
         } catch (IOException e) {
-            getLogger().log(Level.WARNING, "Das Lautpaket ließ sich nicht schreiben", e);
+            getLogger().log(Level.WARNING, "Could not write the sound pack", e);
         }
         String home = getConfig().getString("rvc.home", "");
         Path rvcHome = home == null || home.isBlank() ? Path.of(System.getProperty("user.home"), ".voiceapi", "rvc") : Path.of(home.strip());
@@ -54,9 +54,9 @@ public final class VoiceApiPlugin extends JavaPlugin {
                 getConfig().getString("rvc.model", "villager"));
         VoiceApi.enable(player, library, pack, Files.isRegularFile(soundPack) ? soundPack : base);
         VoiceApi.enableSongs(this, songs, converter, base, soundPack);
-        getLogger().info("VoiceAPI " + getDescription().getVersion() + " bereit: " + Speaker.values().length + " Stimmen, " + library.size()
-                + " gespeicherte Stücke, " + songs.size() + " Villager-Gesänge, Ressourcenpaket " + (pack.available() ? "mit" : "ohne")
-                + " VoiceAPI-Laute, Stimmmodell " + (converter.ready() ? "bereit" : "nicht eingerichtet (" + String.join(", ", converter.missing()) + ")") + ".");
+        getLogger().info("VoiceAPI " + getDescription().getVersion() + " ready: " + Speaker.values().length + " voices, " + library.size()
+                + " saved utterances, " + songs.size() + " villager songs, resource pack " + (pack.available() ? "with" : "without")
+                + " VoiceAPI sounds, voice model " + (converter.ready() ? "ready" : "not set up (" + String.join(", ", converter.missing()) + ")") + ".");
     }
 
     @Override
@@ -69,9 +69,9 @@ public final class VoiceApiPlugin extends JavaPlugin {
     }
 
     /**
-     * Legt die beigelegten Laute als Grundpaket nach {@code pack/VoiceAPI-Sounds-base.zip} (nur, wenn sie sich geändert haben); das fertige
-     * {@code VoiceAPI-Sounds.zip} entsteht daraus plus den Villager-Gesängen ({@link de.passimoritz.voiceapi.song.SongVoices#writePack}).
-     * @return die Datei, oder null
+     * Places the bundled sounds as the base pack at {@code pack/VoiceAPI-Sounds-base.zip} (only if they changed); the finished
+     * {@code VoiceAPI-Sounds.zip} is made from it plus the villager songs ({@link de.passimoritz.voiceapi.song.SongVoices#writePack}).
+     * @return the file, or null
      */
     private Path extractSounds() {
         Path target = getDataFolder().toPath().resolve("pack").resolve("VoiceAPI-Sounds-base.zip");
@@ -86,12 +86,12 @@ public final class VoiceApiPlugin extends JavaPlugin {
             }
             return target;
         } catch (IOException e) {
-            getLogger().log(Level.WARNING, "Die Laute ließen sich nicht auspacken", e);
+            getLogger().log(Level.WARNING, "Could not unpack the sounds", e);
             return Files.isRegularFile(target) ? target : null;
         }
     }
 
-    /** Legt die Python-Werkzeuge aus dem Jar in den Datenordner (immer der Stand des Jars). */
+    /** Places the Python tools from the jar in the data folder (always the jar's version). */
     private void extractTools() {
         Path folder = getDataFolder().toPath().resolve("tools");
         try {
@@ -105,7 +105,7 @@ public final class VoiceApiPlugin extends JavaPlugin {
                 }
             }
         } catch (IOException e) {
-            getLogger().log(Level.WARNING, "Die Werkzeuge ließen sich nicht auspacken", e);
+            getLogger().log(Level.WARNING, "Could not unpack the tools", e);
         }
     }
 }

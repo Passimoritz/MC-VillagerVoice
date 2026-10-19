@@ -3,21 +3,21 @@ package de.passimoritz.voiceapi.sing;
 import de.passimoritz.voiceapi.Compat;
 
 /**
- * Wie gesungen wird – für die Hmm-Noten aus dem Ressourcenpaket ({@link Singer}).
+ * How it is sung – for the hum notes from the resource pack ({@link Singer}).
  *
- * @param volume         Gesamt-Lautstärke des Gesangs (0 … 1; Standard 0,8)
- * @param dynamics       wie stark die Lautstärke der Töne der Melodie folgt (0 = alle gleich laut, 1 = volle Schwankung; Standard 0,35)
- * @param legatoMs       Lücken bis zu so vielen ms zwischen zwei Tönen werden gebunden: der Ton klingt bis zum nächsten durch (Standard 140)
- * @param overlapMs      gebundene Töne setzen so viele ms früher ein und überlappen den vorigen – kein Loch, kein Neuanschlag (Standard 35)
- * @param glideSemitones ab so vielen Halbtönen Sprung wird ein kurzer Zwischenton eingeschoben, der Übergang gleitet (0 = aus; Standard 3)
- * @param glideMs        Länge des Zwischentons (Standard 45)
- * @param minNoteMs      kürzere Töne werden mit dem vorigen zusammengelegt statt angeschlagen (Standard 70)
+ * @param volume         overall volume of the singing (0 … 1; default 0.8)
+ * @param dynamics       how strongly the volume of the notes follows the melody (0 = all equally loud, 1 = full variation; default 0.35)
+ * @param legatoMs       gaps of up to this many ms between two notes are tied: the note sounds until the next one (default 140)
+ * @param overlapMs      tied notes start this many ms earlier and overlap the previous one – no hole, no new attack (default 35)
+ * @param glideSemitones from a jump of this many semitones a short passing note is inserted, the transition glides (0 = off; default 3)
+ * @param glideMs        length of the passing note (default 45)
+ * @param minNoteMs      shorter notes are merged with the previous one instead of being attacked (default 70)
  */
 public record SingOptions(double volume, double dynamics, int legatoMs, int overlapMs, double glideSemitones, int glideMs, int minNoteMs) {
 
     public static final SingOptions DEFAULT = new SingOptions(0.8, 0.35, 140, 35, 3.0, 45, 70);
 
-    /** Wie die Hmm-Noten vor diesen Optionen klangen (jeder Ton angeschlagen, volle Dynamik). */
+    /** How the hum notes sounded before these options (every note attacked, full dynamics). */
     public static final SingOptions DETACHED = new SingOptions(0.9, 1.0, 40, 0, 0.0, 45, 0);
 
     public SingOptions {
@@ -50,7 +50,7 @@ public record SingOptions(double volume, double dynamics, int legatoMs, int over
         return new SingOptions(volume, dynamics, legatoMs, overlapMs, glideSemitones, glideMs, ms);
     }
 
-    /** Liest Optionen aus Text: {@code volume=0.7; dynamics=0.3; legato=150; overlap=40; glide=3; glideMs=45; minNote=70} (Unbekanntes wird überlesen). */
+    /** Reads options from text: {@code volume=0.7; dynamics=0.3; legato=150; overlap=40; glide=3; glideMs=45; minNote=70} (unknown keys are skipped; the former German keys still work). */
     public static SingOptions parse(String text) {
         SingOptions o = DEFAULT;
         if (text == null || text.isBlank()) {
@@ -76,13 +76,13 @@ public record SingOptions(double volume, double dynamics, int legatoMs, int over
                     default -> o;
                 };
             } catch (NumberFormatException e) {
-                // ueberlesen
+                // skip
             }
         }
         return o;
     }
 
-    /** Die Optionen als Text (wie {@link #parse}). */
+    /** The options as text (like {@link #parse}). */
     public String describe() {
         return String.format(java.util.Locale.ROOT, "volume=%.2f; dynamics=%.2f; legato=%d; overlap=%d; glide=%.1f; glideMs=%d; minNote=%d",
                 volume, dynamics, legatoMs, overlapMs, glideSemitones, glideMs, minNoteMs);

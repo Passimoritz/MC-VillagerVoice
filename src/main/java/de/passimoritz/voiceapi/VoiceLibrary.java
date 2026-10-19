@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-/** Die gespeicherten Sprechstücke ({@code plugins/VoiceAPI/voices/<id>.voice}). */
+/** The saved utterances ({@code plugins/VoiceAPI/voices/<id>.voice}). */
 public final class VoiceLibrary {
 
     private final Path folder;
@@ -29,14 +29,14 @@ public final class VoiceLibrary {
         return folder;
     }
 
-    /** Liest alle Stücke aus dem Ordner. */
+    /** Reads all utterances from the folder. */
     public synchronized void load() {
         utterances.clear();
         if (!Files.isDirectory(folder)) {
             try {
                 Files.createDirectories(folder);
             } catch (IOException e) {
-                log.accept("Der Ordner " + folder + " ließ sich nicht anlegen: " + e.getMessage());
+                log.accept("Could not create the folder " + folder + ": " + e.getMessage());
             }
             return;
         }
@@ -47,15 +47,15 @@ public final class VoiceLibrary {
                 try {
                     utterances.put(id, UtteranceFile.read(id, Files.readString(path, StandardCharsets.UTF_8)));
                 } catch (IOException | IllegalArgumentException e) {
-                    log.accept("Das Stück " + path.getFileName() + " ließ sich nicht lesen: " + e.getMessage());
+                    log.accept("Could not read the utterance " + path.getFileName() + ": " + e.getMessage());
                 }
             });
         } catch (IOException e) {
-            log.accept("Der Ordner " + folder + " ließ sich nicht lesen: " + e.getMessage());
+            log.accept("Could not read the folder " + folder + ": " + e.getMessage());
         }
     }
 
-    /** Alle Stücke (nach Kennung). */
+    /** All utterances (by id). */
     public synchronized List<Utterance> all() {
         return List.copyOf(utterances.values());
     }
@@ -65,10 +65,10 @@ public final class VoiceLibrary {
     }
 
     /**
-     * Speichert ein Stück (die Kennung aus seinem Titel, wenn es keine hat; eine vorhandene Datei wird überschrieben).
+     * Saves an utterance (the id from its title if it has none; an existing file is overwritten).
      *
-     * @return das gespeicherte Stück mit seiner Kennung
-     * @throws IOException wenn die Datei nicht zu schreiben ist
+     * @return the saved utterance with its id
+     * @throws IOException if the file cannot be written
      */
     public synchronized Utterance save(Utterance utterance) throws IOException {
         String id = utterance.id().isBlank() ? Utterance.slug(utterance.title()) : Utterance.slug(utterance.id());
@@ -79,7 +79,7 @@ public final class VoiceLibrary {
         return named;
     }
 
-    /** Löscht ein Stück. @return ob es da war */
+    /** Deletes an utterance. @return whether it existed */
     public synchronized boolean delete(String id) throws IOException {
         String key = id == null ? "" : id.toLowerCase(Locale.ROOT);
         if (utterances.remove(key) == null) {

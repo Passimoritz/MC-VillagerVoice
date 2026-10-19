@@ -4,28 +4,28 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Ein gesprochenes Wort: seine Schreibung, seine Silben und was nach ihm kommt (Pause, Satzende, Frage …).
+ * A spoken word: its spelling, its syllables and what comes after it (pause, end of sentence, question …).
  *
- * @param text      das Wort, wie es geschrieben stand
- * @param syllables die Silben
- * @param after     die Grenze nach dem Wort
- * @param emphasis  ob das Wort hervorgehoben ist (GROSS geschrieben oder *so*)
+ * @param text      the word as it was written
+ * @param syllables the syllables
+ * @param after     the boundary after the word
+ * @param emphasis  whether the word is emphasised (written in CAPS or *like this*)
  */
 public record Word(String text, List<Syllable> syllables, Break after, boolean emphasis) {
 
-    /** Was nach einem Wort folgt. */
+    /** What follows a word. */
     public enum Break {
-        /** Das nächste Wort folgt direkt. */
+        /** The next word follows directly. */
         NONE,
-        /** Komma, Gedankenstrich, Doppelpunkt: kurze Pause, die Melodie bleibt offen. */
+        /** Comma, dash, colon: short pause, the melody stays open. */
         COMMA,
-        /** Punkt: Satzende, die Melodie fällt. */
+        /** Full stop: end of sentence, the melody falls. */
         SENTENCE,
-        /** Fragezeichen: die Melodie steigt. */
+        /** Question mark: the melody rises. */
         QUESTION,
-        /** Ausrufezeichen: stärker, Melodie fällt tief. */
+        /** Exclamation mark: stronger, the melody falls low. */
         EXCLAMATION,
-        /** Auslassungspunkte: lange Pause, Melodie schwebt. */
+        /** Ellipsis: long pause, the melody hovers. */
         ELLIPSIS;
 
         public boolean endsSentence() {
@@ -43,7 +43,7 @@ public record Word(String text, List<Syllable> syllables, Break after, boolean e
         this(text, syllables, Break.NONE, false);
     }
 
-    /** Dasselbe Wort mit anderer Grenze. */
+    /** The same word with another boundary. */
     public Word followedBy(Break newBreak) {
         return new Word(text, syllables, newBreak, emphasis);
     }
@@ -52,7 +52,7 @@ public record Word(String text, List<Syllable> syllables, Break after, boolean e
         return new Word(text, syllables, after, strong);
     }
 
-    /** Alle Laute des Wortes in Sprechfolge. */
+    /** All sounds of the word in speaking order. */
     public List<Phoneme> phonemes() {
         List<Phoneme> all = new ArrayList<>();
         for (Syllable syllable : syllables) {
@@ -61,7 +61,7 @@ public record Word(String text, List<Syllable> syllables, Break after, boolean e
         return all;
     }
 
-    /** Die Nummer der Silbe mit Hauptbetonung (0, wenn keine markiert ist). */
+    /** The index of the syllable with primary stress (0 if none is marked). */
     public int stressedSyllable() {
         for (int i = 0; i < syllables.size(); i++) {
             if (syllables.get(i).isStressed()) {
@@ -71,7 +71,7 @@ public record Word(String text, List<Syllable> syllables, Break after, boolean e
         return 0;
     }
 
-    /** Die Lautschrift ({@code ˈha.lo}). */
+    /** The transcription ({@code ˈha.lo}). */
     public String transcription() {
         return String.join(".", syllables.stream().map(Syllable::toString).toList());
     }

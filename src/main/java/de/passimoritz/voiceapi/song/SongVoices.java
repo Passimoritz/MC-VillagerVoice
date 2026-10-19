@@ -28,9 +28,9 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 /**
- * Die umgewandelten Villager-Gesänge ({@code plugins/VoiceAPI/songs/<id>/voice.json} + {@code <n>.ogg}) und das Lautpaket, das sie enthält:
- * Das beigelegte Grundpaket (Hmm-Laute, Vokale, Konsonanten) plus alle Gesänge ergibt {@code VoiceAPI-Sounds.zip}. Die NoteAPI mischt dieses
- * Paket in ihr Ressourcenpaket; weil die Gesänge in {@code assets/voiceapi/voiceapi.json} aufgezählt sind, erkennt sie jede Änderung.
+ * The converted villager songs ({@code plugins/VoiceAPI/songs/<id>/voice.json} + {@code <n>.ogg}) and the sound pack that contains them:
+ * the bundled base pack (hum sounds, vowels, consonants) plus all songs makes {@code VoiceAPI-Sounds.zip}. NoteAPI mixes this pack into its
+ * resource pack; because the songs are listed in {@code assets/voiceapi/voiceapi.json}, it notices every change.
  */
 public final class SongVoices {
 
@@ -51,18 +51,18 @@ public final class SongVoices {
         return folder;
     }
 
-    /** Der Ordner eines Gesangs. */
+    /** The folder of a song voice. */
     public Path folder(String id) {
         return folder.resolve(safe(id));
     }
 
-    /** Eine Kennung, wie sie im Paket stehen darf (Kleinbuchstaben, Ziffern, Bindestrich, Unterstrich). */
+    /** An id as it may appear in the pack (lower-case letters, digits, dash, underscore). */
     public static String safe(String id) {
         String clean = id == null ? "" : id.strip().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_-]", "-");
         return clean.replace("-", "").isEmpty() ? "song" : clean;
     }
 
-    /** Liest alle Gesänge. */
+    /** Reads all song voices. */
     public synchronized void load() {
         voices.clear();
         if (!Files.isDirectory(folder)) {
@@ -71,11 +71,11 @@ public final class SongVoices {
         try (Stream<Path> dirs = Files.list(folder)) {
             dirs.filter(Files::isDirectory).sorted().forEach(dir -> read(dir).ifPresent(voice -> voices.put(voice.id(), voice)));
         } catch (IOException e) {
-            log.accept("Der Ordner " + folder + " ließ sich nicht lesen: " + e.getMessage());
+            log.accept("Could not read the folder " + folder + ": " + e.getMessage());
         }
     }
 
-    /** Liest einen Gesang neu (nach einer Umwandlung). */
+    /** Reads a song voice again (after a conversion). */
     public synchronized Optional<SongVoice> reload(String id) {
         Optional<SongVoice> voice = read(folder(id));
         voice.ifPresentOrElse(v -> voices.put(v.id(), v), () -> voices.remove(safe(id)));
@@ -99,7 +99,7 @@ public final class SongVoices {
             return Optional.of(new SongVoice(id, json.get("chunkMs").getAsInt(), json.get("overlapMs").getAsInt(), json.get("count").getAsInt(), silent,
                     json.get("lengthMs").getAsInt(), json.has("model") ? json.get("model").getAsString() : ""));
         } catch (IOException | RuntimeException e) {
-            log.accept("Der Gesang in " + dir + " ließ sich nicht lesen: " + e.getMessage());
+            log.accept("Could not read the song voice in " + dir + ": " + e.getMessage());
             return Optional.empty();
         }
     }
@@ -112,7 +112,7 @@ public final class SongVoices {
         return List.copyOf(voices.values());
     }
 
-    /** Löscht einen Gesang (Dateien und Eintrag). @return ob er da war */
+    /** Deletes a song voice (files and entry). @return whether it existed */
     public synchronized boolean delete(String id) throws IOException {
         Path dir = folder(id);
         boolean existed = voices.remove(safe(id)) != null;
@@ -128,11 +128,11 @@ public final class SongVoices {
     }
 
     /**
-     * Schreibt das Lautpaket: Grundpaket plus alle Gesänge. Ohne Gesänge ist es eine Kopie des Grundpakets.
+     * Writes the sound pack: base pack plus all songs. Without songs it is a copy of the base pack.
      *
-     * @param base   das beigelegte Grundpaket
-     * @param target die fertige Datei ({@code VoiceAPI-Sounds.zip})
-     * @return ob die Datei neu geschrieben wurde
+     * @param base   the bundled base pack
+     * @param target the finished file ({@code VoiceAPI-Sounds.zip})
+     * @return whether the file was rewritten
      */
     public synchronized boolean writePack(Path base, Path target) throws IOException {
         if (!Files.isRegularFile(base)) {
@@ -217,12 +217,12 @@ public final class SongVoices {
         }
     }
 
-    /** Wie viele Gesänge da sind. */
+    /** How many song voices there are. */
     public synchronized int size() {
         return voices.size();
     }
 
-    /** Für Tests: Abschnitte, die zu einem Gesang fehlen. */
+    /** For tests: sections missing for a song voice. */
     public synchronized List<Integer> missingChunks(String id) {
         List<Integer> missing = new ArrayList<>();
         get(id).ifPresent(voice -> {

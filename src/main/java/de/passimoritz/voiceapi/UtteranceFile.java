@@ -8,13 +8,13 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Sprechstücke als Textdatei ({@code voices/<id>.voice}), lesbar und von Hand änderbar:
+ * Utterances as a text file ({@code voices/<id>.voice}), readable and editable by hand:
  * <pre>
- * # VoiceAPI-Sprechstück
- * title: Willkommen
+ * # VoiceAPI utterance
+ * title: Welcome
  * lang: de
  * speaker: villager
- * kind: sung            (nur bei gesungenen Stücken)
+ * kind: sung            (only for sung utterances)
  * style: rate=1.00; pitch=0.0; range=1.00; energy=1.00; mood=happy
  * text: Willkommen im Dorf!
  * ---
@@ -24,8 +24,8 @@ import java.util.Locale;
  * 130 l 55 45.2 0.60 *
  * …
  * </pre>
- * Jede Lautzeile: Beginn (ms), Laut (IPA, siehe {@link Phoneme}), Dauer (ms), Tonhöhe (MIDI, mit {@code >} Gleiten zur End-Tonhöhe),
- * Lautstärke, optional {@code *} für betont. Eine Zeile {@code > Wort} beginnt ein neues Wort; {@code _} ist eine Pause.
+ * Every sound line: start (ms), sound (IPA, see {@link Phoneme}), duration (ms), pitch (MIDI, with {@code >} a glide to the end pitch),
+ * volume, optionally {@code *} for stressed. A line {@code > word} starts a new word; {@code _} is a pause.
  */
 public final class UtteranceFile {
 
@@ -34,13 +34,16 @@ public final class UtteranceFile {
     private UtteranceFile() {
     }
 
-    /** Das Stück als Text. */
+    /** The utterance as text. */
     public static String write(Utterance utterance) {
         StringBuilder text = new StringBuilder(128 + utterance.segments().size() * 24);
-        text.append("# VoiceAPI-Sprechstück\n");
+        text.append("# VoiceAPI utterance\n");
         text.append("title: ").append(oneLine(utterance.title())).append('\n');
         text.append("lang: ").append(utterance.language().code()).append('\n');
         text.append("speaker: ").append(utterance.speaker()).append('\n');
+        if (utterance.sung()) {
+            text.append("kind: sung\n");
+        }
         text.append("style: ").append(utterance.style().describe()).append('\n');
         if (!utterance.text().isBlank()) {
             text.append("text: ").append(oneLine(utterance.text())).append('\n');
@@ -71,10 +74,10 @@ public final class UtteranceFile {
     }
 
     /**
-     * Liest ein Stück aus Text.
+     * Reads an utterance from text.
      *
-     * @param id die Kennung (der Dateiname ohne Endung)
-     * @throws IllegalArgumentException wenn eine Zeile nicht zu lesen ist
+     * @param id the id (the file name without extension)
+     * @throws IllegalArgumentException if a line cannot be read
      */
     public static Utterance read(String id, String text) {
         String title = id;
@@ -117,13 +120,13 @@ public final class UtteranceFile {
             }
             String[] parts = line.split("\\s+");
             if (parts.length < 5) {
-                throw new IllegalArgumentException("Zeile " + lineNumber + " ist keine Lautzeile: " + line);
+                throw new IllegalArgumentException("Line " + lineNumber + " is not a sound line: " + line);
             }
             try {
                 int start = Integer.parseInt(parts[0]);
                 Phoneme phoneme = Phoneme.bySymbol(parts[1]);
                 if (phoneme == null) {
-                    throw new IllegalArgumentException("Zeile " + lineNumber + ": unbekannter Laut " + parts[1]);
+                    throw new IllegalArgumentException("Line " + lineNumber + ": unknown sound " + parts[1]);
                 }
                 int dur = Integer.parseInt(parts[2]);
                 String[] pitches = parts[3].split(">");
@@ -133,7 +136,7 @@ public final class UtteranceFile {
                 boolean stressed = parts.length > 5 && parts[5].equals("*");
                 segments.add(new Segment(start, dur, phoneme, pitch, pitchEnd, volume, phoneme.isPause() ? -1 : Math.max(0, word), stressed));
             } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Zeile " + lineNumber + " ist nicht zu lesen: " + line, e);
+                throw new IllegalArgumentException("Line " + lineNumber + " cannot be read: " + line, e);
             }
         }
         return new Utterance(id, title, spoken, language, speaker, style, segments, sung);

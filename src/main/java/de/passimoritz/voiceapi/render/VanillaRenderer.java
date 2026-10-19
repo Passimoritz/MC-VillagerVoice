@@ -11,45 +11,45 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Sprache aus Vanilla-Klängen – ohne Ressourcenpaket, für jeden Spieler.
+ * Speech from vanilla sounds – without a resource pack, for every player.
  * <p>
- * <b>Vokale</b> kommen aus den Lauten der Stimme ({@link Speaker}): Das gehaltene „Hmm“ wird mit der Tonhöhe der Silbe gestartet (etwas
- * früher, weil der Laut im Klang erst nach einigen Millisekunden einsetzt) und am Ende des Vokals gestoppt – so entsteht aus einem Brummen
- * jede gewünschte Silbenlänge. Helle Vokale (i, e) spielen etwas höher, dunkle (u, o) etwas tiefer: Mit der Tonhöhe wandern auch die
- * Formanten, und das Ohr hört den Vokal mit. Offene betonte Vokale (a) beginnen mit dem kurzen offenen Laut („Uh!“), Ausrufe mit dem Schrei.
- * Diphthonge und Gleiten der Melodie innerhalb eines Vokals werden in zwei Stufen gespielt.
+ * <b>Vowels</b> come from the sounds of the voice ({@link Speaker}): the held "Hmm" is started at the pitch of the syllable (a little earlier,
+ * because the sound only sets in after a few milliseconds) and stopped at the end of the vowel – so a hum gives any syllable length. Bright
+ * vowels (i, e) play a little higher, dark ones (u, o) a little lower: the formants move with the pitch, and the ear hears the vowel along.
+ * Open stressed vowels (a) start with the short open sound ("Uh!"), exclamations with the scream. Diphthongs and melody glides within a
+ * vowel are played in two steps.
  * <p>
- * <b>Konsonanten</b> sind Geräusche von Blöcken und Tieren, die den Mundgeräuschen am nächsten kommen: Sand für s und sch, Kies für den
- * ach-Laut, ein Pferdeatmen für h und f, ein Knopfklick für t, ein Lavablubb für p, Steinsetzen für k und g … Stimmhafte Konsonanten
- * (b, d, g, v, z, w) bekommen dazu ein leises, kurzes „Hmm“ als Stimmton. Nasale, l, r, w und j sind kurze Hmm-Laute in passender Färbung.
+ * <b>Consonants</b> are block and animal noises that come closest to mouth noises: sand for s and sh, gravel for the "ach" sound, a horse
+ * breathing for h and f, a button click for t, a lava pop for p, stone placing for k and g … Voiced consonants (b, d, g, v, z, w) also get a
+ * quiet, short "Hmm" as voicing. Nasals, l, r, w and j are short hum sounds in a matching colour.
  */
 public final class VanillaRenderer implements Renderer {
 
     public static final VanillaRenderer INSTANCE = new VanillaRenderer();
 
-    /** Wie stark Helligkeit und Dunkelheit eines Vokals die Tonhöhe färben (Halbtöne von u bis i). */
+    /** How strongly brightness and darkness of a vowel colour the pitch (semitones from u to i). */
     private static final double COLOUR_SEMITONES = 5.0;
-    /** Zweite Stufe eines Gleitens: wenn ein Vokal mindestens so lang ist (ms). */
+    /** Second step of a glide: if a vowel is at least this long (ms). */
     private static final int GLIDE_MIN_MS = 110;
 
     /**
-     * Ein Geräusch für einen Konsonanten.
+     * A noise for a consonant.
      *
-     * @param sound  das Klang-Ereignis
-     * @param rate   die Geschwindigkeit (färbt: schneller = heller und kürzer)
-     * @param gainDb wie viel lauter als das Dorfbewohner-„Hmm“ der Klang von Natur aus ist (wird ausgeglichen)
-     * @param maxMs  wie lange der Klang bei Geschwindigkeit 1 nutzbar ist (danach Stopp)
-     * @param voiced ob dazu ein Stimmton (leises Hmm) spielt
+     * @param sound  the sound event
+     * @param rate   the speed (colours it: faster = brighter and shorter)
+     * @param gainDb how much louder than the villager "Hmm" the sound naturally is (compensated)
+     * @param maxMs  how long the sound is usable at speed 1 (then stop)
+     * @param voiced whether a voicing tone (quiet hum) plays with it
      */
     public record Noise(String sound, float rate, double gainDb, int maxMs, boolean voiced) {
 
-        /** Der Lautstärke-Faktor, der das Geräusch auf das Dorfbewohner-„Hmm“ bringt. */
+        /** The volume factor that brings the noise to the level of the villager "Hmm". */
         float gain() {
             return (float) Math.pow(10.0, -gainDb / 20.0);
         }
     }
 
-    /** Welches Geräusch jeder Konsonant ist (Affrikaten: zwei nacheinander). */
+    /** Which noise every consonant is (affricates: two in a row). */
     public static final Map<Phoneme, List<Noise>> NOISES = new EnumMap<>(Phoneme.class);
 
     static {
@@ -80,7 +80,7 @@ public final class VanillaRenderer implements Renderer {
         NOISES.put(phoneme, List.of(noise));
     }
 
-    /** Die Färbung (Halbtöne) der klingenden Konsonanten gegenüber der Silben-Tonhöhe. */
+    /** The colouring (semitones) of the voiced consonants relative to the syllable pitch. */
     private static double colour(Phoneme phoneme) {
         return switch (phoneme) {
             case M -> -2.0;
@@ -94,7 +94,7 @@ public final class VanillaRenderer implements Renderer {
         };
     }
 
-    /** Alle Klang-Ereignisse, die dieser Renderer benutzt (für Prüfungen gegen die Vanilla-Liste). */
+    /** All sound events this renderer uses (for checks against the vanilla list). */
     public static List<String> sounds() {
         java.util.LinkedHashSet<String> all = new java.util.LinkedHashSet<>();
         for (Speaker speaker : Speaker.values()) {
@@ -132,14 +132,14 @@ public final class VanillaRenderer implements Renderer {
             } else if (phoneme.isSonorant()) {
                 sonorant(cues, speaker, segment, i, utterance.sung());
             } else if (phoneme.isConsonant() && !utterance.sung()) {
-                // beim Singen keine Geräusche: Dorfbewohner singen „Hmm“ (wie in den bekannten Videos) – die Melodie zählt
+                // no noises when singing: villagers sing "Hmm" (like in the well-known videos) – the melody is what counts
                 consonant(cues, speaker, segment, i);
             }
         }
         return Renderer.finish(cues);
     }
 
-    // ── Vokale ──
+    // ── Vowels ──
 
     private static void vowel(List<Cue> cues, Speaker speaker, Segment segment, int index, boolean sung) {
         Phoneme phoneme = segment.phoneme();
@@ -152,8 +152,8 @@ public final class VanillaRenderer implements Renderer {
         double pitchEnd = segment.pitchEnd() + colourEnd;
         boolean glide = dur >= GLIDE_MIN_MS && (phoneme.isDiphthong() || Math.abs(pitchEnd - pitchStart) >= 1.0);
         float volume = segment.volume() * MASTER;
-        // Beginn: offener Laut oder Schrei bei offenen betonten Vokalen
-        // Grunz- und Schrei-Einsätze haben keine verlässliche Tonhöhe: beim Singen nur das gehaltene Hmm
+        // onset: open sound or scream for open stressed vowels
+        // grunt and scream onsets have no reliable pitch: when singing only the held hum
         boolean open = !sung && phoneme.openness() >= 0.6 && segment.stressed();
         Speaker.Carrier onset = null;
         if (open && segment.volume() >= 0.95f) {
@@ -169,7 +169,7 @@ public final class VanillaRenderer implements Renderer {
             if (dur <= usable * 0.8) {
                 return;
             }
-            // der Rest des Vokals auf dem Hmm, leicht überlappend
+            // the rest of the vowel on the hum, slightly overlapping
             start = start + Math.min(usable, dur) / 2;
             volume *= 0.9f;
         }
@@ -187,8 +187,8 @@ public final class VanillaRenderer implements Renderer {
     }
 
     /**
-     * Ein gehaltener Laut von {@code from} bis {@code to} (ms): vorgezogen um den Einsatz (beim Singen bis die Tonhöhe steht – der Rutscher davor
-     * wird zum Portamento in den Ton), bei Bedarf neu gestartet, am Ende gestoppt.
+     * A held sound from {@code from} to {@code to} (ms): started earlier by its onset (when singing until the pitch is stable – the slide
+     * before becomes a portamento into the note), restarted if needed, stopped at the end.
      */
     private static void hum(List<Cue> cues, Speaker speaker, Speaker.Carrier carrier, double pitch, int from, int to, float volume, int index, boolean sung) {
         if (to <= from) {
@@ -200,7 +200,7 @@ public final class VanillaRenderer implements Renderer {
         float gain = volume * carrier.gain();
         int dur = to - from;
         if (dur < carrier.attackMs() / rate) {
-            // kurze Vokale erreichen die volle Lautstärke des weichen Einsatzes nicht: etwas anheben
+            // short vowels do not reach the full volume of the soft attack: raise them a little
             gain *= 1.25f;
         }
         int at = from;
@@ -214,7 +214,7 @@ public final class VanillaRenderer implements Renderer {
         }
     }
 
-    // ── klingende Konsonanten ──
+    // ── Voiced consonants ──
 
     private static void sonorant(List<Cue> cues, Speaker speaker, Segment segment, int index, boolean sung) {
         double pitch = segment.midPitch() + (sung ? 0 : colour(segment.phoneme()));
@@ -222,7 +222,7 @@ public final class VanillaRenderer implements Renderer {
         hum(cues, speaker, speaker.hum(), pitch, segment.startMs(), segment.endMs(), volume, index, sung);
     }
 
-    // ── Geräusch-Konsonanten ──
+    // ── Noise consonants ──
 
     private static void consonant(List<Cue> cues, Speaker speaker, Segment segment, int index) {
         List<Noise> noises = NOISES.get(segment.phoneme());
@@ -240,7 +240,7 @@ public final class VanillaRenderer implements Renderer {
             float volume = Math.min(1f, segment.volume() * MASTER * noise.gain());
             cues.add(new Cue(from, noise.sound(), noise.rate(), volume, stop, index));
             if (noise.voiced()) {
-                // Stimmton: leises Hmm unter dem Geräusch
+                // voicing: quiet hum under the noise
                 hum(cues, speaker, speaker.hum(), segment.midPitch() - 2.0, from, to, segment.volume() * MASTER * 0.35f, index);
             }
         }

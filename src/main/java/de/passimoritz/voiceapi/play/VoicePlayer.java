@@ -26,15 +26,15 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 
 /**
- * Spielt Sprechstücke: eine eigene Sprach-Uhr (Thread, 5-ms-Schritte) startet und stoppt die Klänge auf die Millisekunde – der Server-Tick
- * (50 ms) wäre für Konsonanten zu grob. Je Server-Tick werden im Hauptthread Zuhörer, Orte und Paket-Stand neu erhoben; die Uhr arbeitet
- * mit diesem Stand. Spieler mit dem Ressourcenpaket (VoiceAPI-Laute) bekommen die Paket-Klänge, alle anderen die Vanilla-Klänge.
+ * Plays utterances: its own speech clock (thread, 5 ms steps) starts and stops the sounds to the millisecond – the server tick (50 ms) would
+ * be too coarse for consonants. Every server tick the main thread collects listeners, places and pack state again; the clock works with that
+ * state. Players with the resource pack (VoiceAPI sounds) get the pack sounds, everyone else the vanilla sounds.
  * <p>
- * Die Klänge laufen in der Kategorie aus {@code speech.category} (Standard: Stimme/Sprache), ein Spieler kann sie also im Spiel regeln.
+ * The sounds play in the category from {@code speech.category} (default: Voice/Speech), so a player can adjust them in the game.
  */
 public final class VoicePlayer {
 
-    /** Weiter als so viele Blöcke vom Sprecher hört niemand mehr. */
+    /** Nobody hears the speaker further away than this many blocks. */
     public static final double RANGE = 24.0;
     private static final long STEP_MS = 5;
 
@@ -56,7 +56,7 @@ public final class VoicePlayer {
         this.pack = pack;
     }
 
-    /** Übernimmt die Einstellungen ({@code speech.*}). */
+    /** Takes over the settings ({@code speech.*}). */
     public void configure(String categoryName, double volume, double speechRate) {
         SoundCategory found = defaultCategory();
         if (categoryName != null) {
@@ -71,9 +71,9 @@ public final class VoicePlayer {
         rate = Double.isFinite(speechRate) && speechRate > 0 ? Compat.clamp(speechRate, 0.4, 2.5) : 1.0;
     }
 
-    /** Ob Gesang nur mit dem Ressourcenpaket gespielt wird ({@code sing.require-pack}): Mit Vanilla-Klängen trifft der Dorfbewohner die Töne
-     * nicht (sein Brummen steht nur ~180 ms stabil und das Spiel wählt zufällig eine von drei Aufnahmen); Spieler ohne Paket hören dann nichts,
-     * und das einbindende Plugin soll das Paket erzwingen ({@link de.passimoritz.voiceapi.VoiceApi#needsPack}). */
+    /** Whether singing only plays with the resource pack ({@code sing.require-pack}): with vanilla sounds the villager does not hit the notes
+     * (its hum is only stable for ~180 ms and the game randomly picks one of three takes); players without the pack then hear nothing, and
+     * the integrating plugin should enforce the pack ({@link de.passimoritz.voiceapi.VoiceApi#needsPack}). */
     public void singRequiresPack(boolean required) {
         singRequiresPack = required;
     }
@@ -82,8 +82,8 @@ public final class VoicePlayer {
         return singRequiresPack;
     }
 
-    /** Ob auch Sprache nur mit dem Ressourcenpaket gespielt wird ({@code speech.require-pack}, Standard an: die Vanilla-Laute klingen nur als
-     * Notlösung). */
+    /** Whether speech also only plays with the resource pack ({@code speech.require-pack}, on by default: the vanilla sounds are only a
+     * fallback). */
     public void speechRequiresPack(boolean required) {
         speechRequiresPack = required;
     }
@@ -92,7 +92,7 @@ public final class VoicePlayer {
         return speechRequiresPack;
     }
 
-    /** „Stimme/Sprache“, sonst „Spieler“, sonst die erste Kategorie – nach Namen gesucht, damit kein Server-Update das Plugin bricht. */
+    /** "Voice", otherwise "Players", otherwise the first category – looked up by name so no server update breaks the plugin. */
     private static SoundCategory defaultCategory() {
         for (String name : new String[]{"VOICE", "PLAYERS", "MASTER"}) {
             for (SoundCategory candidate : SoundCategory.values()) {
@@ -104,7 +104,7 @@ public final class VoicePlayer {
         return SoundCategory.values()[0];
     }
 
-    /** Das Sprechtempo aus der Einstellung (wird auf jedes Stück angewendet). */
+    /** The speaking rate from the settings (applied to every utterance). */
     public double rate() {
         return rate;
     }
@@ -118,7 +118,7 @@ public final class VoicePlayer {
             return;
         }
         clock = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread thread = new Thread(r, "VoiceAPI-Uhr");
+            Thread thread = new Thread(r, "VoiceAPI-Clock");
             thread.setDaemon(true);
             return thread;
         });
@@ -138,7 +138,7 @@ public final class VoicePlayer {
         }
     }
 
-    /** Siehe {@link de.passimoritz.voiceapi.VoiceApi#play}. */
+    /** See {@link de.passimoritz.voiceapi.VoiceApi#play}. */
     public Speech play(Utterance utterance, Supplier<Location> place, Predicate<Player> listeners, double volume, Runnable whenDone) {
         Utterance spoken = rate == 1.0 ? utterance : utterance.stretched(1.0 / rate);
         boolean packOnly = spoken.sung() ? singRequiresPack : speechRequiresPack;
@@ -161,22 +161,22 @@ public final class VoicePlayer {
         }
     }
 
-    /** Wie viele Stücke gerade laufen. */
+    /** How many utterances are playing right now. */
     public int active() {
         return running.size();
     }
 
-    /** Wie viele Klang-Befehle insgesamt gesendet wurden. */
+    /** How many sound commands were sent in total. */
     public long cuesPlayed() {
         return cuesPlayed.get();
     }
 
-    /** Alle laufenden Stücke. */
+    /** All running utterances. */
     public List<Speech> speeches() {
         return List.copyOf(running);
     }
 
-    // ── Hauptthread: Zuhörer und Orte je Tick ──
+    // ── Main thread: listeners and places per tick ──
 
     private void sync() {
         for (Speech speech : running) {
@@ -186,10 +186,10 @@ public final class VoicePlayer {
             try {
                 speech.ears = ears(speech);
             } catch (RuntimeException e) {
-                plugin.getLogger().log(Level.WARNING, "Zuhörer eines Sprechstücks nicht zu bestimmen", e);
+                plugin.getLogger().log(Level.WARNING, "Could not determine the listeners of an utterance", e);
                 speech.ears = List.of();
             }
-            // Beobachter nachziehen (Wörter, Laute)
+            // update the observers (words, sounds)
             int word = speech.wordDue;
             if (word != speech.lastWord && word >= 0) {
                 speech.lastWord = word;
@@ -198,7 +198,7 @@ public final class VoicePlayer {
                     try {
                         observer.accept(word, text);
                     } catch (RuntimeException e) {
-                        plugin.getLogger().log(Level.WARNING, "Beobachter eines Sprechstücks", e);
+                        plugin.getLogger().log(Level.WARNING, "An utterance observer failed", e);
                     }
                 }
             }
@@ -210,7 +210,7 @@ public final class VoicePlayer {
                     try {
                         observer.accept(current);
                     } catch (RuntimeException e) {
-                        plugin.getLogger().log(Level.WARNING, "Beobachter eines Sprechstücks", e);
+                        plugin.getLogger().log(Level.WARNING, "An utterance observer failed", e);
                     }
                 }
             }
@@ -238,7 +238,7 @@ public final class VoicePlayer {
         return result;
     }
 
-    // ── Sprach-Uhr ──
+    // ── Speech clock ──
 
     private void step() {
         long now = System.nanoTime();
@@ -246,7 +246,7 @@ public final class VoicePlayer {
             try {
                 advance(speech, now);
             } catch (RuntimeException e) {
-                plugin.getLogger().log(Level.WARNING, "Sprach-Uhr", e);
+                plugin.getLogger().log(Level.WARNING, "Speech clock failed", e);
                 finish(speech);
             }
         }
@@ -262,7 +262,7 @@ public final class VoicePlayer {
         int elapsed = (int) ((now - speech.startNanos) / 1_000_000L);
         List<Speech.Ear> ears = speech.ears;
         if (speech.stopped.get()) {
-            // alles Laufende abbrechen
+            // cut everything that is running
             for (Speech.PendingStop stop : speech.stops) {
                 for (Speech.Ear ear : ears) {
                     if (ear.pack() == stop.pack()) {
@@ -274,7 +274,7 @@ public final class VoicePlayer {
             finish(speech);
             return;
         }
-        // Stopps, die fällig sind
+        // stops that are due
         while (!speech.stops.isEmpty() && Compat.first(speech.stops).atMs() <= elapsed) {
             Speech.PendingStop stop = Compat.removeFirst(speech.stops);
             for (Speech.Ear ear : ears) {
@@ -283,10 +283,10 @@ public final class VoicePlayer {
                 }
             }
         }
-        // Klänge, die fällig sind
+        // sounds that are due
         speech.vanillaIndex = fire(speech, speech.vanilla, speech.vanillaIndex, elapsed, ears, false);
         speech.packIndex = fire(speech, speech.pack, speech.packIndex, elapsed, ears, true);
-        // Beobachter: welcher Laut läuft
+        // observers: which sound is playing
         List<Segment> segments = speech.utterance.segments();
         int current = speech.segmentDue;
         while (current + 1 < segments.size() && segments.get(current + 1).startMs() <= elapsed) {
@@ -348,7 +348,7 @@ public final class VoicePlayer {
                 try {
                     speech.whenDone.run();
                 } catch (RuntimeException e) {
-                    plugin.getLogger().log(Level.WARNING, "whenDone eines Sprechstücks", e);
+                    plugin.getLogger().log(Level.WARNING, "whenDone of an utterance failed", e);
                 }
             });
         }

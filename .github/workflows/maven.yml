@@ -1,10 +1,10 @@
-# VoiceAPI – Bauen, Testen und Kompatibilität, ohne Pflege:
-# - bei jedem Push, jedem PR und jeden Montag (neue Minecraft-/Server-Versionen werden so von selbst geprüft; schlägt etwas fehl, schickt
-#   GitHub eine Mail)
-# - übersetzt gegen die älteste unterstützte Spigot-API (1.17.1, Java 17) und gegen die jeweils NEUESTE Paper- und Spigot-API
-# - startet echte Server (älteste und neueste Paper-Version, eine Version dazwischen, neueste Folia, neueste Spigot) mit dem Jar und prüft,
-#   dass die VoiceAPI fehlerfrei einschaltet. Versionen und nötiges Java kommen aus den Projekt-APIs, nichts ist fest eingetragen.
-# - ein Tag "v<Version>" erstellt ein Release mit dem Jar
+# VoiceAPI – build, test and compatibility, without maintenance:
+# - on every push, every PR and every Monday (new Minecraft/server versions are checked by themselves; if something fails, GitHub sends
+#   an email)
+# - compiles against the oldest supported Spigot API (1.17.1, Java 17) and against the NEWEST Paper and Spigot API
+# - starts real servers (oldest and newest Paper version, one version in between, newest Folia, newest Spigot) with the jar and checks
+#   that VoiceAPI enables without errors. Versions and the required Java come from the project APIs, nothing is hard-coded.
+# - a tag "v<version>" creates a release with the jar
 name: Java CI with Maven
 
 on:
@@ -51,7 +51,7 @@ jobs:
       run: gh release create "$GITHUB_REF_NAME" target/voiceapi-*.jar --title "VoiceAPI ${GITHUB_REF_NAME#v}" --notes-file CHANGELOG.md
 
   api-latest:
-    # dieselben Quellen und Tests gegen die neueste API – fällt hier etwas weg oder ändert sich, merkt es die CI vor den Nutzern
+    # the same sources and tests against the newest API – if something disappears or changes, CI notices before the users
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -64,14 +64,14 @@ jobs:
         java-version: '25'
         distribution: 'temurin'
         cache: maven
-    - name: Neueste ${{ matrix.api }}-API
+    - name: Newest ${{ matrix.api }} API
       id: v
       run: echo "version=$(bash ci/latest-api.sh ${{ matrix.api }})" >> "$GITHUB_OUTPUT"
-    - name: Build and test gegen ${{ matrix.api }} ${{ steps.v.outputs.version }}
+    - name: Build and test against ${{ matrix.api }} ${{ steps.v.outputs.version }}
       run: mvn -B -ntp -P ${{ matrix.api }}-latest -Dbukkit.version="${{ steps.v.outputs.version }}" verify
 
   server:
-    # echte Server starten: lädt die VoiceAPI, schaltet sie fehlerfrei ein?
+    # start real servers: does VoiceAPI load and enable without errors?
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -88,21 +88,21 @@ jobs:
       with:
         name: voiceapi
         path: dist
-    - name: Version und Java bestimmen
+    - name: Resolve version and Java
       id: r
       run: |
         read -r version java < <(python3 ci/smoke.py --project ${{ matrix.project }} --version ${{ matrix.version }} --resolve)
-        [ "$java" -lt 17 ] && java=17   # das Plugin braucht Java 17
+        [ "$java" -lt 17 ] && java=17   # the plugin needs Java 17
         echo "version=$version" >> "$GITHUB_OUTPUT"; echo "java=$java" >> "$GITHUB_OUTPUT"
     - uses: actions/setup-java@v5
       with:
         java-version: ${{ steps.r.outputs.java }}
         distribution: 'temurin'
-    - name: ${{ matrix.project }} ${{ steps.r.outputs.version }} (Java ${{ steps.r.outputs.java }}) mit VoiceAPI starten
+    - name: ${{ matrix.project }} ${{ steps.r.outputs.version }} (Java ${{ steps.r.outputs.java }}) with VoiceAPI
       run: python3 ci/smoke.py --project ${{ matrix.project }} --version ${{ steps.r.outputs.version }} --jar "dist/voiceapi-*.jar"
 
   spigot:
-    # Spigot hat keine Download-API: neuester Stand mit BuildTools, dann derselbe Rauchtest
+    # Spigot has no download API: newest state with BuildTools, then the same smoke test
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -115,11 +115,11 @@ jobs:
       with:
         java-version: '25'
         distribution: 'temurin'
-    - name: Spigot (neueste) bauen
+    - name: Build Spigot (newest)
       run: |
         mkdir -p bt && cd bt
         curl -fsSL -o BuildTools.jar https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar
         java -jar BuildTools.jar --rev latest --output-dir out > buildtools.log 2>&1 || (tail -50 buildtools.log; exit 1)
         ls out
-    - name: Spigot mit VoiceAPI starten
+    - name: Start Spigot with VoiceAPI
       run: python3 ci/smoke.py --server "$(ls bt/out/spigot-*.jar | head -1)" --jar "dist/voiceapi-*.jar"

@@ -64,7 +64,7 @@ class SongVoicesTest {
 
         Path target = dir.resolve("VoiceAPI-Sounds.zip");
         assertTrue(voices.writePack(base, target));
-        assertFalse(voices.writePack(base, target), "unverändert: nicht neu schreiben");
+        assertFalse(voices.writePack(base, target), "unchanged: do not rewrite");
         try (ZipFile zip = new ZipFile(target.toFile())) {
             assertNotNull(zip.getEntry("assets/voiceapi/sounds/hum/villager/45_l0.ogg"));
             assertNotNull(zip.getEntry("assets/voiceapi/sounds/song/lied/0.ogg"));

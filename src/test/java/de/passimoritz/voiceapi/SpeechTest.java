@@ -26,16 +26,27 @@ class SpeechTest {
     }
 
     @Test
+    void sungUtteranceStaysSungInVoiceFile() {
+        Utterance sung = Singer.sing("la la", Language.ENGLISH, Speaker.VILLAGER,
+                List.of(new MelodyNote(0, 300, 60), new MelodyNote(300, 300, 62)), Style.DEFAULT);
+        assertTrue(sung.sung());
+        assertTrue(UtteranceFile.read("la", UtteranceFile.write(sung)).sung());
+        assertFalse(UtteranceFile.read("hi", UtteranceFile.write(speak("Hello", Language.ENGLISH, Style.DEFAULT))).sung());
+        assertEquals(Speaker.TRADER, Speaker.find("Fahrender Händler").orElseThrow());
+        assertEquals(Speaker.TRADER, Speaker.find("Wandering trader").orElseThrow());
+    }
+
+    @Test
     void segmentsAreOrderedAndDoNotOverlap() {
         Utterance utterance = speak("Willkommen im Dorf! Hast du Hunger?", Language.GERMAN, Style.DEFAULT);
         assertFalse(utterance.isEmpty());
         int end = 0;
         for (Segment segment : utterance.segments()) {
-            assertTrue(segment.startMs() >= end, "überlappt: " + segment);
+            assertTrue(segment.startMs() >= end, "overlaps: " + segment);
             end = segment.endMs();
         }
         assertEquals(6, utterance.words());
-        assertTrue(utterance.lengthMs() > 1500 && utterance.lengthMs() < 4000, "Länge " + utterance.lengthMs());
+        assertTrue(utterance.lengthMs() > 1500 && utterance.lengthMs() < 4000, "length " + utterance.lengthMs());
     }
 
     @Test
@@ -44,8 +55,8 @@ class SpeechTest {
         Utterance statement = speak("Du hast Hunger.", Language.GERMAN, Style.DEFAULT);
         Segment lastQ = question.segments().stream().filter(s -> s.phoneme().isVocalic()).reduce((a, b) -> b).orElseThrow();
         Segment lastS = statement.segments().stream().filter(s -> s.phoneme().isVocalic()).reduce((a, b) -> b).orElseThrow();
-        assertTrue(lastQ.pitchEnd() > lastQ.pitch(), "Frage steigt: " + lastQ);
-        assertTrue(lastS.pitchEnd() < lastS.pitch(), "Aussage fällt: " + lastS);
+        assertTrue(lastQ.pitchEnd() > lastQ.pitch(), "question rises: " + lastQ);
+        assertTrue(lastS.pitchEnd() < lastS.pitch(), "statement falls: " + lastS);
     }
 
     @Test
@@ -106,7 +117,7 @@ class SpeechTest {
             for (int j = i + 1; j < cues.size(); j++) {
                 Cue later = cues.get(j);
                 if (later.sound().equals(cue.sound()) && later.atMs() > cue.atMs() && cue.stops()) {
-                    assertTrue(cue.stopMs() < later.atMs(), "Stopp würde den nächsten Klang treffen: " + cue + " vs " + later);
+                    assertTrue(cue.stopMs() < later.atMs(), "stop would hit the next sound: " + cue + " vs " + later);
                 }
             }
         }
@@ -132,16 +143,16 @@ class SpeechTest {
 
     @Test
     void allVanillaSoundsExistInMinecraft() throws Exception {
-        // die Liste der Klang-Ereignisse von Minecraft 26.3 (aus sounds.json der Assets)
+        // the list of Minecraft 26.3 sound events (from the assets' sounds.json)
         java.util.Set<String> known = new java.util.HashSet<>();
         try (var in = getClass().getResourceAsStream("/vanilla-sounds.txt")) {
-            assertNotNull(in, "src/test/resources/vanilla-sounds.txt fehlt");
+            assertNotNull(in, "src/test/resources/vanilla-sounds.txt is missing");
             for (String line : new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).split("\\R")) {
                 known.add(line.strip());
             }
         }
         for (String sound : VanillaRenderer.sounds()) {
-            assertTrue(known.contains(sound), "kein Vanilla-Klang: " + sound);
+            assertTrue(known.contains(sound), "not a vanilla sound: " + sound);
         }
     }
 
@@ -156,7 +167,7 @@ class SpeechTest {
         for (Segment vowel : vowels) {
             assertTrue(vowel.pitch() >= 40 && vowel.pitch() <= 70, vowel.toString());
         }
-        // eine Oktavlage für alle, um die Gesangslage (48,6) herum: Mitte 67 → eine Oktave tiefer (64 → 52); h vor dem ersten Ton bleibt bei 0
+        // one octave register for all, around the singing register (48.6): middle 67 → one octave lower (64 → 52); h before the first note stays at 0
         assertEquals(52, vowels.get(0).pitch(), 0.01);
         assertTrue(Compat.first(sung.segments()).startMs() >= 0);
         assertEquals(Phoneme.H, Compat.first(sung.segments()).phoneme());
@@ -173,7 +184,7 @@ class SpeechTest {
 
     @Test
     void notesTaggedWithWordsStayWithTheirWord() {
-        // "Hallo" bekommt zwei Töne, "Welt" einen – egal wie die Silben sonst verteilt würden
+        // "Hallo" gets two notes, "Welt" one – no matter how the syllables would be distributed otherwise
         List<MelodyNote> melody = List.of(new MelodyNote(0, 300, 60, 0.8f, 0), new MelodyNote(300, 300, 62, 0.8f, 0), new MelodyNote(1000, 500, 64, 0.8f, 1));
         Utterance sung = Singer.sing("Hallo Welt", Language.GERMAN, Speaker.VILLAGER, melody, Style.DEFAULT);
         List<Segment> vowels = sung.segments().stream().filter(s -> s.phoneme().isVocalic()).toList();
@@ -186,24 +197,24 @@ class SpeechTest {
 
     @Test
     void smoothingBindsNotesGlidesOverJumpsAndEvensOutVolume() {
-        // zwei Töne mit 100 ms Lücke und Quint-Sprung, ein sehr leiser und ein lauter
+        // two notes with a 100 ms gap and a jump of a fifth, one very quiet and one loud
         List<MelodyNote> melody = List.of(new MelodyNote(0, 400, 55, 0.3f), new MelodyNote(500, 400, 62, 1.0f), new MelodyNote(2000, 400, 55, 0.6f));
         de.passimoritz.voiceapi.sing.SingOptions options = de.passimoritz.voiceapi.sing.SingOptions.DEFAULT;
         Utterance sung = Singer.sing("a a a", Language.GERMAN, Speaker.VILLAGER, melody, Style.DEFAULT, options);
         List<Segment> vowels = sung.segments().stream().filter(s -> s.phoneme().isVocalic()).sorted(java.util.Comparator.comparingInt(Segment::startMs)).toList();
-        // erster Ton klingt bis zum zweiten durch (Lücke 100 ≤ 140), zweiter setzt 35 ms früher ein, davor ein Zwischenton (Sprung 7 ≥ 3)
+        // the first note sounds until the second (gap 100 ≤ 140), the second starts 35 ms earlier, with a passing note before it (jump 7 ≥ 3)
         assertEquals(500, vowels.get(0).endMs());
         Segment glide = vowels.get(1);
         assertEquals(465, glide.startMs());
         assertEquals(options.glideMs(), glide.durMs());
         assertTrue(glide.pitch() > vowels.get(0).pitch() && glide.pitch() < vowels.get(2).pitch());
-        // dritter Ton nach 1,1 s Pause: nicht gebunden, kein Zwischenton
+        // third note after a 1.1 s rest: not tied, no passing note
         assertEquals(2000, Compat.last(vowels).startMs());
-        // Lautstärke gestaucht: Abstand leise–laut deutlich kleiner als 0,3 → 1,0
+        // volume compressed: distance quiet–loud clearly smaller than 0.3 → 1.0
         float quiet = vowels.get(0).volume();
         float loud = vowels.get(2).volume();
         assertTrue(loud - quiet < 0.35f, quiet + " .. " + loud);
-        // im Paket: der gebundene Ton nimmt das Legato-Hmm, der freie nicht
+        // in the pack: the tied note takes the legato hum, the free one does not
         List<Cue> cues = PackRenderer.INSTANCE.render(sung);
         assertTrue(cues.stream().anyMatch(c -> c.sound().endsWith("g")), cues.toString());
         assertTrue(cues.stream().filter(c -> c.atMs() == 2000).noneMatch(c -> c.sound().endsWith("g")));

@@ -11,10 +11,10 @@ import java.util.Set;
 import static de.passimoritz.voiceapi.lang.Phoneme.*;
 
 /**
- * Englisch: ein Wörterbuch der häufigen und unregelmäßigen Wörter (die englische Schreibung verrät die Aussprache oft nicht) und für alles andere
- * Regeln: Endungen (-ing, -ed, -s, -tion, -ture, -le …), stummes End-e mit langem Vokal (name, time, hope), Vokal-Digraphe (ee, ea, oo, ou, ow,
- * ai, oa, igh …), c/g vor e/i/y, s zwischen Vokalen, offene und geschlossene Silben. Betonung aus dem Wörterbuch oder: erste Silbe; nach
- * unbetonten Vorsilben (a-, be-, re-, de-, pre-, com-, con-, ex-, un-, dis-) die zweite; -tion/-sion/-ic/-ity betonen die Silbe davor.
+ * English: a dictionary of frequent and irregular words (English spelling often does not reveal the pronunciation) and rules for
+ * everything else: endings (-ing, -ed, -s, -tion, -ture, -le …), silent final e with a long vowel (name, time, hope), vowel digraphs (ee, ea,
+ * oo, ou, ow, ai, oa, igh …), c/g before e/i/y, s between vowels, open and closed syllables. Stress from the dictionary or: first syllable;
+ * after unstressed prefixes (a-, be-, re-, de-, pre-, com-, con-, ex-, un-, dis-) the second; -tion/-sion/-ic/-ity stress the syllable before.
  */
 public final class EnglishPhonemizer implements Phonemizer {
 
@@ -155,7 +155,7 @@ public final class EnglishPhonemizer implements Phonemizer {
         if (known != null) {
             return known;
         }
-        // Endungen abtrennen, Stamm nachschlagen oder nach Regeln lesen
+        // split off endings, look up the stem or read it by the rules
         for (String[] suffix : SUFFIXES) {
             String end = suffix[0];
             if (word.length() > end.length() + 2 && word.endsWith(end)) {
@@ -182,7 +182,7 @@ public final class EnglishPhonemizer implements Phonemizer {
         return Phonemizer.stress(parts, stressed);
     }
 
-    /** Endung → Laute; {@code ~} steht für „stimmhaft/stimmlos je nach Stamm“ (s/z, d/t/ɪd). */
+    /** Ending → sounds; {@code ~} stands for "voiced/voiceless depending on the stem" (s/z, d/t/ɪd). */
     private static final String[][] SUFFIXES = {
             {"ing", "ɪŋ"}, {"ings", "ɪŋz"}, {"ed", "~ed"}, {"es", "~s"}, {"s", "~s"}, {"'s", "~s"}, {"ly", "li"}, {"er", "ɚ"}, {"ers", "ɚz"},
             {"est", "ɪst"}, {"ness", "nɪs"}, {"ment", "mənt"}, {"ful", "fəl"}, {"less", "lɪs"}, {"y", "i"},
@@ -247,7 +247,7 @@ public final class EnglishPhonemizer implements Phonemizer {
         return 0;
     }
 
-    /** Unbetonte kurze Vokale in Mittelsilben werden zum Murmel-e (nicht am Wortende: happy, taxi). */
+    /** Unstressed short vowels in middle syllables become schwa (not at the end of a word: happy, taxi). */
     private static void reduce(List<List<Phoneme>> parts, int stressed) {
         for (int s = 0; s < parts.size(); s++) {
             if (s == stressed || s == parts.size() - 1 && parts.size() > 1) {
@@ -263,7 +263,7 @@ public final class EnglishPhonemizer implements Phonemizer {
         }
     }
 
-    /** Läuft Buchstabe für Buchstabe durch ein Wort. */
+    /** Walks through a word letter by letter. */
     private static final class Walk {
         private final String w;
         private final List<Phoneme> out = new ArrayList<>();
@@ -309,7 +309,7 @@ public final class EnglishPhonemizer implements Phonemizer {
         }
 
         private boolean silentFinalE(int from) {
-            // stummes End-e: Konsonant + e am Wortende (nicht "le": little → əl)
+            // silent final e: consonant + e at the end of a word (not "le": little → əl)
             return from == w.length() - 1 && w.charAt(from) == 'e' && from > 0 && !isVowelLetter(w.charAt(from - 1)) && out.stream().anyMatch(Phoneme::isVocalic);
         }
 
@@ -318,9 +318,9 @@ public final class EnglishPhonemizer implements Phonemizer {
             char n = ch(1);
             char nn = ch(2);
             boolean last = i == w.length() - 1;
-            // Endungen
+            // endings
             if (c == 'e' && last && !out.isEmpty() && out.stream().anyMatch(Phoneme::isVocalic)) {
-                // stummes e (name) – aber "le" am Ende (table) = əl
+                // silent e (name) – but "le" at the end (table) = əl
                 if (ch(-1) == 'l' && !out.isEmpty() && Compat.last(out) == L && w.length() > 2 && !isVowelLetter(ch(-2))) {
                     Compat.removeLast(out);
                     add(SCHWA, L);
@@ -348,7 +348,7 @@ public final class EnglishPhonemizer implements Phonemizer {
                 i += 4;
                 return;
             }
-            // Digraphe
+            // digraphs
             String two = c + String.valueOf(n);
             Phoneme digraph = switch (two) {
                 case "ee", "ea" -> II;
@@ -373,14 +373,14 @@ public final class EnglishPhonemizer implements Phonemizer {
                     add(R);
                 }
                 if (two.equals("ar") || two.equals("or")) {
-                    // "are", "ore": stummes e
+                    // "are", "ore": silent e
                     if (ch(0) == 'e' && i == w.length() - 1) {
                         i++;
                     }
                 }
                 return;
             }
-            // Ein einzelner Vokal: offen (Konsonant + Vokal / stummes End-e folgt) oder geschlossen
+            // a single vowel: open (consonant + vowel / silent final e follows) or closed
             int consonants = 0;
             int k = i + 1;
             while (k < w.length() && !isVowelLetter(w.charAt(k))) {
@@ -397,7 +397,7 @@ public final class EnglishPhonemizer implements Phonemizer {
             if (consonants == 0 && k >= w.length() && !last) {
                 open = true;
             }
-            // vor r: "fire", "care", "here" (Vokal + r + e)
+            // before r: "fire", "care", "here" (vowel + r + e)
             Phoneme chosen = switch (c) {
                 case 'a' -> open ? EI : AEE;
                 case 'e' -> open ? II : E;
@@ -500,7 +500,7 @@ public final class EnglishPhonemizer implements Phonemizer {
                 return;
             }
             if (at("gh")) {
-                // stumm (night, high) – am Wortende nach au/ou oft f (laugh, tough: im Wörterbuch)
+                // silent (night, high) – at the end of a word after au/ou often f (laugh, tough: in the dictionary)
                 i += 2;
                 return;
             }
@@ -555,14 +555,14 @@ public final class EnglishPhonemizer implements Phonemizer {
                 case 'y' -> add(Y);
                 case 'z' -> add(Z);
                 default -> {
-                    // fremde Zeichen überspringen
+                    // skip foreign characters
                 }
             }
             i++;
         }
     }
 
-    // ── Zahlen ──
+    // ── Numbers ──
 
     private static final String[] ONES = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
             "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"};

@@ -18,28 +18,28 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
- * Wandelt die Gesangsspur eines Stücks mit dem Villager-Stimmmodell um ({@code tools/villager_sing.py --chunks}, RVC über Applio, nur CPU) –
- * ein Lied nach dem anderen, in einem eigenen Thread. Die Python-Umgebung richtet {@code tools/rvc_setup.py} ein (Windows und Linux).
+ * Converts the vocal track of a piece with the villager voice model ({@code tools/villager_sing.py --chunks}, RVC via Applio, CPU only) –
+ * one song after the other, on its own thread. {@code tools/rvc_setup.py} sets up the Python environment (Windows and Linux).
  */
 public final class SongConverter {
 
-    /** Wie lange eine Umwandlung höchstens dauern darf. */
+    /** How long a conversion may take at most. */
     private static final long TIMEOUT_MINUTES = 60;
 
     private final Path rvcHome;
     private final Path script;
     private final String model;
     private final ExecutorService worker = Executors.newSingleThreadExecutor(r -> {
-        Thread thread = new Thread(r, "VoiceAPI-Umwandlung");
+        Thread thread = new Thread(r, "VoiceAPI-Conversion");
         thread.setDaemon(true);
         return thread;
     });
     private volatile Process running;
 
     /**
-     * @param rvcHome Ordner der Stimmmodell-Umgebung ({@code ~/.voiceapi/rvc}: venv, Applio, models)
+     * @param rvcHome folder of the voice model environment ({@code ~/.voiceapi/rvc}: venv, Applio, models)
      * @param script  {@code villager_sing.py}
-     * @param model   Name des Modells ({@code villager})
+     * @param model   name of the model ({@code villager})
      */
     public SongConverter(Path rvcHome, Path script, String model) {
         this.rvcHome = rvcHome;
@@ -47,26 +47,26 @@ public final class SongConverter {
         this.model = model == null || model.isBlank() ? "villager" : model;
     }
 
-    /** Das Python der Umgebung. */
+    /** The Python of the environment. */
     public Path python() {
         boolean windows = System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
         return rvcHome.resolve("venv").resolve(windows ? "Scripts/python.exe" : "bin/python");
     }
 
-    /** Was fehlt, damit umgewandelt werden kann (leer = alles da). */
+    /** What is missing for converting (empty = everything is there). */
     public List<String> missing() {
         List<String> missing = new ArrayList<>();
         if (!Files.isRegularFile(python())) {
-            missing.add("Python-Umgebung (" + python() + ")");
+            missing.add("Python environment (" + python() + ")");
         }
         if (!Files.isRegularFile(rvcHome.resolve("Applio").resolve("core.py"))) {
             missing.add("Applio (" + rvcHome.resolve("Applio") + ")");
         }
         if (!Files.isRegularFile(rvcHome.resolve("models").resolve(model + ".pth"))) {
-            missing.add("Stimmmodell (" + rvcHome.resolve("models").resolve(model + ".pth") + ")");
+            missing.add("voice model (" + rvcHome.resolve("models").resolve(model + ".pth") + ")");
         }
         if (!Files.isRegularFile(script)) {
-            missing.add("Werkzeug (" + script + ")");
+            missing.add("tool (" + script + ")");
         }
         return missing;
     }
@@ -76,20 +76,20 @@ public final class SongConverter {
     }
 
     /**
-     * Wandelt eine Gesangsspur um.
+     * Converts a vocal track.
      *
-     * @param id       Kennung des Stücks
-     * @param vocals   die getrennte Gesangsspur (WAV)
-     * @param target   Ordner für {@code voice.json} und die Abschnitte
-     * @param progress bekommt Fortschritts-Zeilen („Villager singt“, „Abschnitte“) – aus dem Umwandlungs-Thread
-     * @return wird mit dem Ordner erfüllt, oder mit einem Fehler (Text der Ausgabe)
+     * @param id       id of the piece
+     * @param vocals   the separated vocal track (WAV)
+     * @param target   folder for {@code voice.json} and the sections
+     * @param progress receives progress lines ("Villager is singing", "Writing sections") – from the conversion thread
+     * @return completed with the folder, or with an error (text of the output)
      */
     public CompletableFuture<Path> convert(String id, Path vocals, Path target, Consumer<String> progress) {
         CompletableFuture<Path> result = new CompletableFuture<>();
         List<String> missing = missing();
         if (!missing.isEmpty()) {
-            result.completeExceptionally(new IllegalStateException("Das Stimmmodell ist nicht eingerichtet, es fehlt: " + String.join(", ", missing)
-                    + " – tools/rvc_setup.py richtet es ein"));
+            result.completeExceptionally(new IllegalStateException("The voice model is not set up, missing: " + String.join(", ", missing)
+                    + " – tools/rvc_setup.py sets it up"));
             return result;
         }
         worker.submit(() -> {
@@ -116,10 +116,10 @@ public final class SongConverter {
                 }
                 if (!process.waitFor(TIMEOUT_MINUTES, TimeUnit.MINUTES)) {
                     process.destroyForcibly();
-                    throw new IOException("Zeitüberschreitung nach " + TIMEOUT_MINUTES + " Minuten");
+                    throw new IOException("Timed out after " + TIMEOUT_MINUTES + " minutes");
                 }
                 if (process.exitValue() != 0 || !Files.isRegularFile(target.resolve("voice.json"))) {
-                    throw new IOException("Die Umwandlung ist fehlgeschlagen:\n" + String.join("\n", tail));
+                    throw new IOException("The conversion failed:\n" + String.join("\n", tail));
                 }
                 result.complete(target);
             } catch (IOException | RuntimeException e) {
@@ -134,7 +134,7 @@ public final class SongConverter {
         return result;
     }
 
-    /** Bricht die laufende Umwandlung ab. */
+    /** Cancels the running conversion. */
     public void cancel() {
         Process process = running;
         if (process != null) {

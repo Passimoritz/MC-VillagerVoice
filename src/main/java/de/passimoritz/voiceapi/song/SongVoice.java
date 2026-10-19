@@ -7,16 +7,16 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Der Villager-Gesang eines Stücks, vom KI-Stimmmodell aus der echten Gesangsspur umgewandelt ({@code tools/villager_sing.py --chunks}) und als
- * kurze, überblendete Abschnitte im Lautpaket abgelegt ({@code voiceapi:song.<id>.<n>}).
+ * The villager singing of a piece, converted by the AI voice model from the real vocal track ({@code tools/villager_sing.py --chunks}) and
+ * stored as short, crossfaded sections in the sound pack ({@code voiceapi:song.<id>.<n>}).
  *
- * @param id        die Kennung des Stücks (wie in der NoteAPI)
- * @param chunkMs   Länge eines Abschnitts ohne Überlappung (ms)
- * @param overlapMs Überblendung an jeder Grenze (ms); Abschnitt {@code n} beginnt bei {@code n * chunkMs - overlapMs}
- * @param count     Anzahl der Abschnitte
- * @param silent    Abschnitte ohne Gesang (nicht im Paket, werden übersprungen)
- * @param lengthMs  Länge des Gesangs (ms)
- * @param model     das Stimmmodell, mit dem umgewandelt wurde
+ * @param id        the id of the piece (as in NoteAPI)
+ * @param chunkMs   length of a section without overlap (ms)
+ * @param overlapMs crossfade at every boundary (ms); section {@code n} starts at {@code n * chunkMs - overlapMs}
+ * @param count     number of sections
+ * @param silent    sections without singing (not in the pack, skipped)
+ * @param lengthMs  length of the singing (ms)
+ * @param model     the voice model used for the conversion
  */
 public record SongVoice(String id, int chunkMs, int overlapMs, int count, Set<Integer> silent, int lengthMs, String model) {
 
@@ -26,24 +26,24 @@ public record SongVoice(String id, int chunkMs, int overlapMs, int count, Set<In
         overlapMs = Math.max(0, Math.min(chunkMs / 4, overlapMs));
     }
 
-    /** Der Klangname eines Abschnitts. */
+    /** The sound name of a section. */
     public String sound(int chunk) {
         return "voiceapi:" + key(chunk);
     }
 
-    /** Der Schlüssel eines Abschnitts in {@code sounds.json}. */
+    /** The key of a section in {@code sounds.json}. */
     public String key(int chunk) {
         return "song." + id + "." + chunk;
     }
 
-    /** Wann ein Abschnitt startet (ms ab Beginn des Stücks). */
+    /** When a section starts (ms from the beginning of the piece). */
     public int startMs(int chunk) {
         return Math.max(0, chunk * chunkMs - (chunk > 0 ? overlapMs : 0));
     }
 
     /**
-     * Die Klang-Befehle des ganzen Gesangs (Geschwindigkeit 1, volle Lautstärke, ausklingen lassen) – zum Abspielen auf der Musik-Uhr des
-     * einbindenden Plugins. Lautstärke regelt das Plugin.
+     * The sound commands of the whole singing (speed 1, full volume, let decay) – to be played on the music clock of the integrating plugin.
+     * The plugin controls the volume.
      */
     public List<Cue> cues() {
         List<Cue> cues = new ArrayList<>(count);
@@ -55,7 +55,7 @@ public record SongVoice(String id, int chunkMs, int overlapMs, int count, Set<In
         return cues;
     }
 
-    /** Die Befehle ab einer Stelle (für Sprünge): der laufende Abschnitt wird ausgelassen, es geht mit dem nächsten weiter. */
+    /** The commands from a position (for jumps): the running section is left out, playback continues with the next one. */
     public List<Cue> cuesFrom(int fromMs) {
         return cues().stream().filter(cue -> cue.atMs() >= fromMs).toList();
     }
