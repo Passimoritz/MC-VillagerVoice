@@ -7,6 +7,7 @@
   scharfe Konsonanten des Originals leise dazu (`--consonants`, Standard 0,5) – Text verständlicher, Einsätze klarer. `--no-follow` = wie bisher.
   Gemessen mit der NoteAPI-Likeness an 6 NCS-Liedern: Harmonie/Rhythmus/Dynamik 85,3 → 91,3 (Rhythmus 71,7 → 80,1, Dynamik 90,4 → 99,9,
   Klangfarbe ≈ 70 → 74).
+- `--protect` bleibt 0,33: 0,5 geprüft und verworfen (Rhythmus 79,3 → 73,8, Harmonie leicht schlechter).
 
 ## 1.3.1 (19.10.2026)
 
