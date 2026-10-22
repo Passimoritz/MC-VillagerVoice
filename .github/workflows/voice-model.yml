@@ -1,0 +1,45 @@
+# Villager voice model on machines WITHOUT a GPU – Linux and Windows Server (GitHub's runners have no graphics card):
+# sets up the environment from scratch with tools/rvc_setup.py, then converts a short melody exactly like the plugin does
+# (ci/voice_model_test.py, fails if torch sees a GPU). Runs weekly and when the tools change, so it keeps working without maintenance.
+# The model comes from the release "voice-model" (villager.pth + villager.index).
+name: Voice model (CPU, Linux + Windows Server)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 5 * * 1"
+  push:
+    paths:
+      - "tools/villager_sing.py"
+      - "tools/rvc_setup.py"
+      - "tools/rvc_infer.py"
+      - "ci/voice_model_test.py"
+      - ".github/workflows/voice-model.yml"
+
+jobs:
+  cpu:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    env:
+      CUDA_VISIBLE_DEVICES: ""
+      GH_TOKEN: ${{ github.token }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Download the villager model
+      shell: bash
+      run: gh release download voice-model -R "$GITHUB_REPOSITORY" -p "villager.*" -D model
+    - name: Set up (CPU only)
+      shell: bash
+      run: python tools/rvc_setup.py --model model/villager.pth && python tools/rvc_setup.py --check
+    - name: Convert a melody like the plugin
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" = "Windows" ]; then py="$HOME/.voiceapi/rvc/venv/Scripts/python.exe"; else py="$HOME/.voiceapi/rvc/venv/bin/python"; fi
+        "$py" ci/voice_model_test.py

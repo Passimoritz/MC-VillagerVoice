@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.0 (2026-10-22)
+
+- **Closer to the villager videos**: training finished (200 epochs, CPU only); every 10th–20th epoch measured against the villager videos
+  ("Thick of It", "APT.": timbre, long-term spectrum, voicing, pitch) – **epoch 140** is the closest and is the new model (release
+  `voice-model`). Conversion defaults `--index-rate 1.0` (more of the villager's own timbre) and `--protect 0.5`. Distance to the videos
+  60.2 → 51.4, pitch like the video (0.10 semitones); NoteAPI Likeness on 8 NCS songs 88.7 (target ≥ 87; before 91.3 – the closer to the
+  original performance, the less like the video).
+- **Mix like the videos**: they keep the original instrumental untouched and the villager about as loud as the original singer (measured);
+  `villager_sing.py` now limits peaks smoothly instead of clipping them, `--vocal-gain` adjusts the villager's level.
+- **Faster**: register detection with yin (0.1 s instead of 12.5 s per song), consonant separation with smaller kernels.
+- **Proven without a GPU on Linux and Windows Server**: new workflow *Voice model (CPU, Linux + Windows Server)* sets the voice model up
+  from scratch on GitHub's runners every week and converts a melody like the plugin (`ci/voice_model_test.py`, fails if torch sees a GPU).
+
 ## 1.4.0 (2026-10-20)
 
 - **English throughout**: code comments, log lines, error and progress messages, config comments, tools, CI and README are English;

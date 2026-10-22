@@ -60,7 +60,7 @@ def model_files(name: str) -> tuple[Path, Path | None]:
     return weights[-1], indexes[-1] if indexes else None
 
 
-def convert(vocals: Path, out: Path, model: str, pitch: int, f0_method: str = "fcpe", index_rate: float = 0.75, protect: float = 0.33) -> None:
+def convert(vocals: Path, out: Path, model: str, pitch: int, f0_method: str = "fcpe", index_rate: float = 1.0, protect: float = 0.5) -> None:
     pth, index = model_files(model)
     # through rvc_infer.py: fixed randomness, noise always from the CPU – the same result on every machine, CPU or GPU
     starter = Path(__file__).resolve().parent / "rvc_infer.py"
@@ -76,11 +76,14 @@ def convert(vocals: Path, out: Path, model: str, pitch: int, f0_method: str = "f
 
 
 def auto_pitch(vocals: np.ndarray) -> int:
-    """The videos sing in the register of the original; only very high voices (middle above G4) one octave lower."""
+    """The videos sing in the register of the original; only very high voices (middle above G4) one octave lower.
+    yin on 22 kHz instead of pyin: the same median in about a twentieth of the time (only the register matters here)."""
     import librosa
-    f0, v, _ = librosa.pyin(vocals[: SR * 60], fmin=65, fmax=1000, sr=SR, frame_length=2048, hop_length=512)
-    vals = f0[np.nan_to_num(v) > 0.5]
-    if len(vals) == 0:
+    y = librosa.resample(vocals[: SR * 60], orig_sr=SR, target_sr=22050)
+    f0 = librosa.yin(y, fmin=65, fmax=1000, sr=22050, frame_length=2048, hop_length=512)
+    rms = librosa.feature.rms(y=y, frame_length=2048, hop_length=512)[0][: len(f0)]
+    vals = f0[: len(rms)][rms > rms.max() * 0.15]
+    if len(vals) < 20:
         return 0
     median = 69 + 12 * np.log2(np.median(vals) / 440)
     return -12 if median > 67 else 0
@@ -151,12 +154,30 @@ def follow(vocals: np.ndarray, y: np.ndarray, consonants: float = 0.5, win_ms: f
     out = y * np.convolve(gain, k / k.sum(), mode="same")
     if consonants > 0:
         S = librosa.stft(vocals, n_fft=2048, hop_length=512)
-        _, P = librosa.decompose.hpss(S, margin=2.0)
+        _, P = librosa.decompose.hpss(S, kernel_size=(17, 17), margin=2.0)
         P[librosa.fft_frequencies(sr=SR, n_fft=2048) < 2000] = 0
         out = out + consonants * librosa.istft(P, hop_length=512, length=n)
     out *= float(np.sqrt(np.mean(vocals ** 2))) / (float(np.sqrt(np.mean(out ** 2))) + 1e-9)
     log(f"offset corrected: {lag / SR * 1000:+.1f} ms")
     return out.astype(np.float32)
+
+
+def limit(y: np.ndarray, ceiling: float = 0.97) -> np.ndarray:
+    """Peak limiter instead of hard clipping: a smooth gain (5 ms attack, 120 ms release) keeps the mix under the ceiling without
+    the crackle of clipped peaks."""
+    peak = np.abs(y)
+    if peak.max() <= ceiling:
+        return y.astype(np.float32)
+    need = np.minimum(1.0, ceiling / np.maximum(peak, 1e-9))
+    hold = int(0.005 * SR)
+    from scipy.ndimage import minimum_filter1d
+    # the minimum around every sample: the gain is already down when a peak arrives (look-ahead) and stays down briefly after it
+    gain = minimum_filter1d(need, size=2 * hold + 1)
+    release = int(0.12 * SR)
+    k = np.hanning(2 * release + 1)
+    smooth = np.convolve(gain, k / k.sum(), mode="same")
+    gain = np.minimum(gain, smooth)
+    return np.clip(y * gain, -ceiling, ceiling).astype(np.float32)
 
 
 def write_chunks(y: np.ndarray, folder: Path, ident: str, model: str) -> dict:
@@ -205,10 +226,11 @@ def main() -> None:
     parser.add_argument("--pitch", default="auto")
     parser.add_argument("--f0-method", default="fcpe", help="fcpe (default, faster, just as accurate) or rmvpe")
     parser.add_argument("--no-colour", action="store_true", help="do not match the sound to the villager videos")
-    parser.add_argument("--index-rate", type=float, default=0.75)
-    parser.add_argument("--protect", type=float, default=0.33)
+    parser.add_argument("--index-rate", type=float, default=1.0, help="how much of the villager's own timbre (index) to use, 0 … 1")
+    parser.add_argument("--protect", type=float, default=0.5, help="how much consonants/breaths stay untouched, 0 … 0.5")
     parser.add_argument("--consonants", type=float, default=0.5, help="mix in the consonants of the original (0 = off)")
     parser.add_argument("--no-follow", action="store_true", help="do not align offset, level curve and consonants to the original")
+    parser.add_argument("--vocal-gain", type=float, default=0.0, help="villager level in the mix relative to the original vocals (dB)")
     parser.add_argument("--label", default="Villager")
     args = parser.parse_args()
     import soundfile as sf
@@ -254,7 +276,7 @@ def main() -> None:
     title = args.title
     src = out / f"{title} - 1 Original - vocals only.wav"
     sf.write(str(src), vocals, SR)
-    sf.write(str(out / f"{title} - 1 Original - with backing.wav"), np.clip(vocals + backing, -1, 1), SR)
+    sf.write(str(out / f"{title} - 1 Original - with backing.wav"), limit(vocals + backing), SR)
     pitch = auto_pitch(vocals) if args.pitch == "auto" else int(args.pitch)
     raw = out / f"_{args.label}-raw.wav"
     convert(src, raw, args.model, pitch, args.f0_method, args.index_rate, args.protect)
@@ -266,8 +288,10 @@ def main() -> None:
     y *= float(np.sqrt(np.mean(vocals ** 2))) / (float(np.sqrt(np.mean(y ** 2))) + 1e-9)
     if not args.no_follow:
         y = follow(vocals, y, args.consonants)
-    sf.write(str(out / f"{title} - 2 {args.label} - vocals only.wav"), np.clip(y, -1, 1), SR)
-    sf.write(str(out / f"{title} - 2 {args.label} - with backing.wav"), np.clip(y + backing, -1, 1), SR)
+    sf.write(str(out / f"{title} - 2 {args.label} - vocals only.wav"), limit(y), SR)
+    # the videos keep the original instrumental untouched and the villager about as loud as the original singer (measured: −0.6 dB)
+    sung = y * 10 ** (args.vocal_gain / 20) + backing
+    sf.write(str(out / f"{title} - 2 {args.label} - with backing.wav"), limit(sung), SR)
     # comparison: the loudest 12 s of the vocals, original first, then villager (with backing)
     win = 12 * SR
     if n > win:
@@ -275,8 +299,8 @@ def main() -> None:
         best = int(np.argmax([energy[i: i + 48].sum() for i in range(max(1, len(energy) - 48))])) * (SR // 4)
     else:
         best = 0
-    a = np.clip(vocals + backing, -1, 1)[best: best + win]
-    b = np.clip(y + backing, -1, 1)[best: best + win]
+    a = limit(vocals + backing)[best: best + win]
+    b = limit(sung)[best: best + win]
     sf.write(str(out / f"{title} - Comparison (original first, then {args.label}).wav"), np.concatenate([a, np.zeros(SR // 2, dtype=np.float32), b]), SR)
     raw.unlink(missing_ok=True)
     log(f"done: {out}")

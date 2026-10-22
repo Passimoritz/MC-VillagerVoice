@@ -133,23 +133,35 @@ the villager voice and turns any singing into it. Everything runs on the **CPU**
    (−7 … +12 semitones, the way the game plays them via speed) and 3 tempi: 510 files, 4.2 min.
 3. **Train** (in `Applio/`): `core.py preprocess --model-name villager --sample-rate 40000 …`, `core.py extract … --f0-method rmvpe --gpu -`,
    `core.py train --model-name villager --sample-rate 40000 --batch-size 8 --gpu - --total-epoch 200 --save-every-epoch 5`, `core.py index …`.
-   On a Ryzen 7 7800X3D one epoch takes about 4 minutes (200 epochs ≈ 13 hours, once). Copy the result to
-   `~/.voiceapi/rvc/models/villager.pth` (+ `.index`).
+   On a Ryzen 7 7800X3D one epoch takes about 4 minutes (200 epochs ≈ 13 hours, once). Then pick the epoch that is closest to the
+   villager videos – not simply the last one: epoch 140 won against 65, 100, 120, 150, 180, 190 and 200. Copy it to
+   `~/.voiceapi/rvc/models/villager.pth` (+ `.index`). The finished model is attached to the release
+   [`voice-model`](https://github.com/Passimoritz/MC-VoiceAPI/releases/tag/voice-model).
 4. **Let it sing**: `python tools/villager_sing.py --cache <NoteAPI cache folder> --out <folder> --title "Genre - Title"` – takes the
    separated vocal track, converts it with the model (`~/.voiceapi/rvc/models/villager.pth` or the newest training weights) and mixes it with
    the original backing. Files: `<Title> - 1 Original - with backing.wav`, `<Title> - 2 Villager - with backing.wav`,
    `<Title> - 2 Villager - vocals only.wav`, `<Title> - Comparison (original first, then Villager).wav`.
-   After the conversion the singing follows the performance of the original (`follow`): offset corrected sample-exactly, level every 25 ms
-   like the original (silence stays silent), the original's sharp consonants mixed in quietly (`--consonants 0.5`, `0` = off; `--no-follow`
-   switches it all off). NoteAPI Likeness on 8 NCS songs: harmony/rhythm/dynamics 91.3 (before 85.3 on 6 songs; dynamics 90 → 100,
-   rhythm 72 → 80).
-5. **Reproducible**: conversions run through `tools/rvc_infer.py` – fixed randomness, the model's noise is always made on the CPU. The same
+   Defaults: `--index-rate 1.0` (the villager's own timbre from the index), `--protect 0.5`. After the conversion the singing follows the
+   performance of the original (`follow`): offset corrected sample-exactly, level every 25 ms like the original (silence stays silent), the
+   original's sharp consonants mixed in quietly (`--consonants 0.5`, `0` = off; `--no-follow` switches it all off). The mix keeps the
+   original instrumental untouched and the villager as loud as the original singer – measured on the videos (`--vocal-gain` in dB); a
+   limiter instead of hard clipping.
+   **Measured against the villager videos** ("Thick of It", "APT."; timbre, spectrum, voicing, pitch – lower is closer): 60.2 → **51.4**;
+   pitch on the video's notes (0.10 semitones). NoteAPI Likeness on 8 NCS songs: harmony/rhythm/dynamics **88.7** (target ≥ 87).
+   The closer the singing follows the original performance, the better NoteAPI's rhythm score and the less it sounds like the video –
+   the defaults are the best balance of both.
+5. **Fast on the CPU**: the register detection uses yin (0.1 s instead of 12 s), consonant separation with smaller kernels; on an
+   8-core CPU a song converts in about real time.
+6. **Reproducible**: conversions run through `tools/rvc_infer.py` – fixed randomness, the model's noise is always made on the CPU. The same
    input gives the same result on every machine (two CPU runs checked: bit-identical), and a GPU would get the same random numbers.
 
 **In the plugin** (interface 3): `VoiceApi.convertSong(id, vocalsWav, progress)` calls `villager_sing.py --chunks` with the environment from
 `rvc.home`, stores the singing as 4 s sections with 60 ms crossfades in `plugins/VoiceAPI/songs/<id>/` and rewrites the sound pack;
 `onSoundPackChanged` tells the integrating plugin (NoteAPI remixes and sends). Playback goes through `VoiceApi.songVoice(id).cues()` on the
-plugin's music clock. On a server without a GPU: `python plugins/VoiceAPI/tools/rvc_setup.py --model villager.pth` (Linux and Windows).
+plugin's music clock. On a server without a GPU: `python plugins/VoiceAPI/tools/rvc_setup.py --model villager.pth` (Linux and Windows,
+including Windows Server). **CI proves it**: the workflow *Voice model (CPU, Linux + Windows Server)* sets the environment up from scratch on
+GitHub's runners (no graphics card) every week, downloads the model from the release and converts a melody exactly like the plugin
+(`ci/voice_model_test.py` fails if torch sees a GPU).
 
 ## Build
 

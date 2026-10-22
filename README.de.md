@@ -132,19 +132,28 @@ Villager-Stimme gelernt hat und jeden Gesang in sie umwandelt. Alles läuft auf 
    (−7 … +12 Halbtöne, wie das Spiel sie per Geschwindigkeit spielt) und 3 Tempi: 510 Dateien, 4,2 min.
 3. **Trainieren** (in `Applio/`): `core.py preprocess --model-name villager --sample-rate 40000 …`, `core.py extract … --f0-method rmvpe --gpu -`,
    `core.py train --model-name villager --sample-rate 40000 --batch-size 8 --gpu - --total-epoch 200 --save-every-epoch 5`, `core.py index …`.
-   Auf einem Ryzen 7 7800X3D dauert eine Runde etwa 4 Minuten (200 Runden ≈ 13 Stunden, einmalig).
+   Auf einem Ryzen 7 7800X3D dauert eine Runde etwa 4 Minuten (200 Runden ≈ 13 Stunden, einmalig). Danach die Runde nehmen, die den
+   Villager-Videos am nächsten kommt – nicht einfach die letzte: Runde 140 schlug 65, 100, 120, 150, 180, 190 und 200. Das fertige Modell
+   hängt am Release [`voice-model`](https://github.com/Passimoritz/MC-VoiceAPI/releases/tag/voice-model).
 4. **Singen lassen**: `python tools/villager_sing.py --cache <NoteAPI-Cache-Ordner> --out <Ordner> --title "Genre - Titel"` – nimmt die
    getrennte Gesangsspur, wandelt sie mit dem Modell (`~/.voiceapi/rvc/models/villager.pth` oder das neueste Trainingsgewicht) und mischt mit
    der Original-Begleitung. Dateien: `<Titel> - 1 Original - with backing.wav`, `<Titel> - 2 Villager - with backing.wav`,
    `<Titel> - 2 Villager - vocals only.wav`, `<Titel> - Comparison (original first, then Villager).wav`.
    Nach der Umwandlung richtet sich der Gesang nach dem Vortrag des Originals (`follow`): Versatz samplegenau ausgeglichen, Pegel alle 25 ms wie
    das Original (Stille bleibt still), die scharfen Konsonanten des Originals leise dazu (`--consonants 0.5`, `0` = aus; `--no-follow` schaltet
-   alles ab). NoteAPI-Likeness an 6 NCS-Liedern: Harmonie/Rhythmus/Dynamik 85,3 → 91,3 (Dynamik 90 → 100, Rhythmus 72 → 80).
+   alles ab). Standard: `--index-rate 1.0` (Villager-Klangfarbe aus dem Index), `--protect 0.5`. Im Mix bleibt das Original-Instrumental
+   unverändert und der Villager so laut wie der Original-Sänger – so machen es die Videos (`--vocal-gain` in dB); Begrenzer statt hartem
+   Abschneiden. **Gegen die Villager-Videos gemessen** („Thick of It“, „APT.“; kleiner = näher): 60,2 → **51,4**, Tonhöhe wie das Video
+   (0,10 Halbtöne). NoteAPI-Likeness an 8 NCS-Liedern: **88,7** (Ziel ≥ 87). Je enger der Gesang dem Original-Vortrag folgt, desto besser
+   der NoteAPI-Rhythmus und desto weniger klingt er nach dem Video – die Standards sind der beste Ausgleich. Schnell auf der CPU: ein Lied
+   in etwa Echtzeit auf 8 Kernen.
 
 **Im Plugin** (Schnittstelle 3): `VoiceApi.convertSong(id, vocalsWav, progress)` ruft `villager_sing.py --chunks` mit der Umgebung aus `rvc.home`
 auf, legt den Gesang als 4-s-Abschnitte mit 60 ms Überblendung nach `plugins/VoiceAPI/songs/<id>/` und schreibt das Lautpaket neu;
 `onSoundPackChanged` meldet das dem einbindenden Plugin (die NoteAPI mischt neu und sendet). Abgespielt wird über `VoiceApi.songVoice(id).cues()`
-auf der Musik-Uhr des Plugins. Auf einem Server ohne GPU: `python plugins/VoiceAPI/tools/rvc_setup.py --model villager.pth` (Linux und Windows).
+auf der Musik-Uhr des Plugins. Auf einem Server ohne GPU: `python plugins/VoiceAPI/tools/rvc_setup.py --model villager.pth` (Linux und Windows,
+auch Windows Server). **Die CI prüft das** jede Woche auf GitHub-Rechnern ohne Grafikkarte (Workflow *Voice model (CPU, Linux + Windows
+Server)*, `ci/voice_model_test.py` bricht ab, wenn torch eine GPU sieht).
 
 ## Bauen
 
