@@ -54,6 +54,12 @@ public final class VoiceApiPlugin extends JavaPlugin {
                 getConfig().getString("rvc.model", "villager"));
         VoiceApi.enable(player, library, pack, Files.isRegularFile(soundPack) ? soundPack : base);
         VoiceApi.enableSongs(this, songs, converter, base, soundPack);
+        if (getConfig().getBoolean("rvc.resume", true)) {
+            int resumed = VoiceApi.resumeInterrupted();
+            if (resumed > 0) {
+                getLogger().info("Continuing " + resumed + " conversion(s) a server stop interrupted.");
+            }
+        }
         getLogger().info("VoiceAPI " + getDescription().getVersion() + " ready: " + Speaker.values().length + " voices, " + library.size()
                 + " saved utterances, " + songs.size() + " villager songs, resource pack " + (pack.available() ? "with" : "without")
                 + " VoiceAPI sounds, voice model " + (converter.ready() ? "ready" : "not set up (" + String.join(", ", converter.missing()) + ")") + ".");

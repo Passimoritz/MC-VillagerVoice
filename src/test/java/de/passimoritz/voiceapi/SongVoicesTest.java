@@ -37,6 +37,37 @@ class SongVoicesTest {
     }
 
     @Test
+    void sectionsStartAtTheirQuietBoundaries() {
+        SongVoice voice = new SongVoice("lied", 4000, 60, 3, Set.of(), 12000, "villager", List.of(0, 3720, 8410));
+        assertEquals(List.of(0, 3660, 8350), voice.cues().stream().map(Cue::atMs).toList());
+        // a wrong number of starts falls back to the fixed grid
+        assertEquals(3940, new SongVoice("lied", 4000, 60, 3, Set.of(), 12000, "villager", List.of(0, 1)).startMs(1));
+    }
+
+    @Test
+    void leftoversOfInterruptedConversionsAreRemovedAndResumable(@TempDir Path dir) throws IOException {
+        Files.createDirectories(dir.resolve("crab-rave.part"));
+        Files.writeString(dir.resolve("crab-rave.part").resolve("_vocals.wav"), "x");
+        Files.createDirectories(dir.resolve("old-song"));
+        Files.writeString(dir.resolve("old-song").resolve("_villager.wav"), "x");
+        Path ok = dir.resolve("fine");
+        Files.createDirectories(ok);
+        Files.writeString(ok.resolve("voice.json"), "{\"id\":\"fine\",\"chunkMs\":4000,\"overlapMs\":60,\"count\":2,\"silent\":[],\"starts\":[0,3900],"
+                + "\"lengthMs\":7000,\"model\":\"villager\"}");
+        Path vocals = dir.resolve("vocals.wav");
+        Files.writeString(vocals, "x");
+        Files.writeString(dir.resolve("crab-rave.job"), vocals.toString());
+        Files.writeString(dir.resolve("gone.job"), dir.resolve("missing.wav").toString());
+        SongVoices voices = new SongVoices(dir, null);
+        voices.load();
+        assertFalse(Files.exists(dir.resolve("crab-rave.part")));
+        assertFalse(Files.exists(dir.resolve("old-song")));
+        assertEquals(List.of(0, 3840), voices.get("fine").orElseThrow().cues().stream().map(Cue::atMs).toList());
+        assertEquals(java.util.Map.of("crab-rave", vocals), voices.interrupted());
+        assertFalse(Files.exists(dir.resolve("gone.job")));
+    }
+
+    @Test
     void idsAreSafeForThePack() {
         assertEquals("cartoon-on---on", SongVoices.safe("Cartoon On & On"));
         assertEquals("song", SongVoices.safe(" "));

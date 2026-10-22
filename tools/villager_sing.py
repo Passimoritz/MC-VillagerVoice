@@ -4,8 +4,8 @@
   python villager_sing.py --vocals vocals.wav --backing backing.wav --out folder/ --title "…"
   python villager_sing.py --vocals vocals.wav --chunks folder/ --id <piece-id>      for the plugin: villager singing as pack sections
 
---chunks (called by the plugin): converts only the vocals and stores them as short OGG sections with crossfades (<id>/<n>.ogg) plus
-voice.json (section length, overlap, count, duration, model). The sections play one after the other and together make the singing
+--chunks (called by the plugin): converts only the vocals and stores them as short OGG sections with crossfades (<id>/<n>.ogg), cut at
+quiet moments about every 4 s, plus voice.json (section starts, overlap, count, duration, model). The sections play one after the other and together make the singing
 (the linear crossfades sum to 1); so the player can start anywhere and stays in time.
 
 Output (descriptive names):
@@ -200,19 +200,41 @@ def limit(y: np.ndarray, ceiling: float = 0.97) -> np.ndarray:
     return np.clip(y * gain, -ceiling, ceiling).astype(np.float32)
 
 
-def write_chunks(y: np.ndarray, folder: Path, ident: str, model: str) -> dict:
-    """Cuts the singing into crossfaded sections and writes them as OGG (Vorbis) – section n starts at n*CHUNK_MS - OVERLAP_MS."""
-    import soundfile as sf
-    folder.mkdir(parents=True, exist_ok=True)
-    for old in folder.glob("*.ogg"):
-        old.unlink()
+def boundaries(y: np.ndarray, reach_ms: int = 1000) -> list[int]:
+    """Where to cut the singing into sections (sample positions, first 0): about every CHUNK_MS, but at the quietest moment within
+    ±reach_ms – between syllables or in a breath. Minecraft starts streamed sounds with a slightly varying delay; at a quiet cut such a
+    delay cannot be heard, inside a sung note it would double the note for a moment."""
     chunk = int(CHUNK_MS / 1000 * SR)
+    reach = int(reach_ms / 1000 * SR)
+    hop = int(0.01 * SR)
+    win = int(0.05 * SR)
+    energy = np.convolve(y.astype(np.float64) ** 2, np.ones(win) / win, mode="same")[::hop]
+    cuts = [0]
+    while cuts[-1] + chunk + reach < len(y):
+        nominal = cuts[-1] + chunk
+        a, b = (nominal - reach) // hop, (nominal + reach) // hop
+        best = a + int(np.argmin(energy[a:b]))
+        cuts.append(max(cuts[-1] + chunk // 2, best * hop))
+    return cuts
+
+
+def write_chunks(y: np.ndarray, folder: Path, ident: str, model: str) -> dict:
+    """Cuts the singing into crossfaded sections at quiet moments and writes them as OGG (Vorbis): section n covers starts[n] − OVERLAP_MS
+    … starts[n+1] + OVERLAP_MS. Everything is written into <folder>.part first and swapped in at the end – an interrupted conversion never
+    leaves a half-written song behind."""
+    import shutil
+    import soundfile as sf
+    part_dir = folder.with_name(folder.name + ".part")
+    part_dir.mkdir(parents=True, exist_ok=True)
+    for old in part_dir.glob("*.ogg"):
+        old.unlink()
     over = int(OVERLAP_MS / 1000 * SR)
-    count = int(np.ceil(len(y) / chunk))
+    cuts = boundaries(y)
+    count = len(cuts)
     silent = []
     for n in range(count):
-        a = max(0, n * chunk - over)
-        b = min(len(y), (n + 1) * chunk + over)
+        a = max(0, cuts[n] - over)
+        b = min(len(y), (cuts[n + 1] if n + 1 < count else len(y)) + over)
         part = y[a:b].copy()
         # linear crossfade over 2*over around every boundary: fade in at the start (except the first), fade out at the end (except the last)
         if n > 0:
@@ -224,10 +246,21 @@ def write_chunks(y: np.ndarray, folder: Path, ident: str, model: str) -> dict:
         if float(np.abs(part).max()) < 1e-3:
             silent.append(n)  # silent section: not stored, the player skips it
             continue
-        sf.write(str(folder / f"{n}.ogg"), part.astype(np.float32), SR, format="OGG", subtype="VORBIS")
+        sf.write(str(part_dir / f"{n}.ogg"), part.astype(np.float32), SR, format="OGG", subtype="VORBIS")
     meta = {"id": ident, "chunkMs": CHUNK_MS, "overlapMs": OVERLAP_MS, "count": count, "silent": silent,
-            "lengthMs": int(len(y) / SR * 1000), "model": model, "sampleRate": SR}
-    (folder / "voice.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
+            "starts": [int(round(c / SR * 1000)) for c in cuts], "lengthMs": int(len(y) / SR * 1000), "model": model, "sampleRate": SR}
+    (part_dir / "voice.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
+    for temp in part_dir.glob("_*.wav"):
+        temp.unlink()
+    # swap in: the old song (if any) only disappears once the new one is complete
+    old_dir = folder.with_name(folder.name + ".old")
+    if old_dir.exists():
+        shutil.rmtree(old_dir)
+    if folder.exists():
+        folder.rename(old_dir)
+    part_dir.rename(folder)
+    if old_dir.exists():
+        shutil.rmtree(old_dir, ignore_errors=True)
     return meta
 
 
@@ -260,12 +293,13 @@ def main() -> None:
         if not args.vocals or not args.id:
             raise SystemExit("--chunks needs --vocals and --id")
         folder = Path(args.chunks).resolve()
-        folder.mkdir(parents=True, exist_ok=True)
+        work = folder.with_name(folder.name + ".part")
+        work.mkdir(parents=True, exist_ok=True)
         vocals = load(Path(args.vocals), args.start, args.end)
-        src = folder / "_vocals.wav"
+        src = work / "_vocals.wav"
         sf.write(str(src), vocals, SR)
         pitch = auto_pitch(vocals) if args.pitch == "auto" else int(args.pitch)
-        raw = folder / "_villager.wav"
+        raw = work / "_villager.wav"
         log("@@step Villager is singing")
         convert(src, raw, args.model, pitch, args.f0_method, args.index_rate, args.protect, args.noise)
         y = clean(load(raw), args.clean)
@@ -278,8 +312,6 @@ def main() -> None:
         y = np.clip(y, -0.98, 0.98)
         log("@@step Writing sections")
         meta = write_chunks(y, folder, args.id, args.model)
-        src.unlink(missing_ok=True)
-        raw.unlink(missing_ok=True)
         log(f"@@done {args.id} {meta['count']} sections, {meta['lengthMs'] / 1000:.1f} s")
         return
     if not args.out or not args.title:

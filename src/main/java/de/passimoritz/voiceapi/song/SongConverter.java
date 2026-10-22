@@ -92,6 +92,14 @@ public final class SongConverter {
                     + " – tools/rvc_setup.py sets it up"));
             return result;
         }
+        // remember the job until it is done: if the server stops in between, VoiceAPI continues it on the next start
+        Path job = target.resolveSibling(target.getFileName() + ".job");
+        try {
+            Files.createDirectories(target.getParent());
+            Files.writeString(job, vocals.toAbsolutePath().toString(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            // only the resume after a restart is lost
+        }
         worker.submit(() -> {
             List<String> tail = new ArrayList<>();
             try {
@@ -121,8 +129,12 @@ public final class SongConverter {
                 if (process.exitValue() != 0 || !Files.isRegularFile(target.resolve("voice.json"))) {
                     throw new IOException("The conversion failed:\n" + String.join("\n", tail));
                 }
+                deleteQuietly(job);
                 result.complete(target);
             } catch (IOException | RuntimeException e) {
+                if (!stopping) {
+                    deleteQuietly(job);
+                }
                 result.completeExceptionally(e);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -133,6 +145,17 @@ public final class SongConverter {
         });
         return result;
     }
+
+    private static void deleteQuietly(Path file) {
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException e) {
+            // stays; the next start drops it if the vocal track is gone
+        }
+    }
+
+    /** Set while the plugin shuts down: the job file then stays, so the next start continues the conversion. */
+    private volatile boolean stopping;
 
     /** Cancels the running conversion. */
     public void cancel() {
@@ -148,6 +171,7 @@ public final class SongConverter {
     }
 
     public void shutdown() {
+        stopping = true;
         cancel();
         worker.shutdownNow();
     }

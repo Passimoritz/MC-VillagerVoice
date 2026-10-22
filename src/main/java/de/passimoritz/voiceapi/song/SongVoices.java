@@ -62,17 +62,73 @@ public final class SongVoices {
         return clean.replace("-", "").isEmpty() ? "song" : clean;
     }
 
-    /** Reads all song voices. */
+    /** Reads all song voices and removes what interrupted conversions left behind ({@code <id>.part}, {@code <id>.old}, temporary WAVs). */
     public synchronized void load() {
         voices.clear();
         if (!Files.isDirectory(folder)) {
             return;
         }
         try (Stream<Path> dirs = Files.list(folder)) {
-            dirs.filter(Files::isDirectory).sorted().forEach(dir -> read(dir).ifPresent(voice -> voices.put(voice.id(), voice)));
+            for (Path dir : dirs.filter(Files::isDirectory).sorted().toList()) {
+                String name = dir.getFileName().toString();
+                if (name.endsWith(".part") || name.endsWith(".old")) {
+                    removeTree(dir);
+                    log.accept("Removed the leftovers of an interrupted conversion: " + name);
+                    continue;
+                }
+                cleanTemporary(dir);
+                read(dir).ifPresent(voice -> voices.put(voice.id(), voice));
+            }
         } catch (IOException e) {
             log.accept("Could not read the folder " + folder + ": " + e.getMessage());
         }
+    }
+
+    /** Temporary WAVs of older versions (written next to the sections); a folder that held nothing else is removed. */
+    private void cleanTemporary(Path dir) throws IOException {
+        boolean removed = false;
+        for (String temp : new String[]{"_vocals.wav", "_villager.wav", "_gesang.wav"}) {
+            removed |= Files.deleteIfExists(dir.resolve(temp));
+        }
+        if (removed && !Files.isRegularFile(dir.resolve("voice.json"))) {
+            removeTree(dir);
+            log.accept("Removed the leftovers of an interrupted conversion: " + dir.getFileName());
+        }
+    }
+
+    private static void removeTree(Path dir) throws IOException {
+        try (Stream<Path> files = Files.walk(dir)) {
+            for (Path path : files.sorted((a, b) -> b.getNameCount() - a.getNameCount()).toList()) {
+                Files.deleteIfExists(path);
+            }
+        }
+    }
+
+    /** The job file of a conversion in progress ({@code <id>.job}: the path of the vocal track) – left behind if the server stopped. */
+    public Path job(String id) {
+        return folder.resolve(safe(id) + ".job");
+    }
+
+    /** Conversions a server stop interrupted: id → vocal track (only those whose vocal track still exists; the others are dropped). */
+    public synchronized Map<String, Path> interrupted() {
+        Map<String, Path> out = new LinkedHashMap<>();
+        if (!Files.isDirectory(folder)) {
+            return out;
+        }
+        try (Stream<Path> files = Files.list(folder)) {
+            for (Path file : files.filter(p -> p.getFileName().toString().endsWith(".job")).sorted().toList()) {
+                String id = file.getFileName().toString().replaceFirst("\\.job$", "");
+                Path vocals = Path.of(Files.readString(file, StandardCharsets.UTF_8).strip());
+                if (Files.isRegularFile(vocals)) {
+                    out.put(id, vocals);
+                } else {
+                    Files.deleteIfExists(file);
+                }
+            }
+        } catch (IOException | RuntimeException e) {
+            log.accept("Could not read the interrupted conversions: " + e.getMessage());
+        }
+        return out;
     }
 
     /** Reads a song voice again (after a conversion). */
@@ -96,8 +152,14 @@ public final class SongVoices {
                 }
             }
             String id = safe(json.has("id") ? json.get("id").getAsString() : dir.getFileName().toString());
+            List<Integer> starts = new ArrayList<>();
+            if (json.has("starts")) {
+                for (JsonElement element : json.getAsJsonArray("starts")) {
+                    starts.add(element.getAsInt());
+                }
+            }
             return Optional.of(new SongVoice(id, json.get("chunkMs").getAsInt(), json.get("overlapMs").getAsInt(), json.get("count").getAsInt(), silent,
-                    json.get("lengthMs").getAsInt(), json.has("model") ? json.get("model").getAsString() : ""));
+                    json.get("lengthMs").getAsInt(), json.has("model") ? json.get("model").getAsString() : "", starts));
         } catch (IOException | RuntimeException e) {
             log.accept("Could not read the song voice in " + dir + ": " + e.getMessage());
             return Optional.empty();

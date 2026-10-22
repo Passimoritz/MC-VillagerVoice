@@ -151,7 +151,9 @@ Villager-Stimme gelernt hat und jeden Gesang in sie umwandelt. Alles läuft auf 
    in etwa Echtzeit auf 8 Kernen.
 
 **Im Plugin** (Schnittstelle 3): `VoiceApi.convertSong(id, vocalsWav, progress)` ruft `villager_sing.py --chunks` mit der Umgebung aus `rvc.home`
-auf, legt den Gesang als 4-s-Abschnitte mit 60 ms Überblendung nach `plugins/VoiceAPI/songs/<id>/` und schreibt das Lautpaket neu;
+auf, legt den Gesang als Abschnitte von etwa 4 s – geschnitten an leisen Stellen, damit eine schwankende Startverzögerung gestreamter Klänge nicht
+hörbar ist – mit 60 ms Überblendung nach `plugins/VoiceAPI/songs/<id>/` und schreibt das Lautpaket neu (erst in `<id>.part`, am Ende getauscht;
+eine durch einen Server-Stopp unterbrochene Umwandlung läuft beim nächsten Start weiter, `rvc.resume`);
 `onSoundPackChanged` meldet das dem einbindenden Plugin (die NoteAPI mischt neu und sendet). Abgespielt wird über `VoiceApi.songVoice(id).cues()`
 auf der Musik-Uhr des Plugins. Auf einem Server ohne GPU: `python plugins/VoiceAPI/tools/rvc_setup.py --model villager.pth` (Linux und Windows,
 auch Windows Server). **Die CI prüft das** jede Woche auf GitHub-Rechnern ohne Grafikkarte (Workflow *Voice model (CPU, Linux + Windows

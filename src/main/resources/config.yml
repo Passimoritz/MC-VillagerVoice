@@ -24,6 +24,8 @@ rvc:
   home: ""
   # name of the model in <home>/models/<model>.pth
   model: villager
+  # continue conversions a server stop interrupted (on the next start, in the background)
+  resume: true
 
 pack:
   # players with the NoteAPI resource pack (which contains the VoiceAPI sounds) hear real vowels and consonants instead of villager sounds

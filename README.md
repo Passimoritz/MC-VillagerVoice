@@ -157,7 +157,9 @@ the villager voice and turns any singing into it. Everything runs on the **CPU**
    input gives the same result on every machine (two CPU runs checked: bit-identical), and a GPU would get the same random numbers.
 
 **In the plugin** (interface 3): `VoiceApi.convertSong(id, vocalsWav, progress)` calls `villager_sing.py --chunks` with the environment from
-`rvc.home`, stores the singing as 4 s sections with 60 ms crossfades in `plugins/VoiceAPI/songs/<id>/` and rewrites the sound pack;
+`rvc.home`, stores the singing as sections of about 4 s – cut at quiet moments, so a varying start delay of streamed sounds cannot be heard – with
+60 ms crossfades in `plugins/VoiceAPI/songs/<id>/` and rewrites the sound pack (written into `<id>.part` and swapped in when complete; a
+conversion a server stop interrupts continues on the next start, `rvc.resume`);
 `onSoundPackChanged` tells the integrating plugin (NoteAPI remixes and sends). Playback goes through `VoiceApi.songVoice(id).cues()` on the
 plugin's music clock. On a server without a GPU: `python plugins/VoiceAPI/tools/rvc_setup.py --model villager.pth` (Linux and Windows,
 including Windows Server). **CI proves it**: the workflow *Voice model (CPU, Linux + Windows Server)* sets the environment up from scratch on

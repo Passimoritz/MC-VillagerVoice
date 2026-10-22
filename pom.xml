@@ -24,7 +24,7 @@
     <java.version>17</java.version>
     <maven.compiler.release>${java.version}</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <revision>1.6.0</revision>
+    <revision>1.7.0</revision>
     <bukkit.groupId>org.spigotmc</bukkit.groupId>
     <bukkit.artifactId>spigot-api</bukkit.artifactId>
     <bukkit.version>1.17.1-R0.1-SNAPSHOT</bukkit.version>

@@ -12,18 +12,26 @@ import java.util.Set;
  *
  * @param id        the id of the piece (as in NoteAPI)
  * @param chunkMs   length of a section without overlap (ms)
- * @param overlapMs crossfade at every boundary (ms); section {@code n} starts at {@code n * chunkMs - overlapMs}
+ * @param overlapMs crossfade at every boundary (ms); section {@code n} starts {@code overlapMs} before its boundary
  * @param count     number of sections
  * @param silent    sections without singing (not in the pack, skipped)
  * @param lengthMs  length of the singing (ms)
  * @param model     the voice model used for the conversion
+ * @param starts    the boundary of every section (ms; cut at quiet moments, so a varying start delay of streamed sounds cannot be heard);
+ *                  empty for songs converted before 1.7: then every {@code chunkMs}
  */
-public record SongVoice(String id, int chunkMs, int overlapMs, int count, Set<Integer> silent, int lengthMs, String model) {
+public record SongVoice(String id, int chunkMs, int overlapMs, int count, Set<Integer> silent, int lengthMs, String model, List<Integer> starts) {
 
     public SongVoice {
         silent = Set.copyOf(silent);
         chunkMs = Math.max(500, chunkMs);
         overlapMs = Math.max(0, Math.min(chunkMs / 4, overlapMs));
+        starts = starts == null || starts.size() != count ? List.of() : List.copyOf(starts);
+    }
+
+    /** A song voice with fixed section lengths (converted before 1.7). */
+    public SongVoice(String id, int chunkMs, int overlapMs, int count, Set<Integer> silent, int lengthMs, String model) {
+        this(id, chunkMs, overlapMs, count, silent, lengthMs, model, List.of());
     }
 
     /** The sound name of a section. */
@@ -38,7 +46,8 @@ public record SongVoice(String id, int chunkMs, int overlapMs, int count, Set<In
 
     /** When a section starts (ms from the beginning of the piece). */
     public int startMs(int chunk) {
-        return Math.max(0, chunk * chunkMs - (chunk > 0 ? overlapMs : 0));
+        int boundary = starts.isEmpty() ? chunk * chunkMs : starts.get(chunk);
+        return Math.max(0, boundary - (chunk > 0 ? overlapMs : 0));
     }
 
     /**

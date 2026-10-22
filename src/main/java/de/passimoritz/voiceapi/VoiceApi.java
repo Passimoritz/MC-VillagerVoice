@@ -285,6 +285,25 @@ public final class VoiceApi {
         return result;
     }
 
+    /**
+     * Continues the conversions a server stop interrupted (their job files in {@code songs/}), one after the other in the background; the
+     * integrating plugin learns about each finished song through {@link #onSoundPackChanged}. Called by the plugin on start.
+     *
+     * @return how many were resumed
+     */
+    static synchronized int resumeInterrupted() {
+        if (songs == null || converter == null || owner == null || !converter.ready()) {
+            return 0;
+        }
+        java.util.Map<String, java.nio.file.Path> jobs = songs.interrupted();
+        for (java.util.Map.Entry<String, java.nio.file.Path> job : jobs.entrySet()) {
+            org.bukkit.plugin.Plugin plugin = owner;
+            convertSong(job.getKey(), job.getValue(), null).whenComplete((voice, error) -> plugin.getLogger().info(error == null
+                    ? "Resumed conversion finished: " + job.getKey() : "Resumed conversion failed: " + job.getKey() + " – " + error.getMessage()));
+        }
+        return jobs.size();
+    }
+
     /** Cancels the running conversion. */
     public static synchronized void cancelSongConversion() {
         if (converter != null) {

@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.7.0 (2026-10-23)
+
+- **Livelier timbre – model "villager2"**: Minecraft only has 17 villager takes, each a single steady sound; a model trained on them keeps its
+  timbre too static. `tools/villager_dataset.py --rich` builds phrases from 2–5 different takes at changing pitches (crossfaded) plus vibrato
+  and glides; the model was fine-tuned on that (CPU only). Epoch 40 against the villager videos: distance 51.6 → 48.1, timbre movement 2.36/2.52 → 2.50/2.67 (videos
+  2.90/3.21), NoteAPI Likeness 87.0 (target ≥ 87). Release `voice-model` carries the new `villager.pth` + `.index`.
+- **No more doubled notes at section boundaries** (found by NoteAPI: +6.8 dB for 60 ms at 4 of 55 boundaries): Minecraft starts streamed
+  sounds with a slightly varying delay, and a cut inside a sung note then doubles it. The sections are now cut at the quietest moment within
+  ±1 s of every 4 s (`voice.json` → `starts`; level at the cuts 8–16 dB below the singing instead of right inside it). Songs converted
+  before keep working on the fixed grid; convert them again for the quiet cuts.
+- **Interrupted conversions are no longer lost**: a conversion writes into `songs/<id>.part` and swaps it in only when complete (an old
+  version stays until then); a job file `songs/<id>.job` remembers the vocal track, and on the next start VoiceAPI continues interrupted
+  conversions by itself (`rvc.resume`, default on). Leftovers of older versions (`_vocals.wav`, `_villager.wav`, `.part`/`.old` folders) are
+  removed on start.
+
 ## 1.6.0 (2026-10-22)
 
 - **Livelier, less robotic villager**: measured on German songs (Schlager: Helene Fischer, Andrea Berg; rap: TJ_beastboy, Apache 207)
