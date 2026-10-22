@@ -60,7 +60,8 @@ def model_files(name: str) -> tuple[Path, Path | None]:
     return weights[-1], indexes[-1] if indexes else None
 
 
-def convert(vocals: Path, out: Path, model: str, pitch: int, f0_method: str = "fcpe", index_rate: float = 1.0, protect: float = 0.5) -> None:
+def convert(vocals: Path, out: Path, model: str, pitch: int, f0_method: str = "fcpe", index_rate: float = 1.0, protect: float = 0.5,
+            noise: float = 0.0) -> None:
     pth, index = model_files(model)
     # through rvc_infer.py: fixed randomness, noise always from the CPU – the same result on every machine, CPU or GPU
     starter = Path(__file__).resolve().parent / "rvc_infer.py"
@@ -70,7 +71,9 @@ def convert(vocals: Path, out: Path, model: str, pitch: int, f0_method: str = "f
     if index:
         cmd += ["--index-path", str(index)]
     log(f"  model {pth.name}" + (f" + {index.name}" if index else "") + f", pitch {pitch:+d}")
-    result = subprocess.run(cmd, cwd=str(APPLIO), capture_output=True, text=True, encoding="utf-8", errors="replace")
+    # the model's latent noise (RVC samples it at 0.67): 0 = the clean, steady voice – with it the villager sounds breathy and tired
+    env = dict(os.environ, VOICEAPI_PRIOR_NOISE=str(noise))
+    result = subprocess.run(cmd, cwd=str(APPLIO), capture_output=True, text=True, encoding="utf-8", errors="replace", env=env)
     if result.returncode != 0 or not out.exists():
         raise SystemExit("Conversion failed:\n" + result.stdout[-1500:] + result.stderr[-1500:])
 
@@ -112,6 +115,23 @@ def colour(y: np.ndarray, strength: float = 0.7, limit_db: float = 9.0) -> np.nd
     centers = np.sqrt(np.array(VIDEO_EDGES[:-1]) * np.array(VIDEO_EDGES[1:]))
     gain = 10 ** (np.interp(freqs, centers, correction) / 20)
     out = librosa.istft(S * gain[:, None], hop_length=512, length=len(y))
+    return (out * (np.sqrt(np.mean(y ** 2)) / (np.sqrt(np.mean(out ** 2)) + 1e-9))).astype(np.float32)
+
+
+def clean(y: np.ndarray, strength: float = 0.6) -> np.ndarray:
+    """Takes the hiss out of the sung parts: the model's output is noticeably breathier than the singer and the villager videos (harmonic-
+    to-noise about 5 dB lower), which sounds tired and robotic. Where a frame is mainly tonal (sung), the noisy part (HPSS percussive/
+    residual) is lowered by `strength`; consonants and breaths (mainly noise) stay untouched. 0 switches it off."""
+    if strength <= 0:
+        return y
+    import librosa
+    S = librosa.stft(y, n_fft=2048, hop_length=512)
+    H, P = librosa.decompose.hpss(S, kernel_size=(17, 17), margin=1.0)
+    eh, ep = (np.abs(H) ** 2).sum(axis=0), (np.abs(P) ** 2).sum(axis=0)
+    tonal = np.clip((10 * np.log10((eh + 1e-12) / (ep + 1e-12)) + 3) / 6, 0, 1)  # 0 below −3 dB, 1 above +3 dB
+    tonal = np.convolve(tonal, np.ones(3) / 3, mode="same")
+    keep = 1 - strength * tonal
+    out = librosa.istft(H + P * keep[None, :], hop_length=512, length=len(y))
     return (out * (np.sqrt(np.mean(y ** 2)) / (np.sqrt(np.mean(out ** 2)) + 1e-9))).astype(np.float32)
 
 
@@ -228,6 +248,8 @@ def main() -> None:
     parser.add_argument("--no-colour", action="store_true", help="do not match the sound to the villager videos")
     parser.add_argument("--index-rate", type=float, default=1.0, help="how much of the villager's own timbre (index) to use, 0 … 1")
     parser.add_argument("--protect", type=float, default=0.5, help="how much consonants/breaths stay untouched, 0 … 0.5")
+    parser.add_argument("--noise", type=float, default=0.0, help="the model's latent noise (1 = RVC's own; 0 = clean, steady voice)")
+    parser.add_argument("--clean", type=float, default=0.6, help="lower the hiss in sung parts (0 = off … 1)")
     parser.add_argument("--consonants", type=float, default=0.5, help="mix in the consonants of the original (0 = off)")
     parser.add_argument("--no-follow", action="store_true", help="do not align offset, level curve and consonants to the original")
     parser.add_argument("--vocal-gain", type=float, default=0.0, help="villager level in the mix relative to the original vocals (dB)")
@@ -245,8 +267,8 @@ def main() -> None:
         pitch = auto_pitch(vocals) if args.pitch == "auto" else int(args.pitch)
         raw = folder / "_villager.wav"
         log("@@step Villager is singing")
-        convert(src, raw, args.model, pitch, args.f0_method, args.index_rate, args.protect)
-        y = load(raw)
+        convert(src, raw, args.model, pitch, args.f0_method, args.index_rate, args.protect, args.noise)
+        y = clean(load(raw), args.clean)
         if not args.no_colour:
             y = colour(y)
         y = np.pad(y, (0, max(0, len(vocals) - len(y))))[: len(vocals)]
@@ -279,8 +301,8 @@ def main() -> None:
     sf.write(str(out / f"{title} - 1 Original - with backing.wav"), limit(vocals + backing), SR)
     pitch = auto_pitch(vocals) if args.pitch == "auto" else int(args.pitch)
     raw = out / f"_{args.label}-raw.wav"
-    convert(src, raw, args.model, pitch, args.f0_method, args.index_rate, args.protect)
-    y = load(raw)
+    convert(src, raw, args.model, pitch, args.f0_method, args.index_rate, args.protect, args.noise)
+    y = clean(load(raw), args.clean)
     if not args.no_colour:
         y = colour(y)
     y = np.pad(y, (0, max(0, n - len(y))))[:n]

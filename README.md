@@ -141,7 +141,8 @@ the villager voice and turns any singing into it. Everything runs on the **CPU**
    separated vocal track, converts it with the model (`~/.voiceapi/rvc/models/villager.pth` or the newest training weights) and mixes it with
    the original backing. Files: `<Title> - 1 Original - with backing.wav`, `<Title> - 2 Villager - with backing.wav`,
    `<Title> - 2 Villager - vocals only.wav`, `<Title> - Comparison (original first, then Villager).wav`.
-   Defaults: `--index-rate 1.0` (the villager's own timbre from the index), `--protect 0.5`. After the conversion the singing follows the
+   Defaults: `--index-rate 1.0` (the villager's own timbre from the index), `--protect 0.5`, `--noise 0` (no latent noise – with it the
+   villager sounds breathy and tired), `--clean 0.6` (lowers the hiss in sung parts; up to a third of them fell apart into noise before). After the conversion the singing follows the
    performance of the original (`follow`): offset corrected sample-exactly, level every 25 ms like the original (silence stays silent), the
    original's sharp consonants mixed in quietly (`--consonants 0.5`, `0` = off; `--no-follow` switches it all off). The mix keeps the
    original instrumental untouched and the villager as loud as the original singer – measured on the videos (`--vocal-gain` in dB); a

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.6.0 (2026-10-22)
+
+- **Livelier, less robotic villager**: measured on German songs (Schlager: Helene Fischer, Andrea Berg; rap: TJ_beastboy, Apache 207)
+  and the two villager videos. The pitch movements (vibrato, slides, bends) were already carried over like in the videos – the tired,
+  robotic sound came from **hiss**: the model's output was about 5 dB breathier than the singer and the videos, and up to a third of the sung
+  parts fell apart into noise.
+  - The model's latent noise is switched off (`rvc_infer.py`: `VOICEAPI_PRIOR_NOISE`, `villager_sing.py --noise`, default 0; RVC samples it
+    at 0.67 – that only adds breath).
+  - New `clean` step (`--clean`, default 0.6): in sung parts the noisy part of the villager voice is lowered, consonants and breaths stay.
+  - Result: sung parts that stay voiced 78 % → 92 % of the original, harmonic-to-noise at the level of the videos ("Thick of It" +3.5 dB vs.
+    video +3.0 dB, before −0.3), distance to the videos unchanged (51.0–51.6), NoteAPI Likeness 88.9.
+- Mixer volume: NoteAPI controls the villager's level itself (mixer → vocals → source "Villager", its volume slider 0 … 3×).
+
 ## 1.5.0 (2026-10-22)
 
 - **Closer to the villager videos**: training finished (200 epochs, CPU only); every 10th–20th epoch measured against the villager videos

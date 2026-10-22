@@ -141,7 +141,9 @@ Villager-Stimme gelernt hat und jeden Gesang in sie umwandelt. Alles läuft auf 
    `<Titel> - 2 Villager - vocals only.wav`, `<Titel> - Comparison (original first, then Villager).wav`.
    Nach der Umwandlung richtet sich der Gesang nach dem Vortrag des Originals (`follow`): Versatz samplegenau ausgeglichen, Pegel alle 25 ms wie
    das Original (Stille bleibt still), die scharfen Konsonanten des Originals leise dazu (`--consonants 0.5`, `0` = aus; `--no-follow` schaltet
-   alles ab). Standard: `--index-rate 1.0` (Villager-Klangfarbe aus dem Index), `--protect 0.5`. Im Mix bleibt das Original-Instrumental
+   alles ab). Standard: `--index-rate 1.0` (Villager-Klangfarbe aus dem Index), `--protect 0.5`, `--noise 0` (kein Rauschen im Modell –
+   damit klang der Villager hauchig und lustlos), `--clean 0.6` (senkt das Rauschen in gesungenen Stellen; vorher zerfiel bis zu ein Drittel
+   davon in Rauschen). Im Mix bleibt das Original-Instrumental
    unverändert und der Villager so laut wie der Original-Sänger – so machen es die Videos (`--vocal-gain` in dB); Begrenzer statt hartem
    Abschneiden. **Gegen die Villager-Videos gemessen** („Thick of It“, „APT.“; kleiner = näher): 60,2 → **51,4**, Tonhöhe wie das Video
    (0,10 Halbtöne). NoteAPI-Likeness an 8 NCS-Liedern: **88,7** (Ziel ≥ 87). Je enger der Gesang dem Original-Vortrag folgt, desto besser

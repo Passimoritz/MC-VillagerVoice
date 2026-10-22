@@ -35,9 +35,20 @@ def main() -> None:
     generator.manual_seed(SEED)
     original_randn = torch.randn
 
+    # How much randomness the model may add (1 = RVC's own amount):
+    # - VOICEAPI_PRIOR_NOISE scales the sampling of the latent voice (z_p = m_p + exp(logs_p)·noise·0.667, 192 channels) – less = cleaner,
+    #   steadier voice, more = breathier;
+    # - VOICEAPI_SOURCE_NOISE scales the noise of the excitation source (the "breath" mixed into the sine waves of the vocoder).
+    prior_scale = float(os.environ.get("VOICEAPI_PRIOR_NOISE", "1.0"))
+    source_scale = float(os.environ.get("VOICEAPI_SOURCE_NOISE", "1.0"))
+
     def randn_like(tensor, *args, **kwargs):
         dtype = kwargs.get("dtype") or tensor.dtype
         noise = original_randn(tuple(tensor.shape), generator=generator, dtype=torch.float32)
+        if tensor.dim() == 3 and tensor.shape[1] == 192:
+            noise = noise * prior_scale
+        elif tensor.dim() == 3 and tensor.shape[2] <= 16:
+            noise = noise * source_scale
         return noise.to(device=tensor.device, dtype=dtype)
 
     def randn(*size, **kwargs):
