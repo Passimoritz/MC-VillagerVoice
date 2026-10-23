@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.8.0 (2026-10-23)
+
+- **Syllable by syllable like the videos** (`--articulation`, default 2): the villager videos set clearly more note ends than the original
+  singer ("Thick of It": video 39, original 10, VoiceAPI so far 14) – bound together, the villager sounded tired. The dips between syllables
+  are now deepened: note ends 40/39 and 27/28 like the videos, distance to the videos 48.1 → **41.5**, NoteAPI Likeness 87.0 → **88.2**
+  (rhythm 67.7 → 71.5).
+- **Optional timbre transfer** (off by default; `rvc.timbre-follow.strength`, `max-db`, `window-ms`, `smooth-ms` in `config.yml`, CLI
+  `--timbre-follow` …): carries the singer's vowel and brightness changes over to the villager. At 0.3 the timbre moves like in the videos
+  (2.80/3.14 vs. video 2.90/3.21; off: 2.48/2.63) – livelier and easier to understand, a little less "villager".
+- Checked and not adopted (no measurable gain): finer vocal separation (`htdemucs_ft`: distance unchanged at 4× the time), added room/reverb
+  (the videos are not wetter than VoiceAPI), blending the old and new model (48.3–49.5 vs. 48.1), more fine-tuning (epoch 60: 48.5, 80: 50.1).
+- README (English + German) with pictures (`docs/images/`, `docs/images/de/`, drawn by `tools/readme_images.py`); NoteAPI's vocals switch
+  (Original / Villager / Notes / Off) and mixer volume described.
+
 ## 1.7.0 (2026-10-23)
 
 - **Livelier timbre – model "villager2"**: Minecraft only has 17 villager takes, each a single steady sound; a model trained on them keeps its

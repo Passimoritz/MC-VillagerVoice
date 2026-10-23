@@ -30,6 +30,47 @@ NoteAPI-Ressourcenpaket mit den VoiceAPI-Lauten geladen hat, hört stattdessen e
 - **Villager-Stimmmodell (KI)** – `tools/villager_dataset.py` + `tools/villager_sing.py`: ein eigenes RVC-Stimmmodell, trainiert nur auf
   den Dorfbewohner-Lauten des Spiels, wandelt echten Gesang in die Villager-Stimme – Text, Melodie und Tempo bleiben. Läuft **ohne GPU** (siehe unten)
 
+## Villager-Gesang für echte Lieder
+
+![Vom Lied zum Villager-Gesang](docs/images/de/pipeline.png)
+
+Mit der [NoteAPI](https://github.com/Passimoritz/MC-MusicAPI) bekommt jedes umgewandelte Lied **auf seiner Seite einen Gesangs-Schalter:
+Original / Villager / Töne / Aus**. „Villager“ startet `VoiceApi.convertSong` – eine Bossbar zeigt die Schritte („Villager is singing“,
+„Writing sections“), bis dahin singt das Original weiter. Ab Minecraft 1.20.3 liefert die NoteAPI den Villager-Gesang als eigenes kleines
+Paket je Lied aus; das Grundpaket bleibt gleich. **Die Lautstärke des Villagers** regelst du im Mischpult der NoteAPI (Gesangsspur → Quelle
+„Villager“, Regler 0 … 3×, Standard 1 = so laut wie der Original-Sänger, wie in den Videos).
+
+![Dieselben 8 Sekunden: Original-Sänger, Villager-Video, VoiceAPI-Villager](docs/images/de/spectrogram.png)
+
+Maßstab sind echte Villager-Cover-Videos. Ein Messplatz vergleicht jede Änderung mit ihnen („Thick of It“, „APT.“: Klangfarbe,
+Langzeitspektrum, Stimmhaftigkeit, Tonhöhe, Tonenden):
+
+![Mit jeder Version näher an den Villager-Videos](docs/images/de/progress.png)
+
+- **Tonhöhe** sitzt auf den Tönen des Videos (0,10 Halbtöne), Vibrato und Schleifer werden mitgenommen.
+- **Silbe für Silbe** (1.8): Die Videos setzen deutlich öfter ab als der Original-Sänger; `--articulation 2` vertieft die Lücken zwischen den
+  Silben – Tonenden 14 → 40 (Video 39), Abstand zu den Videos 48,1 → 41,5.
+- **Klar statt hauchig** (1.6): kein Rauschen im Modell, Rauschen in gesungenen Stellen gesenkt – Klarheit auf dem Niveau der Videos.
+- **Mix** wie in den Videos: Original-Instrumental unverändert, Villager etwa so laut wie der Original-Sänger, Begrenzer statt Abschneiden.
+- **Keine doppelten Töne** (1.7): Abschnitte werden an leisen Stellen geschnitten, damit eine schwankende Startverzögerung gestreamter Klänge
+  nicht hörbar ist:
+
+![Abschnitt-Schnitte: festes 4-s-Raster vs. leise Stellen](docs/images/de/cuts.png)
+
+**Einstellungen** (`plugins/VoiceAPI/config.yml`, gelten für danach umgewandelte Lieder):
+
+```yaml
+rvc:
+  home: ""          # ~/.voiceapi/rvc (venv, Applio, Modelle)
+  model: villager
+  resume: true      # vom Server-Stopp unterbrochene Umwandlungen fortsetzen
+  timbre-follow:    # optional, standardmäßig AUS: Klangfarben-Bewegung des Sängers übertragen
+    strength: 0.0   # 0 = aus … 1 = voll; 0.3 bewegt sich wie die Videos: lebendiger und verständlicher, etwas weniger „Villager“
+    max-db: 6.0     # Grenze je Frequenzband
+    window-ms: 400  # was als Bewegung zählt: Änderung gegenüber diesem Mittel
+    smooth-ms: 40   # Glättung
+```
+
 ## Kompatibilität – ohne Pflege
 
 | | |

@@ -26,6 +26,17 @@ rvc:
   model: villager
   # continue conversions a server stop interrupted (on the next start, in the background)
   resume: true
+  # Optional: carry the singer's timbre movement over to the villager (vowel and brightness changes). Off by default (strength 0).
+  # More strength = livelier and easier to understand, but a little less "villager". Applies to songs converted afterwards.
+  timbre-follow:
+    # 0 = off … 1 = fully; 0.3 moves like the villager videos (measured: 2.80/3.14 vs. video 2.90/3.21)
+    strength: 0.0
+    # limit per frequency band (dB)
+    max-db: 6.0
+    # what counts as movement: changes against the average of this many milliseconds
+    window-ms: 400
+    # smoothing of the movement (ms)
+    smooth-ms: 40
 
 pack:
   # players with the NoteAPI resource pack (which contains the VoiceAPI sounds) hear real vowels and consonants instead of villager sounds

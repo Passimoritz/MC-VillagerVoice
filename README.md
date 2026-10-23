@@ -30,6 +30,46 @@ the VoiceAPI sounds hear real vowels and consonants instead (formant synthesis).
 - **Villager voice model (AI)** – `tools/villager_dataset.py` + `tools/villager_sing.py`: an RVC voice model of its own, trained only on the
   game's villager sounds, turns real singing into the villager voice – text, melody and tempo stay. Runs **without a GPU** (see below)
 
+## Villager singing for real songs
+
+![From a song to villager singing](docs/images/pipeline.png)
+
+With [NoteAPI](https://github.com/Passimoritz/MC-MusicAPI) every converted song gets a **vocals switch on its page: Original / Villager /
+Notes / Off**. "Villager" starts `VoiceApi.convertSong` – a boss bar shows the steps ("Villager is singing", "Writing sections"), until then
+the original vocals keep singing. From Minecraft 1.20.3 NoteAPI sends the villager singing as a small pack of its own per song; the base pack
+stays the same. **The villager's volume** is set in NoteAPI's mixer (vocals → source "Villager", slider 0 … 3×, default 1 = as loud as the
+original singer, like the videos).
+
+![The same 8 seconds: original singer, villager video, VoiceAPI villager](docs/images/spectrogram.png)
+
+The yardstick are real villager cover videos. A test bench measures every change against them ("Thick of It", "APT.": timbre, long-term
+spectrum, voicing, pitch, note ends):
+
+![Closer to the villager videos with every version](docs/images/progress.png)
+
+- **Pitch** sits on the video's notes (0.10 semitones), vibrato and slides are carried over.
+- **Syllable by syllable** (1.8): the videos set clearly more note ends than the original singer; `--articulation 2` deepens the dips between
+  syllables – note ends 14 → 40 (video 39), distance to the videos 48.1 → 41.5.
+- **Clear, not breathy** (1.6): no latent model noise, hiss lowered in sung parts – harmonic-to-noise at the level of the videos.
+- **Mix** like the videos: original instrumental untouched, villager about as loud as the original singer, a limiter instead of clipping.
+- **No doubled notes** (1.7): sections are cut at quiet moments, so a varying start delay of streamed sounds cannot be heard:
+
+![Section cuts: fixed 4 s grid vs. quiet moments](docs/images/cuts.png)
+
+**Settings** (`plugins/VoiceAPI/config.yml`, for songs converted afterwards):
+
+```yaml
+rvc:
+  home: ""          # ~/.voiceapi/rvc (venv, Applio, models)
+  model: villager
+  resume: true      # continue conversions a server stop interrupted
+  timbre-follow:    # optional, OFF by default: carry the singer's timbre movement over
+    strength: 0.0   # 0 = off … 1 = fully; 0.3 moves like the videos: livelier and easier to understand, a little less "villager"
+    max-db: 6.0     # limit per frequency band
+    window-ms: 400  # what counts as movement: changes against this average
+    smooth-ms: 40   # smoothing
+```
+
 ## Compatibility – without maintenance
 
 | | |

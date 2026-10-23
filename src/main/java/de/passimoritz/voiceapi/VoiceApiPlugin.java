@@ -52,6 +52,7 @@ public final class VoiceApiPlugin extends JavaPlugin {
         Path rvcHome = home == null || home.isBlank() ? Path.of(System.getProperty("user.home"), ".voiceapi", "rvc") : Path.of(home.strip());
         converter = new de.passimoritz.voiceapi.song.SongConverter(rvcHome, getDataFolder().toPath().resolve("tools").resolve("villager_sing.py"),
                 getConfig().getString("rvc.model", "villager"));
+        converter.options(timbreOptions());
         VoiceApi.enable(player, library, pack, Files.isRegularFile(soundPack) ? soundPack : base);
         VoiceApi.enableSongs(this, songs, converter, base, soundPack);
         if (getConfig().getBoolean("rvc.resume", true)) {
@@ -63,6 +64,22 @@ public final class VoiceApiPlugin extends JavaPlugin {
         getLogger().info("VoiceAPI " + getDescription().getVersion() + " ready: " + Speaker.values().length + " voices, " + library.size()
                 + " saved utterances, " + songs.size() + " villager songs, resource pack " + (pack.available() ? "with" : "without")
                 + " VoiceAPI sounds, voice model " + (converter.ready() ? "ready" : "not set up (" + String.join(", ", converter.missing()) + ")") + ".");
+    }
+
+    /**
+     * The optional timbre transfer ({@code rvc.timbre-follow}): off by default; with a strength above 0 the villager takes over the
+     * singer's timbre movement (livelier, a little less villager).
+     */
+    private List<String> timbreOptions() {
+        double strength = getConfig().getDouble("rvc.timbre-follow.strength", 0.0);
+        if (!(strength > 0)) {
+            return List.of();
+        }
+        java.util.function.DoubleFunction<String> num = v -> String.format(java.util.Locale.ROOT, "%.3f", v);
+        return List.of("--timbre-follow", num.apply(Math.min(1.0, strength)),
+                "--timbre-max-db", num.apply(Compat.clamp(getConfig().getDouble("rvc.timbre-follow.max-db", 6.0), 0.5, 18.0)),
+                "--timbre-window-ms", num.apply(Compat.clamp(getConfig().getDouble("rvc.timbre-follow.window-ms", 400.0), 100.0, 2000.0)),
+                "--timbre-smooth-ms", num.apply(Compat.clamp(getConfig().getDouble("rvc.timbre-follow.smooth-ms", 40.0), 0.0, 200.0)));
     }
 
     @Override

@@ -35,6 +35,7 @@ public final class SongConverter {
         return thread;
     });
     private volatile Process running;
+    private volatile List<String> options = List.of();
 
     /**
      * @param rvcHome folder of the voice model environment ({@code ~/.voiceapi/rvc}: venv, Applio, models)
@@ -45,6 +46,15 @@ public final class SongConverter {
         this.rvcHome = rvcHome;
         this.script = script;
         this.model = model == null || model.isBlank() ? "villager" : model;
+    }
+
+    /** Extra arguments for {@code villager_sing.py} from the settings (e.g. {@code --timbre-follow 0.5}); empty = its defaults. */
+    public void options(List<String> newOptions) {
+        options = newOptions == null ? List.of() : List.copyOf(newOptions);
+    }
+
+    public List<String> options() {
+        return options;
     }
 
     /** The Python of the environment. */
@@ -103,8 +113,10 @@ public final class SongConverter {
         worker.submit(() -> {
             List<String> tail = new ArrayList<>();
             try {
-                ProcessBuilder builder = new ProcessBuilder(python().toString(), "-X", "utf8", script.toString(), "--vocals", vocals.toString(),
-                        "--chunks", target.toString(), "--id", id, "--model", model);
+                List<String> command = new ArrayList<>(List.of(python().toString(), "-X", "utf8", script.toString(), "--vocals", vocals.toString(),
+                        "--chunks", target.toString(), "--id", id, "--model", model));
+                command.addAll(options);
+                ProcessBuilder builder = new ProcessBuilder(command);
                 builder.environment().put("VOICEAPI_RVC_HOME", rvcHome.toString());
                 builder.environment().put("PYTHONIOENCODING", "utf-8");
                 builder.redirectErrorStream(true);

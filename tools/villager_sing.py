@@ -135,6 +135,52 @@ def clean(y: np.ndarray, strength: float = 0.6) -> np.ndarray:
     return (out * (np.sqrt(np.mean(y ** 2)) / (np.sqrt(np.mean(out ** 2)) + 1e-9))).astype(np.float32)
 
 
+def articulate(y: np.ndarray, strength: float = 2.0, fast_ms: float = 15.0, slow_ms: float = 180.0, floor: float = 0.25) -> np.ndarray:
+    """Sings syllable by syllable like the villager videos: the dips between syllables are deepened (fast level / slow level, to the power
+    of `strength`, never below `floor`). Measured: the videos set clearly more note ends than the original singer ("Thick of It": 39 vs.
+    10), the plain conversion only 14 – it sounded bound together and tired. With strength 2 the note ends match the videos (40/39, 27/28)
+    and the distance to the videos drops 46.6 → 41.5. 0 switches it off."""
+    if strength <= 0:
+        return y
+    ef, es = _envelope(y, fast_ms), _envelope(y, slow_ms)
+    gain = np.clip((ef / (es + 1e-9)) ** strength, floor, 1.0)
+    k = np.hanning(2 * int(0.004 * SR) + 1)
+    out = y * np.convolve(gain, k / k.sum(), mode="same")
+    return (out * (np.sqrt(np.mean(y ** 2)) / (np.sqrt(np.mean(out ** 2)) + 1e-9))).astype(np.float32)
+
+
+def follow_timbre(vocals: np.ndarray, y: np.ndarray, strength: float = 0.0, max_db: float = 6.0, window_ms: float = 400.0,
+                  smooth_ms: float = 40.0) -> np.ndarray:
+    """Optional (off by default): carries the singer's timbre movement over to the villager. The villager voice keeps a steadier timbre than
+    a singer (its sounds move less: MFCC-delta 2.5 vs. 2.9–3.2 in the videos). Per frame, the singer's spectral shape (40 mel bands) minus
+    its own average over `window_ms` – the vowel and brightness changes – is put onto the villager with `strength` (0 = off, 1 = fully),
+    smoothed over `smooth_ms` and limited to ±`max_db` per band; only where the singer sings. More strength = livelier and easier to
+    understand, but a little less "villager"."""
+    if strength <= 0:
+        return y
+    import librosa
+    from scipy.ndimage import uniform_filter1d
+    n = min(len(vocals), len(y))
+    hop, n_fft = 512, 2048
+    So = np.abs(librosa.stft(vocals[:n], n_fft=n_fft, hop_length=hop)) ** 2
+    Sy = librosa.stft(y[:n], n_fft=n_fft, hop_length=hop)
+    mel = librosa.filters.mel(sr=SR, n_fft=n_fft, n_mels=40, fmin=80, fmax=10000)
+    lo = 10 * np.log10(mel @ So + 1e-10)
+    shape = lo - lo.mean(axis=0, keepdims=True)                      # spectral shape only, loudness stays with follow()
+    frames = max(1, int(window_ms / 1000 * SR / hop))
+    move = shape - uniform_filter1d(shape, size=frames, axis=1, mode="nearest")
+    move = uniform_filter1d(move, size=max(1, int(smooth_ms / 1000 * SR / hop)), axis=1, mode="nearest")
+    level = lo.max(axis=0)
+    sung = (level > np.percentile(level, 95) - 30).astype(float)
+    gain_db = np.clip(strength * move, -max_db, max_db) * sung[None, :]
+    # mel bands back to FFT bins (each bin takes the weighted mean of the bands covering it)
+    weights = mel / (mel.sum(axis=0, keepdims=True) + 1e-9)
+    gain = 10 ** ((weights.T @ gain_db) / 20)
+    out = librosa.istft(Sy * gain[:, : Sy.shape[1]], hop_length=hop, length=n)
+    out = np.concatenate([out, y[n:]])
+    return (out * (np.sqrt(np.mean(y ** 2)) / (np.sqrt(np.mean(out ** 2)) + 1e-9))).astype(np.float32)
+
+
 def _envelope(y: np.ndarray, win_ms: float) -> np.ndarray:
     n = max(1, int(SR * win_ms / 1000))
     k = np.hanning(2 * n + 1)
@@ -286,6 +332,11 @@ def main() -> None:
     parser.add_argument("--consonants", type=float, default=0.5, help="mix in the consonants of the original (0 = off)")
     parser.add_argument("--no-follow", action="store_true", help="do not align offset, level curve and consonants to the original")
     parser.add_argument("--vocal-gain", type=float, default=0.0, help="villager level in the mix relative to the original vocals (dB)")
+    parser.add_argument("--articulation", type=float, default=2.0, help="sing syllable by syllable like the videos (0 = bound together)")
+    parser.add_argument("--timbre-follow", type=float, default=0.0, help="carry the singer's timbre movement over (0 = off … 1 = fully)")
+    parser.add_argument("--timbre-max-db", type=float, default=6.0, help="limit of the timbre movement per band (dB)")
+    parser.add_argument("--timbre-window-ms", type=float, default=400.0, help="what counts as movement: changes against this average (ms)")
+    parser.add_argument("--timbre-smooth-ms", type=float, default=40.0, help="smoothing of the timbre movement (ms)")
     parser.add_argument("--label", default="Villager")
     args = parser.parse_args()
     import soundfile as sf
@@ -309,6 +360,8 @@ def main() -> None:
         y *= float(np.sqrt(np.mean(vocals ** 2))) / (float(np.sqrt(np.mean(y ** 2))) + 1e-9)
         if not args.no_follow:
             y = follow(vocals, y, args.consonants)
+        y = follow_timbre(vocals, y, args.timbre_follow, args.timbre_max_db, args.timbre_window_ms, args.timbre_smooth_ms)
+        y = articulate(y, args.articulation)
         y = np.clip(y, -0.98, 0.98)
         log("@@step Writing sections")
         meta = write_chunks(y, folder, args.id, args.model)
@@ -342,6 +395,8 @@ def main() -> None:
     y *= float(np.sqrt(np.mean(vocals ** 2))) / (float(np.sqrt(np.mean(y ** 2))) + 1e-9)
     if not args.no_follow:
         y = follow(vocals, y, args.consonants)
+    y = follow_timbre(vocals, y, args.timbre_follow, args.timbre_max_db, args.timbre_window_ms, args.timbre_smooth_ms)
+    y = articulate(y, args.articulation)
     sf.write(str(out / f"{title} - 2 {args.label} - vocals only.wav"), limit(y), SR)
     # the videos keep the original instrumental untouched and the villager about as loud as the original singer (measured: −0.6 dB)
     sung = y * 10 ** (args.vocal_gain / 20) + backing
