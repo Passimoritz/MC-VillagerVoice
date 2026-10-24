@@ -213,6 +213,7 @@ public final class VoiceApi {
     private static de.passimoritz.voiceapi.song.SongConverter converter;
     private static org.bukkit.plugin.Plugin owner;
     private static java.nio.file.Path basePack;
+    private static java.nio.file.Path packTarget;
     private static final java.util.List<Runnable> PACK_LISTENERS = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     /**
@@ -331,6 +332,43 @@ public final class VoiceApi {
         }
     }
 
+    /**
+     * The base sounds arrived after the start (downloaded in the background): writes the sound pack from them and the villager songs and
+     * notifies {@link #onSoundPackChanged} on the main thread, so the integrating plugin mixes them into its resource pack.
+     *
+     * @return whether VoiceAPI was still enabled and took them
+     */
+    static boolean basePackArrived(java.nio.file.Path base) {
+        return basePackArrived(base, null);
+    }
+
+    /** {@link #basePackArrived(java.nio.file.Path)} with an own way onto the main thread ({@code null} = the server's; tests: run directly). */
+    static boolean basePackArrived(java.nio.file.Path base, java.util.function.Consumer<Runnable> onMain) {
+        org.bukkit.plugin.Plugin plugin;
+        synchronized (VoiceApi.class) {
+            if (owner == null || songs == null) {
+                return false;
+            }
+            plugin = owner;
+            basePack = base;
+            try {
+                if (packTarget != null) {
+                    songs.writePack(base, packTarget);
+                }
+                soundPack = packTarget != null && java.nio.file.Files.isRegularFile(packTarget) ? packTarget : base;
+            } catch (java.io.IOException e) {
+                plugin.getLogger().log(java.util.logging.Level.WARNING, "Could not write the sound pack", e);
+                soundPack = base;
+            }
+        }
+        if (onMain == null) {
+            Scheduling.run(plugin, VoiceApi::firePackChanged);
+        } else {
+            onMain.accept(VoiceApi::firePackChanged);
+        }
+        return true;
+    }
+
     private static synchronized Throwable rebuildPack() {
         try {
             if (basePack != null && soundPack != null) {
@@ -360,6 +398,7 @@ public final class VoiceApi {
         songs = newSongs;
         converter = newConverter;
         basePack = base;
+        packTarget = pack;
         if (pack != null && java.nio.file.Files.isRegularFile(pack)) {
             soundPack = pack;
         }
@@ -384,6 +423,7 @@ public final class VoiceApi {
         converter = null;
         owner = null;
         basePack = null;
+        packTarget = null;
         PACK_LISTENERS.clear();
     }
 }

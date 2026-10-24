@@ -93,8 +93,12 @@ How it stays valid without maintenance:
 ## Installation
 
 Put `voiceapi-<version>.jar` into the `plugins` folder and restart the server. The plugin that uses it lists `VoiceAPI` under `softdepend`
-(or `depend`). The real sounds are bundled with the jar (`plugins/VoiceAPI/VoiceAPI-Sounds.zip`); **NoteAPI mixes them into its resource
-pack by itself**. With NoteAPI a villager sings along with the vocal melody of converted songs (question when converting, mixer → 🎤 voice),
+(or `depend`). The jar is small (~0.2 MB): the real sounds (23 MB) are downloaded once in the background on the first start from the
+release [`voice-pack`](https://github.com/Passimoritz/MC-VoiceAPI/releases/tag/voice-pack), checked against the SHA-256 built into the
+plugin and kept at `plugins/VoiceAPI/pack/VoiceAPI-Sounds-base.zip` (the server start never waits for it; until then VoiceAPI runs without
+resource pack). **NoteAPI mixes them into its resource pack by itself** as soon as they are there (`plugins/VoiceAPI/VoiceAPI-Sounds.zip`).
+Server without internet: download the file from the release, place it at `plugins/VoiceAPI/pack/VoiceAPI-Sounds-base.zip` and restart
+(`pack.download: false` never downloads; `pack.download-url` for a mirror) – or build a jar with the sounds inside: `mvn package -P bundled-pack`. With NoteAPI a villager sings along with the vocal melody of converted songs (question when converting, mixer → 🎤 voice),
 and `/music villager <piece>` turns the real vocal track into AI villager singing.
 Building it yourself still works with `python plugins/VoiceAPI/tools/build_voice_pack.py --merge plugins/NoteAPI/pack/NoteAPI-Sounds.zip`.
 
@@ -129,7 +133,7 @@ if (VoiceApi.isAvailable()) {
   `SingOptions.parse("legato=200; overlap=40; glide=2; glideMs=50; dynamics=0.2; volume=0.7; minNote=70")`; `SingOptions.DETACHED` = every
   note attacked (the old sound).
 - **Settings** (`config.yml`): `speech.rate`, `speech.volume`, `speech.category` (default: Voice/Speech), `sing.require-pack`, `pack.use`,
-  `pack.file`, `rvc.home`, `rvc.model`.
+  `pack.file`, `pack.download`, `pack.download-url`, `rvc.home`, `rvc.model`.
 - **Former German input** still works: German voice names (`dorfbewohner`, `hexe` …), moods (`traurig`) and keys (`stimmung=`, `binden=`).
 
 ## How the speech is made

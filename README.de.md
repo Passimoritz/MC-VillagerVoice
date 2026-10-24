@@ -94,8 +94,12 @@ So bleibt es ohne Wartung gültig:
 ## Installation
 
 `voiceapi-<Version>.jar` in den `plugins`-Ordner legen und den Server neu starten. Das Plugin, das sie nutzt, trägt `VoiceAPI` unter `softdepend`
-(oder `depend`) ein. Die echten Laute liegen dem Jar bei (`plugins/VoiceAPI/VoiceAPI-Sounds.zip`); die **NoteAPI mischt sie von selbst** in ihr
-Ressourcenpaket. Mit der NoteAPI singt ein Dorfbewohner die Gesangsmelodie umgewandelter Lieder mit (Frage beim Umwandeln, Mischpult → 🎤 Stimme).
+(oder `depend`) ein. Das Jar ist klein (~0,2 MB): Die echten Laute (23 MB) lädt das Plugin beim ersten Start einmal im Hintergrund aus dem
+Release [`voice-pack`](https://github.com/Passimoritz/MC-VoiceAPI/releases/tag/voice-pack), prüft sie gegen die eingebaute SHA-256 und legt sie
+unter `plugins/VoiceAPI/pack/VoiceAPI-Sounds-base.zip` ab (der Serverstart wartet nie darauf; bis dahin läuft VoiceAPI ohne Ressourcenpaket).
+Sobald sie da sind, **mischt die NoteAPI sie von selbst** in ihr Ressourcenpaket (`plugins/VoiceAPI/VoiceAPI-Sounds.zip`). Server ohne Internet:
+die Datei aus dem Release laden, nach `plugins/VoiceAPI/pack/VoiceAPI-Sounds-base.zip` legen und neu starten (`pack.download: false` lädt nie;
+`pack.download-url` für einen Spiegel) – oder ein Jar mit den Lauten bauen: `mvn package -P bundled-pack`. Mit der NoteAPI singt ein Dorfbewohner die Gesangsmelodie umgewandelter Lieder mit (Frage beim Umwandeln, Mischpult → 🎤 Stimme).
 Selbst bauen geht weiter mit `python plugins/VoiceAPI/tools/build_voice_pack.py --merge plugins/NoteAPI/pack/NoteAPI-Sounds.zip`.
 
 ## Für Entwickler (Schnittstelle 3)
@@ -129,7 +133,7 @@ if (VoiceApi.isAvailable()) {
   `SingOptions.parse("legato=200; overlap=40; glide=2; glideMs=50; dynamics=0.2; volume=0.7; minNote=70")`; `SingOptions.DETACHED` = jeder Ton
   angeschlagen (alter Klang).
 - **Einstellungen** (`config.yml`): `speech.rate`, `speech.volume`, `speech.category` (Standard: Stimme/Sprache), `sing.require-pack`, `pack.use`,
-  `pack.file`, `rvc.home`, `rvc.model`.
+  `pack.file`, `pack.download`, `pack.download-url`, `rvc.home`, `rvc.model`.
 
 ## Wie die Sprache entsteht
 

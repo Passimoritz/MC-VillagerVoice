@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.9.0 (in progress)
+
+- **Jar 23.7 MB → 0.2 MB, nothing lost**: 98 % of the jar was the sound pack (2,405 short OGG files; re-encoding would only save ~23 %,
+  since every small OGG carries a 3–4 KB Vorbis header and Minecraft only plays Ogg Vorbis). The sounds are no longer bundled: on the first
+  start VoiceAPI downloads them once in the background from the release `voice-pack` (`VoiceAPI-Sounds-3284456f7161.zip`), checks the SHA-256
+  built into the plugin (`SoundDownload.SHA256`), writes into `.part` and only then moves the file to
+  `plugins/VoiceAPI/pack/VoiceAPI-Sounds-base.zip`. The server start never waits; until the file is there VoiceAPI runs "without resource
+  pack" as before, and when it arrives `onSoundPackChanged` tells NoteAPI to mix the sounds in. Servers updating from 1.8.0 already have the
+  file and download nothing.
+- Offline servers: place the file by hand (any VoiceAPI pack of the current format is used, even with another checksum), `pack.download:
+  false` never downloads, `pack.download-url` points to a mirror (`{sha}`, `{sha256}`). `mvn package -P bundled-pack` still builds the
+  big jar with the sounds inside (then nothing is downloaded).
+- The sounds stay in the repository (`src/main/resources/pack/VoiceAPI-Sounds.zip`); a test fails if they change without updating the
+  checksum.
+
 ## 1.8.0 (2026-10-23)
 
 - **Syllable by syllable like the videos** (`--articulation`, default 2): the villager videos set clearly more note ends than the original

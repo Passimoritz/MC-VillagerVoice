@@ -36,7 +36,12 @@ public final class VoiceApiPlugin extends JavaPlugin {
         player.singRequiresPack(getConfig().getBoolean("sing.require-pack", true));
         player.speechRequiresPack(getConfig().getBoolean("speech.require-pack", true));
         player.start();
-        Path base = extractSounds();
+        de.passimoritz.voiceapi.pack.SoundDownload sounds = new de.passimoritz.voiceapi.pack.SoundDownload(
+                getDataFolder().toPath().resolve("pack").resolve("VoiceAPI-Sounds-base.zip"), de.passimoritz.voiceapi.pack.SoundDownload.SHA256,
+                getLogger());
+        boolean bundled = extractSounds(sounds.target());
+        boolean current = sounds.current();
+        Path base = current ? sounds.target() : sounds.usable().orElse(null);
         de.passimoritz.voiceapi.song.SongVoices songs = new de.passimoritz.voiceapi.song.SongVoices(getDataFolder().toPath().resolve("songs"),
                 message -> getLogger().warning(message));
         songs.load();
@@ -55,6 +60,14 @@ public final class VoiceApiPlugin extends JavaPlugin {
         converter.options(timbreOptions());
         VoiceApi.enable(player, library, pack, Files.isRegularFile(soundPack) ? soundPack : base);
         VoiceApi.enableSongs(this, songs, converter, base, soundPack);
+        if (!bundled && !current) {
+            if (getConfig().getBoolean("pack.download", true)) {
+                downloadSounds(sounds, sounds.url(getConfig().getString("pack.download-url", "")));
+            } else if (base == null) {
+                getLogger().warning("No VoiceAPI sounds at " + sounds.target() + " and pack.download is off – running without resource pack. Place "
+                        + "the file from " + sounds.url("") + " there and restart.");
+            }
+        }
         if (getConfig().getBoolean("rvc.resume", true)) {
             int resumed = VoiceApi.resumeInterrupted();
             if (resumed > 0) {
@@ -92,26 +105,40 @@ public final class VoiceApiPlugin extends JavaPlugin {
     }
 
     /**
-     * Places the bundled sounds as the base pack at {@code pack/VoiceAPI-Sounds-base.zip} (only if they changed); the finished
-     * {@code VoiceAPI-Sounds.zip} is made from it plus the villager songs ({@link de.passimoritz.voiceapi.song.SongVoices#writePack}).
-     * @return the file, or null
+     * Places sounds bundled with the jar (only a jar built with {@code -P bundled-pack} has them) as the base pack, only if they changed;
+     * the finished {@code VoiceAPI-Sounds.zip} is made from it plus the villager songs ({@link de.passimoritz.voiceapi.song.SongVoices#writePack}).
+     * @return whether the jar carries the sounds (then nothing is downloaded)
      */
-    private Path extractSounds() {
-        Path target = getDataFolder().toPath().resolve("pack").resolve("VoiceAPI-Sounds-base.zip");
+    private boolean extractSounds(Path target) {
         try (InputStream in = getResource("pack/VoiceAPI-Sounds.zip")) {
             if (in == null) {
-                return Files.isRegularFile(target) ? target : null;
+                return false;
             }
             byte[] data = in.readAllBytes();
             if (!Files.isRegularFile(target) || !java.util.Arrays.equals(Files.readAllBytes(target), data)) {
                 Files.createDirectories(target.getParent());
                 Files.write(target, data);
             }
-            return target;
+            return true;
         } catch (IOException e) {
             getLogger().log(Level.WARNING, "Could not unpack the sounds", e);
-            return Files.isRegularFile(target) ? target : null;
+            return false;
         }
+    }
+
+    /**
+     * Downloads the base sounds in the background (never holds up the server start); until they are there VoiceAPI runs without resource
+     * pack. Afterwards the sound pack is written and {@link VoiceApi#onSoundPackChanged} listeners mix it into the resource pack.
+     */
+    private void downloadSounds(de.passimoritz.voiceapi.pack.SoundDownload sounds, String url) {
+        getLogger().info("Downloading the VoiceAPI sounds in the background from " + url);
+        Thread thread = new Thread(() -> {
+            if (sounds.fetch(url)) {
+                VoiceApi.basePackArrived(sounds.target());
+            }
+        }, "VoiceAPI sound download");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     /** Places the Python tools from the jar in the data folder (always the jar's version). */

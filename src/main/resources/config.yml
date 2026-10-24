@@ -43,3 +43,10 @@ pack:
   use: true
   # where the NoteAPI pack is (empty = plugins/NoteAPI/pack/NoteAPI-Sounds.zip); VoiceAPI reads from it whether the sounds are included
   file: ""
+  # The sounds are not inside the jar (it stays small): on the first start VoiceAPI downloads them once in the background from the GitHub
+  # release "voice-pack", checks the SHA-256 and keeps them at plugins/VoiceAPI/pack/VoiceAPI-Sounds-base.zip. Until then (or without
+  # internet) it runs without resource pack. Offline: download the file from https://github.com/Passimoritz/MC-VoiceAPI/releases/tag/voice-pack
+  # yourself, place it there and restart. false = never download (e.g. an own file).
+  download: true
+  # another address (mirror); {sha} = first 12 characters of the checksum, {sha256} = all of it. Empty = the GitHub release.
+  download-url: ""
