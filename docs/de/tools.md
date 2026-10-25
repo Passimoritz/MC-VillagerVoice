@@ -40,6 +40,7 @@ die NoteAPI-Umgebung (`~/.noteapi/venv`) hat sie.
 | `voicelab.py` | `setup` lädt die Vanilla-Laute; `render cues.json --out x.wav [--pack zip]` spielt Klangbefehle wie der Client; `atlas` vermisst alle Vanilla-Laute |
 | `build_voice_pack.py` | baut die Paket-Laute (`--out`) oder mischt sie ins NoteAPI-Paket (`--merge`) |
 | `villager_sing.py` | KI-Villager-Gesang für eine Gesangsspur ([Villager-Gesang](villager-singing.md)) |
+| `villager_speak.py` | der Villager spricht eine gesprochene Aufnahme: Rauschen erkannt und gefiltert, Sprech-Einstellungen, Pausen geschlossen (`VoiceApi.convertSpeech`) |
 | `rvc_setup.py` | richtet die Stimmmodell-Umgebung ein (nur CPU), `--check` |
 | `rvc_infer.py` | reproduzierbare Umwandlung (fester Zufall) — von `villager_sing.py` aufgerufen |
 | `villager_dataset.py` | Trainingsdaten aus den Villager-Lauten (`--rich` für lebendigere Klangfarbe) |

@@ -68,6 +68,19 @@ class SongVoicesTest {
     }
 
     @Test
+    void speechJobsResumeInSpeechMode(@TempDir Path dir) throws IOException {
+        Path speech = dir.resolve("speech.wav");
+        Path song = dir.resolve("song.wav");
+        Files.writeString(speech, "x");
+        Files.writeString(song, "x");
+        Files.writeString(dir.resolve("greeting.job"), speech + System.lineSeparator() + "speech");
+        Files.writeString(dir.resolve("old.job"), song.toString());   // a job file of an older version: only the path
+        SongVoices voices = new SongVoices(dir, null);
+        assertEquals(java.util.Map.of("greeting", new SongVoices.Job(speech, true), "old", new SongVoices.Job(song, false)), voices.jobs());
+        assertEquals(java.util.Map.of("greeting", speech, "old", song), voices.interrupted());
+    }
+
+    @Test
     void idsAreSafeForThePack() {
         assertEquals("cartoon-on---on", SongVoices.safe("Cartoon On & On"));
         assertEquals("song", SongVoices.safe(" "));

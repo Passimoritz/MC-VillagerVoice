@@ -2,7 +2,7 @@
 
 *English · [Deutsch](../de/developer-guide.md)* · [← Overview](../../README.md)
 
-Everything goes through one class: **`de.passimoritz.voiceapi.VoiceApi`** (interface version `VoiceApi.API_VERSION = 3`).
+Everything goes through one class: **`de.passimoritz.voiceapi.VoiceApi`** (interface version `VoiceApi.API_VERSION = 4`).
 
 ## Set up your plugin
 
@@ -197,6 +197,19 @@ VoiceApi.songVoiceBusy(); VoiceApi.cancelSongConversion(); VoiceApi.deleteSongVo
 
 Details: [Villager singing](villager-singing.md).
 
+## The villager speaks recordings (AI, interface 4)
+
+For spoken recordings — voice lines for an NPC, a speech, an old radio recording — use the speech mode instead of `convertSong`:
+
+```java
+VoiceApi.convertSpeech("blacksmith-greeting", Path.of("plugins/MyPlugin/lines/greeting.wav"), text -> getLogger().info(text))
+        .thenAccept(voice -> VoiceApi.songVoice(voice.id()).ifPresent(v -> playOnMyClock(v.cues())));
+```
+
+Noise is **detected and filtered** first (the quietest moments give the noise profile; clean recordings are left alone), the model converts
+with speech settings (the speaker's melody stays, no singing aids) and the pauses are closed. The result is stored and played exactly like a
+converted song. Settings: `rvc.speech.*` ([Configuration](configuration.md#rvc--ai-villager-singing-for-songs)).
+
 ## Reading text
 
 ```java
@@ -204,7 +217,7 @@ List<Word> words = VoiceApi.read("Willkommen im Dorf!", Language.GERMAN);   // s
 Language.guess("Hello there");                                                // ENGLISH
 ```
 
-## API reference (interface 3)
+## API reference (interface 4)
 
 | Area | Methods |
 |---|---|
@@ -213,6 +226,6 @@ Language.guess("Hello there");                                                //
 | playing | `play`, `say`, `tell`, `stopAll`, `needsPack`, `player()` |
 | library | `library()` → `save`, `get`, `all` |
 | resource pack | `packAvailable`, `hearsPack`, `packProbe`, `soundPack`, `soundPackFormat`, `pack()`, `onSoundPackChanged` |
-| villager songs | `songVoice`, `songVoices`, `songVoiceMissing`, `songVoiceBusy`, `convertSong`, `cancelSongConversion`, `deleteSongVoice` |
+| villager songs and speech | `songVoice`, `songVoices`, `songVoiceMissing`, `songVoiceBusy`, `convertSong`, `convertSpeech` (4), `cancelSongConversion`, `deleteSongVoice` |
 
 Older German input keeps working: German voice names (`dorfbewohner`, `hexe` …), moods (`traurig`) and keys (`stimmung=`, `binden=`).

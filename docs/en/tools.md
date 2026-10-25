@@ -40,6 +40,7 @@ NoteAPI environment (`~/.noteapi/venv`) has them.
 | `voicelab.py` | `setup` downloads the vanilla sounds; `render cues.json --out x.wav [--pack zip]` plays sound commands the way the client does; `atlas` measures all vanilla sounds |
 | `build_voice_pack.py` | builds the pack sounds (`--out`) or mixes them into NoteAPI's pack (`--merge`) |
 | `villager_sing.py` | AI villager singing for a vocal track ([Villager singing](villager-singing.md)) |
+| `villager_speak.py` | the villager speaks a spoken recording: noise detected and filtered, speech settings, pauses closed (`VoiceApi.convertSpeech`) |
 | `rvc_setup.py` | sets up the voice-model environment (CPU only), `--check` |
 | `rvc_infer.py` | reproducible conversion (fixed randomness) — called by `villager_sing.py` |
 | `villager_dataset.py` | training data from the villager sounds (`--rich` for a livelier timbre) |

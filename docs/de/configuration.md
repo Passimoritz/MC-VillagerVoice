@@ -43,6 +43,9 @@ Nur für den [Villager-Gesang](villager-singing.md) echter Lieder nötig.
 | `rvc.timbre-follow.max-db` | `6.0` | Grenze je Frequenzband (0,5–18 dB) |
 | `rvc.timbre-follow.window-ms` | `400` | was als Bewegung zählt: Änderung gegen den Mittelwert so vieler ms (100–2000) |
 | `rvc.timbre-follow.smooth-ms` | `40` | Glättung der Bewegung (0–200 ms) |
+| `rvc.speech.denoise` | `1.0` | Sprechmodus (`VoiceApi.convertSpeech`): Stärke des Rauschfilters, `0` aus … `1` stark. Rauschen wird zuerst erkannt; saubere Aufnahmen werden nie gefiltert |
+| `rvc.speech.gate` | `24` | Pausen schließen: was das Modell aus Rauschen machte und so viele dB unter der Sprache liegt, wird abgesenkt (`0` = aus) |
+| `rvc.speech.separate` | `auto` | die Stimme zuerst per Demucs vom Hintergrund trennen: `auto` (wenn installiert), `on`, `off` |
 
 ## Vollständige Standarddatei
 
@@ -65,6 +68,10 @@ rvc:
     max-db: 6.0
     window-ms: 400
     smooth-ms: 40
+  speech:
+    denoise: 1.0
+    gate: 24
+    separate: auto
 
 pack:
   use: true

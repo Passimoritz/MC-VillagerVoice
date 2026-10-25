@@ -37,6 +37,15 @@ rvc:
     window-ms: 400
     # smoothing of the movement (ms)
     smooth-ms: 40
+  # The villager speaks spoken recordings (VoiceApi.convertSpeech – voice lines, speeches, old radio recordings; not songs).
+  # Noise is detected first (the quietest moments give the noise profile) and filtered; clean recordings are left alone.
+  speech:
+    # noise filter strength: 0 = off … 1 = strong
+    denoise: 1.0
+    # close the pauses: what the model still made of noise this many dB under the speech is lowered (0 = off)
+    gate: 24
+    # separate the voice from the background with Demucs first: auto = if installed, on, off
+    separate: auto
 
 pack:
   # players with the NoteAPI resource pack (which contains the VoiceAPI sounds) hear real vowels and consonants instead of villager sounds

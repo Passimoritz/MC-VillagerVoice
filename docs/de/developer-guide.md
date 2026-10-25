@@ -2,7 +2,7 @@
 
 *[English](../en/developer-guide.md) · Deutsch* · [← Übersicht](../../README.de.md)
 
-Alles läuft über eine Klasse: **`de.passimoritz.voiceapi.VoiceApi`** (Schnittstellenversion `VoiceApi.API_VERSION = 3`).
+Alles läuft über eine Klasse: **`de.passimoritz.voiceapi.VoiceApi`** (Schnittstellenversion `VoiceApi.API_VERSION = 4`).
 
 ## Dein Plugin vorbereiten
 
@@ -199,6 +199,20 @@ VoiceApi.songVoiceBusy(); VoiceApi.cancelSongConversion(); VoiceApi.deleteSongVo
 
 Details: [Villager-Gesang](villager-singing.md).
 
+## Der Villager spricht Aufnahmen (KI, Schnittstelle 4)
+
+Für gesprochene Aufnahmen — Sprachzeilen für einen NPC, eine Rede, eine alte Radioaufnahme — gibt es statt `convertSong` den Sprechmodus:
+
+```java
+VoiceApi.convertSpeech("schmied-gruss", Path.of("plugins/MeinPlugin/zeilen/gruss.wav"), text -> getLogger().info(text))
+        .thenAccept(stimme -> VoiceApi.songVoice(stimme.id()).ifPresent(v -> aufMeinerUhrSpielen(v.cues())));
+```
+
+Zuerst wird **Rauschen erkannt und gefiltert** (die leisesten Stellen liefern das Rauschprofil; saubere Aufnahmen bleiben unangetastet),
+dann wandelt das Modell mit Sprech-Einstellungen um (die Sprechmelodie bleibt, keine Gesangshilfen), und die Pausen werden geschlossen.
+Gespeichert und abgespielt wird genau wie ein umgewandeltes Lied. Einstellungen: `rvc.speech.*`
+([Einstellungen](configuration.md#rvc--ki-villager-gesang-für-lieder)).
+
 ## Text lesen
 
 ```java
@@ -206,7 +220,7 @@ List<Word> woerter = VoiceApi.read("Willkommen im Dorf!", Language.GERMAN);   //
 Language.guess("Hallo zusammen");                                              // GERMAN
 ```
 
-## API-Übersicht (Schnittstelle 3)
+## API-Übersicht (Schnittstelle 4)
 
 | Bereich | Methoden |
 |---|---|
@@ -215,7 +229,7 @@ Language.guess("Hallo zusammen");                                              /
 | Abspielen | `play`, `say`, `tell`, `stopAll`, `needsPack`, `player()` |
 | Bibliothek | `library()` → `save`, `get`, `all` |
 | Ressourcenpaket | `packAvailable`, `hearsPack`, `packProbe`, `soundPack`, `soundPackFormat`, `pack()`, `onSoundPackChanged` |
-| Villager-Lieder | `songVoice`, `songVoices`, `songVoiceMissing`, `songVoiceBusy`, `convertSong`, `cancelSongConversion`, `deleteSongVoice` |
+| Villager-Lieder und -Sprache | `songVoice`, `songVoices`, `songVoiceMissing`, `songVoiceBusy`, `convertSong`, `convertSpeech` (4), `cancelSongConversion`, `deleteSongVoice` |
 
 Ältere deutsche Eingaben funktionieren weiter: deutsche Stimmennamen (`dorfbewohner`, `hexe` …), Stimmungen (`traurig`) und Schlüssel
 (`stimmung=`, `binden=`).

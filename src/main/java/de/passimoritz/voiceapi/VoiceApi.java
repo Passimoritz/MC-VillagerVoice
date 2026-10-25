@@ -41,8 +41,9 @@ public final class VoiceApi {
     /**
      * The version of the interface. 1: speak, sing, play, library, pack connection. 2: {@link #soundPack()} (bundled sounds).
      * 3: villager singing from the AI voice model ({@link #songVoice}, {@link #convertSong}, {@link #onSoundPackChanged}).
+     * 4: the villager speaks spoken recordings ({@link #convertSpeech}: noise detected and filtered).
      */
-    public static final int API_VERSION = 3;
+    public static final int API_VERSION = 4;
 
     private static VoicePlayer player;
     private static VoiceLibrary library;
@@ -252,6 +253,27 @@ public final class VoiceApi {
      */
     public static synchronized java.util.concurrent.CompletableFuture<de.passimoritz.voiceapi.song.SongVoice> convertSong(String songId,
             java.nio.file.Path vocals, java.util.function.Consumer<String> progress) {
+        return convert(songId, vocals, progress, false);
+    }
+
+    /**
+     * The villager speaks a spoken recording (a voice line, a speech, an old radio recording – not a song): noise is detected and filtered
+     * (the quietest moments give the noise profile, clean recordings are left alone), the voice model converts with speech settings (the
+     * speaker's melody stays) and the pauses are closed. Stored and played exactly like converted songs: {@link #songVoice}{@code (id).cues()},
+     * the sound pack is rewritten and {@link #onSoundPackChanged} is notified. Settings: {@code rvc.speech.*}.
+     *
+     * @param id        id of the recording (letters, digits, - and _)
+     * @param recording the spoken recording (WAV, MP3, OGG …)
+     * @param progress  progress (on the main thread), or {@code null}
+     * @return completed on the main thread with the villager voice, or with an error
+     */
+    public static synchronized java.util.concurrent.CompletableFuture<de.passimoritz.voiceapi.song.SongVoice> convertSpeech(String id,
+            java.nio.file.Path recording, java.util.function.Consumer<String> progress) {
+        return convert(id, recording, progress, true);
+    }
+
+    private static synchronized java.util.concurrent.CompletableFuture<de.passimoritz.voiceapi.song.SongVoice> convert(String songId,
+            java.nio.file.Path vocals, java.util.function.Consumer<String> progress, boolean speech) {
         java.util.concurrent.CompletableFuture<de.passimoritz.voiceapi.song.SongVoice> result = new java.util.concurrent.CompletableFuture<>();
         if (converter == null || songs == null || owner == null) {
             result.completeExceptionally(new IllegalStateException("VoiceAPI is not enabled"));
@@ -261,7 +283,7 @@ public final class VoiceApi {
         org.bukkit.plugin.Plugin plugin = owner;
         java.util.function.Consumer<String> onMain = progress == null ? null
                 : text -> Scheduling.run(plugin, () -> progress.accept(text));
-        converter.convert(id, vocals, songs.folder(id), onMain).whenComplete((folder, error) -> {
+        converter.convert(id, vocals, songs.folder(id), onMain, speech).whenComplete((folder, error) -> {
             de.passimoritz.voiceapi.song.SongVoice voice = null;
             Throwable failure = error;
             if (failure == null) {
@@ -296,10 +318,10 @@ public final class VoiceApi {
         if (songs == null || converter == null || owner == null || !converter.ready()) {
             return 0;
         }
-        java.util.Map<String, java.nio.file.Path> jobs = songs.interrupted();
-        for (java.util.Map.Entry<String, java.nio.file.Path> job : jobs.entrySet()) {
+        java.util.Map<String, de.passimoritz.voiceapi.song.SongVoices.Job> jobs = songs.jobs();
+        for (java.util.Map.Entry<String, de.passimoritz.voiceapi.song.SongVoices.Job> job : jobs.entrySet()) {
             org.bukkit.plugin.Plugin plugin = owner;
-            convertSong(job.getKey(), job.getValue(), null).whenComplete((voice, error) -> plugin.getLogger().info(error == null
+            convert(job.getKey(), job.getValue().input(), null, job.getValue().speech()).whenComplete((voice, error) -> plugin.getLogger().info(error == null
                     ? "Resumed conversion finished: " + job.getKey() : "Resumed conversion failed: " + job.getKey() + " – " + error.getMessage()));
         }
         return jobs.size();

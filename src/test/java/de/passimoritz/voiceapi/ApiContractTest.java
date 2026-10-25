@@ -39,6 +39,8 @@ class ApiContractTest {
         VoiceApi.class.getMethod("onSoundPackChanged", Runnable.class);
         VoiceApi.class.getMethod("songVoice", String.class);
         VoiceApi.class.getMethod("convertSong", String.class, java.nio.file.Path.class, java.util.function.Consumer.class);
+        VoiceApi.class.getMethod("convertSpeech", String.class, java.nio.file.Path.class, java.util.function.Consumer.class);
+        assertTrue(VoiceApi.API_VERSION >= 4, "convertSpeech came with interface 4");
         VoiceApi.class.getMethod("songVoiceMissing");
         MelodyNote.class.getMethod("forWord", int.class);
         SingOptions.class.getMethod("parse", String.class);

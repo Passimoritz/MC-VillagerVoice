@@ -112,15 +112,30 @@ public final class SongVoices {
     /** Conversions a server stop interrupted: id → vocal track (only those whose vocal track still exists; the others are dropped). */
     public synchronized Map<String, Path> interrupted() {
         Map<String, Path> out = new LinkedHashMap<>();
+        jobs().forEach((id, job) -> out.put(id, job.input()));
+        return out;
+    }
+
+    /** An interrupted conversion: its recording and whether it was speech ({@code VoiceApi.convertSpeech}) or singing. */
+    public record Job(Path input, boolean speech) {
+    }
+
+    /**
+     * The interrupted conversions with their mode. A job file holds the recording's path on the first line and {@code speech} on a second
+     * line for the speech mode (files of older versions have only the path: singing).
+     */
+    public synchronized Map<String, Job> jobs() {
+        Map<String, Job> out = new LinkedHashMap<>();
         if (!Files.isDirectory(folder)) {
             return out;
         }
         try (Stream<Path> files = Files.list(folder)) {
             for (Path file : files.filter(p -> p.getFileName().toString().endsWith(".job")).sorted().toList()) {
                 String id = file.getFileName().toString().replaceFirst("\\.job$", "");
-                Path vocals = Path.of(Files.readString(file, StandardCharsets.UTF_8).strip());
-                if (Files.isRegularFile(vocals)) {
-                    out.put(id, vocals);
+                List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8).stream().map(String::strip).filter(l -> !l.isEmpty()).toList();
+                Path input = lines.isEmpty() ? null : Path.of(lines.get(0));
+                if (input != null && Files.isRegularFile(input)) {
+                    out.put(id, new Job(input, lines.size() > 1 && lines.get(1).equals("speech")));
                 } else {
                     Files.deleteIfExists(file);
                 }

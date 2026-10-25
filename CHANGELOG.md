@@ -14,6 +14,12 @@
   big jar with the sounds inside (then nothing is downloaded).
 - The sounds stay in the repository (`src/main/resources/pack/VoiceAPI-Sounds.zip`); a test fails if they change without updating the
   checksum.
+- **The villager speaks recordings — speech mode with noise detection** (interface 4): `VoiceApi.convertSpeech(id, recording, progress)`
+  and `tools/villager_speak.py` convert spoken recordings (voice lines, speeches, old radio recordings) instead of songs. The noise is
+  detected first (the quietest 15 % give a noise profile; clean recordings are left alone) and filtered by spectral gating, the voice model
+  converts with speech settings (rmvpe, the speaker's melody kept) and the pauses are closed. Stored and played like converted songs;
+  interrupted conversions resume in the right mode (job file line 2 `speech`). Settings `rvc.speech.denoise`, `gate`, `separate` (Demucs
+  if installed). Measured pauses vs. speech: −24 … −29 dB of villager murmur before → −46 … −74 dB.
 - **The repository is public and now called `MC-VillagerVoice`** (old links redirect). The plugin keeps its name VoiceAPI, so
   integrations (NoteAPI) keep working.
 - **New documentation** in English (`docs/en/`) and German (`docs/de/`): getting started, configuration, developer guide, how it works,

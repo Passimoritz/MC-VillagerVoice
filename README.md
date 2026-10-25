@@ -23,7 +23,7 @@ It is a library: **no commands**. [NoteAPI](https://github.com/Passimoritz/MC-Mu
 | 🇩🇪 | **J. F. Kennedy** — *"Ich bin ein Berliner"* (1963) | [▶ villager](docs/audio/villager-berliner.mp3) · [original](docs/audio/original-berliner.mp3) |
 | 🇩🇪 | **Ernst Reuter** — *„Schaut auf diese Stadt“* (1948, text read by speech synthesis) | [▶ villager](docs/audio/villager-reuter.mp3) |
 
-Public-domain recordings, 10–20 s, converted by the villager voice model. Live in-game speech (`VoiceApi.speak`):
+Public-domain recordings, 10–20 s, converted by the plugin's speech mode (`VoiceApi.convertSpeech`: noise detected and filtered). Live in-game speech (`VoiceApi.speak`):
 [English](docs/audio/speech-en-pack.mp3) · [German](docs/audio/speech-de-pack.mp3) · [without pack](docs/audio/speech-en-vanilla.mp3) ·
 [witch](docs/audio/speech-en-witch.mp3) · [singing on notes](docs/audio/sing-en-pack.mp3).
 
@@ -33,7 +33,7 @@ Public-domain recordings, 10–20 s, converted by the villager voice model. Live
 |---|---|
 | 🗣️ **Speak** | German by the rules of spelling, English with dictionary + rules; numbers as words; `?` rises, `.` falls, `CAPS` and `*stars*` emphasise |
 | 🎵 **Sing** | syllables on notes, melismas, legato, glides; the real villager hum exactly on the semitone (with the pack) |
-| 🤖 **AI villager singing** | an RVC voice model trained only on villager sounds turns real vocals into villager singing — CPU only, Linux and Windows |
+| 🤖 **AI villager voice** | an RVC voice model trained only on villager sounds turns real vocals into villager singing — and spoken recordings into villager speech, with noise detected and filtered. CPU only, Linux and Windows |
 | 🎭 **9 voices · 10 moods** | villager, trader, witch, allay, piglin, zombie villager, evoker, goat, cat · happy, sad, angry, scared, whisper, robot … |
 | ⏱️ **Speech clock** | its own 5 ms thread — sounds start and stop to the millisecond, not on the 50 ms server tick |
 | 📦 **Small and maintenance-free** | 0.2 MB jar, sounds downloaded once (SHA-256 checked); compiled against the oldest API, tested weekly against the newest |

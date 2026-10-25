@@ -8,7 +8,8 @@ words, melody and timing stay. Everything runs on the **CPU**, also on Linux and
 
 ## Listen — famous speeches, spoken by the villager
 
-Short clips (10–20 s) of public-domain recordings, converted with the same model the plugin uses for songs:
+Short clips (10–20 s) of public-domain recordings, converted by the plugin's **speech mode** (`VoiceApi.convertSpeech`, below) — the same
+model that sings the songs:
 
 | Speech | Villager | Original |
 |---|---|---|
@@ -19,6 +20,25 @@ Short clips (10–20 s) of public-domain recordings, converted with the same mod
 
 ¹ There is no free recording of a famous German speech; the text (public domain) is read by speech synthesis and then converted.
 Made with [`tools/doc_speeches.py`](../../tools/doc_speeches.py). Songs are not included here because their recordings are copyrighted.
+
+## Speech mode: noise detected and filtered
+
+Spoken recordings are not songs: old speeches carry radio hiss, hall and crowd noise, and the voice model would turn all of it into
+"villager". `VoiceApi.convertSpeech` (and `tools/villager_speak.py`) therefore:
+
+1. **detects the noise** — the quietest 15 % of the recording give a noise profile per frequency; the distance between speech and noise
+   decides whether to filter at all (a clean recording, e.g. speech synthesis, is left alone),
+2. **filters it** by spectral gating against that profile and keeps the speech band (90–7000 Hz); with Demucs installed the voice is
+   separated from the background first,
+3. converts with **speech settings** (pitch detection rmvpe, the speaker's melody kept — no singing register, no syllable dips),
+4. **closes the pauses**: what the model still made of noise more than 24 dB under the speech is lowered by 30 dB.
+
+Measured on the clips above (pauses vs. speech): Armstrong's radio recording −70 dB, Kennedy in Berlin −74 dB, the Moon speech −46 dB —
+before, the model turned the noise into a steady villager murmur at −24 to −29 dB.
+
+```bash
+python plugins/VoiceAPI/tools/villager_speak.py --input speech.wav --out villager.wav [--denoise 0…1] [--gate dB] [--separate auto|on|off]
+```
 
 ## Songs with NoteAPI
 

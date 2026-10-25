@@ -36,6 +36,7 @@ public final class SongConverter {
     });
     private volatile Process running;
     private volatile List<String> options = List.of();
+    private volatile List<String> speechOptions = List.of();
 
     /**
      * @param rvcHome folder of the voice model environment ({@code ~/.voiceapi/rvc}: venv, Applio, models)
@@ -55,6 +56,20 @@ public final class SongConverter {
 
     public List<String> options() {
         return options;
+    }
+
+    /** Extra arguments for the speech mode ({@code villager_speak.py}, e.g. {@code --denoise 0.5 --gate 20}); empty = its defaults. */
+    public void speechOptions(List<String> newOptions) {
+        speechOptions = newOptions == null ? List.of() : List.copyOf(newOptions);
+    }
+
+    public List<String> speechOptions() {
+        return speechOptions;
+    }
+
+    /** The script of the speech mode, next to {@code villager_sing.py}. */
+    public Path speechScript() {
+        return script.resolveSibling("villager_speak.py");
     }
 
     /** The Python of the environment. */
@@ -95,6 +110,14 @@ public final class SongConverter {
      * @return completed with the folder, or with an error (text of the output)
      */
     public CompletableFuture<Path> convert(String id, Path vocals, Path target, Consumer<String> progress) {
+        return convert(id, vocals, target, progress, false);
+    }
+
+    /**
+     * Converts singing ({@code villager_sing.py}) or – with {@code speech} – a spoken recording ({@code villager_speak.py}: noise detected
+     * and filtered, speech settings, pauses closed). Both write the same sections, so both play the same way.
+     */
+    public CompletableFuture<Path> convert(String id, Path vocals, Path target, Consumer<String> progress, boolean speech) {
         CompletableFuture<Path> result = new CompletableFuture<>();
         List<String> missing = missing();
         if (!missing.isEmpty()) {
@@ -106,16 +129,16 @@ public final class SongConverter {
         Path job = target.resolveSibling(target.getFileName() + ".job");
         try {
             Files.createDirectories(target.getParent());
-            Files.writeString(job, vocals.toAbsolutePath().toString(), StandardCharsets.UTF_8);
+            Files.writeString(job, vocals.toAbsolutePath() + (speech ? System.lineSeparator() + "speech" : ""), StandardCharsets.UTF_8);
         } catch (IOException e) {
             // only the resume after a restart is lost
         }
         worker.submit(() -> {
             List<String> tail = new ArrayList<>();
             try {
-                List<String> command = new ArrayList<>(List.of(python().toString(), "-X", "utf8", script.toString(), "--vocals", vocals.toString(),
-                        "--chunks", target.toString(), "--id", id, "--model", model));
-                command.addAll(options);
+                List<String> command = new ArrayList<>(List.of(python().toString(), "-X", "utf8", (speech ? speechScript() : script).toString(),
+                        "--vocals", vocals.toString(), "--chunks", target.toString(), "--id", id, "--model", model));
+                command.addAll(speech ? speechOptions : options);
                 ProcessBuilder builder = new ProcessBuilder(command);
                 builder.environment().put("VOICEAPI_RVC_HOME", rvcHome.toString());
                 builder.environment().put("PYTHONIOENCODING", "utf-8");

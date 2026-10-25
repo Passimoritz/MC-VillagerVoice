@@ -8,7 +8,8 @@ Villager-Stimme — Worte, Melodie und Timing bleiben. Alles läuft auf der **CP
 
 ## Reinhören — berühmte Reden, vom Villager gesprochen
 
-Kurze Ausschnitte (10–20 s) gemeinfreier Aufnahmen, umgewandelt mit demselben Modell, das das Plugin für Lieder nutzt:
+Kurze Ausschnitte (10–20 s) gemeinfreier Aufnahmen, umgewandelt mit dem **Sprechmodus** des Plugins (`VoiceApi.convertSpeech`, unten) —
+dasselbe Modell, das die Lieder singt:
 
 | Rede | Villager | Original |
 |---|---|---|
@@ -20,6 +21,25 @@ Kurze Ausschnitte (10–20 s) gemeinfreier Aufnahmen, umgewandelt mit demselben 
 ¹ Von berühmten deutschen Reden gibt es keine freie Aufnahme; der (gemeinfreie) Text wird per Sprachsynthese vorgelesen und dann
 umgewandelt. Erzeugt mit [`tools/doc_speeches.py`](../../tools/doc_speeches.py). Lieder fehlen hier, weil ihre Aufnahmen urheberrechtlich
 geschützt sind.
+
+## Sprechmodus: Rauschen erkannt und gefiltert
+
+Gesprochene Aufnahmen sind keine Lieder: Alte Reden tragen Funkrauschen, Hall und Publikum, und das Stimmmodell würde all das zu
+„Villager“ machen. `VoiceApi.convertSpeech` (und `tools/villager_speak.py`) darum:
+
+1. **erkennt das Rauschen** — die leisesten 15 % der Aufnahme liefern ein Rauschprofil je Frequenz; der Abstand zwischen Sprache und
+   Rauschen entscheidet, ob überhaupt gefiltert wird (eine saubere Aufnahme, z. B. Sprachsynthese, bleibt unangetastet),
+2. **filtert es** per spektralem Gating gegen dieses Profil und behält das Sprachband (90–7000 Hz); ist Demucs installiert, wird die Stimme
+   vorher vom Hintergrund getrennt,
+3. wandelt mit **Sprech-Einstellungen** um (Tonhöhenerkennung rmvpe, die Sprechmelodie bleibt — keine Gesangslage, keine Silbensenken),
+4. **schließt die Pausen**: Was das Modell noch aus Rauschen machte und mehr als 24 dB unter der Sprache liegt, wird um 30 dB abgesenkt.
+
+Gemessen an den Ausschnitten oben (Pausen gegen Sprache): Armstrongs Funkaufnahme −70 dB, Kennedy in Berlin −74 dB, die Mond-Rede −46 dB —
+vorher machte das Modell aus dem Rauschen ein stetes Villager-Murmeln bei −24 bis −29 dB.
+
+```bash
+python plugins/VoiceAPI/tools/villager_speak.py --input rede.wav --out villager.wav [--denoise 0…1] [--gate dB] [--separate auto|on|off]
+```
 
 ## Lieder mit der NoteAPI
 

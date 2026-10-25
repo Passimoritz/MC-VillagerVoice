@@ -43,6 +43,9 @@ Only needed for [villager singing](villager-singing.md) of real songs.
 | `rvc.timbre-follow.max-db` | `6.0` | limit per frequency band (0.5–18 dB) |
 | `rvc.timbre-follow.window-ms` | `400` | what counts as movement: changes against the average of this many ms (100–2000) |
 | `rvc.timbre-follow.smooth-ms` | `40` | smoothing of the movement (0–200 ms) |
+| `rvc.speech.denoise` | `1.0` | speech mode (`VoiceApi.convertSpeech`): noise filter strength, `0` off … `1` strong. Noise is detected first; clean recordings are never filtered |
+| `rvc.speech.gate` | `24` | close the pauses: what the model made of noise this many dB under the speech is lowered (`0` = off) |
+| `rvc.speech.separate` | `auto` | separate the voice from the background with Demucs first: `auto` (if installed), `on`, `off` |
 
 ## Full default file
 
@@ -65,6 +68,10 @@ rvc:
     max-db: 6.0
     window-ms: 400
     smooth-ms: 40
+  speech:
+    denoise: 1.0
+    gate: 24
+    separate: auto
 
 pack:
   use: true

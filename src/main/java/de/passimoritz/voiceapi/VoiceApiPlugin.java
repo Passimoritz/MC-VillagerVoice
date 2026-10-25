@@ -18,7 +18,7 @@ import java.util.logging.Level;
 public final class VoiceApiPlugin extends JavaPlugin {
 
     private static final List<String> TOOLS = List.of("voicelab.py", "build_voice_pack.py", "compare.py", "villager_sing.py", "villager_dataset.py",
-            "rvc_setup.py", "villager_voice.py", "sing_test.py", "find_hums.py", "hums.json", "rvc_infer.py");
+            "rvc_setup.py", "villager_voice.py", "sing_test.py", "find_hums.py", "hums.json", "rvc_infer.py", "villager_speak.py");
 
     private VoicePlayer player;
     private de.passimoritz.voiceapi.song.SongConverter converter;
@@ -58,6 +58,7 @@ public final class VoiceApiPlugin extends JavaPlugin {
         converter = new de.passimoritz.voiceapi.song.SongConverter(rvcHome, getDataFolder().toPath().resolve("tools").resolve("villager_sing.py"),
                 getConfig().getString("rvc.model", "villager"));
         converter.options(timbreOptions());
+        converter.speechOptions(speechOptions());
         VoiceApi.enable(player, library, pack, Files.isRegularFile(soundPack) ? soundPack : base);
         VoiceApi.enableSongs(this, songs, converter, base, soundPack);
         if (!bundled && !current) {
@@ -93,6 +94,15 @@ public final class VoiceApiPlugin extends JavaPlugin {
                 "--timbre-max-db", num.apply(Compat.clamp(getConfig().getDouble("rvc.timbre-follow.max-db", 6.0), 0.5, 18.0)),
                 "--timbre-window-ms", num.apply(Compat.clamp(getConfig().getDouble("rvc.timbre-follow.window-ms", 400.0), 100.0, 2000.0)),
                 "--timbre-smooth-ms", num.apply(Compat.clamp(getConfig().getDouble("rvc.timbre-follow.smooth-ms", 40.0), 0.0, 200.0)));
+    }
+
+    /** The speech mode ({@code rvc.speech}): noise filter strength, how far under the speech pauses are closed, voice separation. */
+    private List<String> speechOptions() {
+        java.util.function.DoubleFunction<String> num = v -> String.format(java.util.Locale.ROOT, "%.3f", v);
+        String separate = getConfig().getString("rvc.speech.separate", "auto");
+        return List.of("--denoise", num.apply(Compat.clamp(getConfig().getDouble("rvc.speech.denoise", 1.0), 0.0, 1.0)),
+                "--gate", num.apply(Compat.clamp(getConfig().getDouble("rvc.speech.gate", 24.0), 0.0, 60.0)),
+                "--separate", List.of("auto", "on", "off").contains(separate) ? separate : "auto");
     }
 
     @Override
