@@ -34,6 +34,9 @@ PYTHON = HOME / "venv" / ("Scripts/python.exe" if sys.platform == "win32" else "
 SR = 44100
 CHUNK_MS = 4000      # length of one section (without overlap)
 OVERLAP_MS = 60      # crossfade between two sections
+# cost of an octave change inside singing (_octaves): high enough that the comfort zone alone never moves a line in its middle
+# (with 60: BTS 4, Döner 5 octave jumps between neighbouring notes; with 400: 0 and 1) – only the hard limits do
+OCTAVE_SWITCH = 400.0
 
 
 def log(text: str) -> None:
@@ -61,7 +64,7 @@ def model_files(name: str) -> tuple[Path, Path | None]:
 
 
 def convert(vocals: Path, out: Path, model: str, pitch: int, f0_method: str = "fcpe", index_rate: float = 1.0, protect: float = 0.5,
-            noise: float = 0.0) -> None:
+            noise: float = 0.0, shape: dict | None = None) -> None:
     pth, index = model_files(model)
     # through rvc_infer.py: fixed randomness, noise always from the CPU – the same result on every machine, CPU or GPU
     starter = Path(__file__).resolve().parent / "rvc_infer.py"
@@ -73,9 +76,137 @@ def convert(vocals: Path, out: Path, model: str, pitch: int, f0_method: str = "f
     log(f"  model {pth.name}" + (f" + {index.name}" if index else "") + f", pitch {pitch:+d}")
     # the model's latent noise (RVC samples it at 0.67): 0 = the clean, steady voice – with it the villager sounds breathy and tired
     env = dict(os.environ, VOICEAPI_PRIOR_NOISE=str(noise))
+    # the pitch curve shaped inside the conversion (shape_f0: smoother, in the villager's register per phrase)
+    env["VOICEAPI_F0"] = json.dumps(shape) if shape else ""
     result = subprocess.run(cmd, cwd=str(APPLIO), capture_output=True, text=True, encoding="utf-8", errors="replace", env=env)
     if result.returncode != 0 or not out.exists():
         raise SystemExit("Conversion failed:\n" + result.stdout[-1500:] + result.stderr[-1500:])
+
+
+def prepare(y: np.ndarray, strength: float = 1.0, highpass_hz: float = 80.0, floor_over: float = 2.0, kick_hz: float = 1500.0,
+            gate_db: float = -35.0, gate_floor_db: float = -40.0) -> np.ndarray:
+    """Cleans the separated vocal track before the conversion. Separated vocals carry bleed of the backing (HTDemucs: kick, bass, a steady
+    synth tone), and the voice model turns everything it is given into villager voice. Here
+    1. a high-pass at `highpass_hz` (kick and bass below the voice),
+    2. the steady floor per frequency (20th percentile over time × `floor_over`: drones, hiss) is subtracted,
+    3. the percussive part below `kick_hz` (kick, plucked bass) is taken out – above it stay the consonants,
+    4. frames without voice (harmonic energy in 150–4000 Hz after steps 1–3 more than `gate_db` below the loud parts) go down by
+       `gate_floor_db`.
+    The result is the input of the conversion and the reference of follow(). `strength` 0 switches it off, 1 = fully."""
+    if strength <= 0:
+        return y
+    import librosa
+    S = librosa.stft(y, n_fft=2048, hop_length=512)
+    freqs = librosa.fft_frequencies(sr=SR, n_fft=2048)
+    mag = np.abs(S)
+    highpass = 1 / np.sqrt(1 + (highpass_hz / np.maximum(freqs, 1.0)) ** 4)
+    floor = np.percentile(mag, 20, axis=1, keepdims=True) * floor_over
+    keep = np.clip((mag - floor) / (mag + 1e-9), 0, 1)
+    H, P = librosa.decompose.hpss(S, kernel_size=(17, 17), margin=1.0)
+    percussive = np.abs(P) / (np.abs(H) + np.abs(P) + 1e-9)
+    keep = keep * np.where(freqs[:, None] < kick_hz, 1 - percussive, 1.0) * highpass[:, None]
+    band = (freqs >= 150) & (freqs < 4000)
+    # measured after the floor is gone – otherwise a steady synth tone keeps the gate open
+    level = 10 * np.log10((np.abs(H[band] * keep[band]) ** 2).sum(axis=0) + 1e-12)
+    voiced = np.clip((level - (np.percentile(level, 95) + gate_db)) / 6.0, 0, 1)   # 6 dB soft knee
+    voiced = np.convolve(voiced, np.ones(5) / 5, mode="same")
+    gate = 10 ** (gate_floor_db * (1 - voiced) / 20)
+    gain = 1 - strength * (1 - keep * gate[None, :])
+    return librosa.istft(S * gain, hop_length=512, length=len(y)).astype(np.float32)
+
+
+def _runs(mask: np.ndarray) -> list[tuple[int, int]]:
+    """Start/end (exclusive) of every run of True."""
+    d = np.diff(np.r_[0, mask.astype(np.int8), 0])
+    return list(zip(np.flatnonzero(d == 1), np.flatnonzero(d == -1)))
+
+
+def _octaves(lf: np.ndarray, lo: float, hi: float, pause: int, comfort: tuple[float, float] = (90.0, 150.0)) -> np.ndarray:
+    """The octave shift per frame (whole octaves, log2) – chosen for the whole song at once (Viterbi): every semitone a note lies outside
+    the `comfort` zone (Hz; the voice sounds best there: harmonic-to-noise +14 … +19 dB, at 60 Hz +11 – deeper it turns into a buzzing
+    fry) costs a little, outside the hard limits `lo` … `hi` much; changing the octave costs much inside singing and almost nothing in a
+    pause of at least `pause` frames. So a melody keeps its octave, the next singer gets his own in the pause before him, and a high
+    voice (BTS ~330 Hz) is not pushed two octaves down into the fry: notes below 80 Hz 16 → 6 %. An octave change inside singing costs
+    OCTAVE_SWITCH – the small comfort costs never add up to it, only notes beyond the hard limits do."""
+    shifts = np.arange(-4, 5, dtype=np.float64)
+    voiced = ~np.isnan(lf)
+    v = np.where(voiced, lf, 0.0)[:, None] + shifts[None, :]
+    c_lo, c_hi = np.log2(comfort[0]), np.log2(comfort[1])
+    cost = 0.3 * 12 * (np.maximum(c_lo - v, 0.0) + np.maximum(v - c_hi, 0.0)) + np.where(v > hi, 10.0, 0.0) + np.where(v < lo, 10.0, 0.0)
+    cost[~voiced] = 0.0
+    # frames inside a pause of at least `pause` frames: changing the octave there is cheap
+    in_pause = np.zeros(len(lf), dtype=bool)
+    for a, b in _runs(~voiced):
+        if b - a >= pause or a == 0 or b == len(lf):
+            in_pause[a:b] = True
+    change = np.where(in_pause, 0.5, OCTAVE_SWITCH)
+    n, m = cost.shape
+    total = cost[0].copy()
+    back = np.zeros((n, m), dtype=np.int8)
+    for t in range(1, n):
+        best = int(np.argmin(total))
+        switch = total[best] + change[t]
+        stay = total
+        back[t] = np.where(stay <= switch, np.arange(m), best)
+        total = np.minimum(stay, switch) + cost[t]
+    path = np.zeros(n, dtype=np.int64)
+    path[-1] = int(np.argmin(total))
+    for t in range(n - 1, 0, -1):
+        path[t - 1] = back[t, path[t]]
+    return shifts[path]
+
+
+def shape_f0(f0: np.ndarray, frame_s: float = 0.01, low: float = 60.0, high: float = 178.0, fill_ms: float = 150.0,
+             smooth_ms: float = 50.0, tune: float = 0.0, phrase_gap_ms: float = 300.0,
+             comfort: tuple[float, float] = (90.0, 150.0)) -> np.ndarray:
+    """Shapes the pitch curve the voice model sings (Hz per frame, 0 = no pitch) – called inside the conversion (rvc_infer.py):
+    1. octave errors of the pitch tracker (runs up to 60 ms an octave off) are folded back – longer ones are real leaps and stay,
+    2. gaps without pitch inside a phrase up to `fill_ms` are bridged – there the model would breathe noise (rap: half of the frames),
+    3. jitter is removed by a median over `smooth_ms` (note steps stay steps – an average blurred them into slides: 5–7 % wrong notes)
+       and the curve is pulled towards the nearest semitone by `tune` (0 … 1),
+    4. the curve is moved by whole octaves into the range where the villager voice sounds good, `low` … `high` Hz – hard limits,
+       measured with clean tones through the model: below 60 Hz it gets thin, quiet and noisy (harmonic-to-noise 60 Hz +11 dB, 55 Hz +7,
+       45 Hz no voice at all), above 178 Hz it rattles (subharmonic 178 Hz −38 dB, 180 Hz −16 dB, 182 Hz −8 dB below the note). The
+       octave is chosen for the whole song at once (_octaves(): as few octave changes as possible, and those in pauses ≥
+       `phrase_gap_ms`, as much as possible in the `comfort` zone – the villager's own sounds lie at 95–117 Hz), so a deep rapper and a
+       high singer both sing in the villager's voice, the notes stay right and one singer does not jump octaves. Whatever is still
+       outside (a line wider than the range) is folded in by octaves.
+    low ≤ 0 switches step 4 off."""
+    f0 = np.asarray(f0, dtype=np.float64)
+    voiced = f0 > 0
+    if voiced.sum() < 3:
+        return f0.copy()
+    from scipy.ndimage import median_filter
+    lf = np.where(voiced, np.log2(np.maximum(f0, 1e-3)), np.nan)
+    short = max(1, int(round(0.06 / frame_s)))
+    for a, b in _runs(voiced):
+        if b - a >= 5:
+            med = median_filter(lf[a:b], size=min(31, (b - a) | 1), mode="nearest")
+            off = np.round(lf[a:b] - med)
+            for c, e in _runs(off != 0):
+                if e - c <= short:
+                    lf[a + c:a + e] -= off[c:e]
+    gap = max(1, int(round(phrase_gap_ms / 1000 / frame_s)))
+    fill = int(round(fill_ms / 1000 / frame_s))
+    for a, b in _runs(~voiced):
+        if 0 < a and b < len(f0) and b - a <= fill:
+            lf[a:b] = np.interp(np.arange(a, b), [a - 1, b], [lf[a - 1], lf[b]])
+    sung = ~np.isnan(lf)
+    k = int(round(smooth_ms / 1000 / frame_s))
+    if k > 1:
+        for a, b in _runs(sung):
+            if b - a >= 3:
+                lf[a:b] = median_filter(lf[a:b], size=min(k | 1, (b - a) | 1), mode="nearest")
+    if tune > 0:
+        midi = 69 + 12 * (lf - np.log2(440.0))
+        lf = np.log2(440.0) + (midi + tune * (np.round(midi) - midi) - 69) / 12
+    if low > 0:
+        lo, hi = np.log2(low), np.log2(high)
+        lf = lf + _octaves(lf, lo, hi, gap, tuple(comfort))
+        # hard limits: whatever is still outside (a line wider than the range) is folded in by octaves
+        lf = np.where(lf > hi, lf - np.ceil(lf - hi), lf)
+        lf = np.where(lf < lo, lf + np.ceil(lo - lf), lf)
+    return np.where(np.isnan(lf), 0.0, 2 ** np.nan_to_num(lf)).astype(np.float64)
 
 
 def auto_pitch(vocals: np.ndarray) -> int:
@@ -145,7 +276,7 @@ def articulate(y: np.ndarray, strength: float = 2.0, fast_ms: float = 15.0, slow
     ef, es = _envelope(y, fast_ms), _envelope(y, slow_ms)
     gain = np.clip((ef / (es + 1e-9)) ** strength, floor, 1.0)
     k = np.hanning(2 * int(0.004 * SR) + 1)
-    out = y * np.convolve(gain, k / k.sum(), mode="same")
+    out = y * _smooth(gain, k)
     return (out * (np.sqrt(np.mean(y ** 2)) / (np.sqrt(np.mean(out ** 2)) + 1e-9))).astype(np.float32)
 
 
@@ -181,20 +312,30 @@ def follow_timbre(vocals: np.ndarray, y: np.ndarray, strength: float = 0.0, max_
     return (out * (np.sqrt(np.mean(y ** 2)) / (np.sqrt(np.mean(out ** 2)) + 1e-9))).astype(np.float32)
 
 
+def _smooth(x: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+    """x smoothed with the kernel (normalised to a sum of 1), same length – by FFT: a direct convolution of a song with a 0.1–0.4 s window
+    takes minutes."""
+    from scipy.signal import oaconvolve
+    return oaconvolve(x, kernel / kernel.sum(), mode="same")
+
+
 def _envelope(y: np.ndarray, win_ms: float) -> np.ndarray:
     n = max(1, int(SR * win_ms / 1000))
     k = np.hanning(2 * n + 1)
-    return np.sqrt(np.convolve(y.astype(np.float64) ** 2, k / k.sum(), mode="same") + 1e-12)
+    return np.sqrt(np.maximum(_smooth(y.astype(np.float64) ** 2, k), 0) + 1e-12)
 
 
 def follow(vocals: np.ndarray, y: np.ndarray, consonants: float = 0.5, win_ms: float = 25.0, clamp_db: float = 18.0,
-           gate_db: float = -45.0) -> np.ndarray:
-    """Puts the villager singing onto the performance of the original:
+           gate_db: float = -40.0, floor_db: float = -60.0) -> np.ndarray:
+    """Puts the villager singing onto the performance of the original (`vocals`: best the cleaned track from prepare()):
     1. Offset: the model starts a few milliseconds early/late – shifted sample-exactly onto the onsets of the original (±50 ms).
     2. Level curve: volume every 25 ms like the original (at most ±18 dB, smoothed) – accents and syllable starts sit where the singer has
-       them; where the original is silent, it gets quiet (no breathing/noise from the model).
-    3. Consonants: the sharp, voiceless parts of the original (percussive, above 2 kHz) mixed in quietly – the model slurs them; without
-       them the text is harder to understand and the onsets blur. 0 switches it off.
+       them.
+    3. Gate: where the original is more than `gate_db` below its loud parts, the villager goes down to `floor_db` (6 dB soft knee). The
+       model sings at its own volume even on near silence (a rap intro at −96 dB came out at −19 dB as a droning buzz); the old limit of
+       −18 dB left that audible as noise in every gap.
+    4. Consonants: the sharp, voiceless parts of the original (percussive, above 2 kHz) mixed in quietly, only where the gate is open –
+       the model slurs them; without them the text is harder to understand and the onsets blur. 0 switches it off.
     Measured with NoteAPI's Likeness on 6 NCS songs: harmony/rhythm/dynamics 85.3 → 91.3."""
     import librosa
     n = min(len(vocals), len(y))
@@ -214,18 +355,56 @@ def follow(vocals: np.ndarray, y: np.ndarray, consonants: float = 0.5, win_ms: f
     eo, ec = _envelope(vocals, win_ms), _envelope(y, win_ms)
     lo, hi = 10 ** (-clamp_db / 20), 10 ** (clamp_db / 20)
     gain = np.clip(eo / ec, lo, hi)
-    quiet = eo < np.percentile(eo, 99) * 10 ** (gate_db / 20)
-    gain[quiet] = np.minimum(gain[quiet], lo)
+    level = 20 * np.log10(eo / np.percentile(eo, 99))
+    k = np.hanning(2 * int(SR * 0.02) + 1)
+    opened = _smooth(np.clip((level - gate_db) / 6.0, 0, 1), k)
+    gain *= 10 ** (floor_db * (1 - opened) / 20)
     k = np.hanning(2 * int(SR * 0.006) + 1)
-    out = y * np.convolve(gain, k / k.sum(), mode="same")
+    out = y * _smooth(gain, k)
     if consonants > 0:
         S = librosa.stft(vocals, n_fft=2048, hop_length=512)
         _, P = librosa.decompose.hpss(S, kernel_size=(17, 17), margin=2.0)
         P[librosa.fft_frequencies(sr=SR, n_fft=2048) < 2000] = 0
-        out = out + consonants * librosa.istft(P, hop_length=512, length=n)
+        out = out + consonants * librosa.istft(P, hop_length=512, length=n) * opened
     out *= float(np.sqrt(np.mean(vocals ** 2))) / (float(np.sqrt(np.mean(out ** 2))) + 1e-9)
     log(f"offset corrected: {lag / SR * 1000:+.1f} ms")
     return out.astype(np.float32)
+
+
+def even(y: np.ndarray, strength: float = 0.5, window_ms: float = 300.0, max_boost_db: float = 12.0, range_db: float = 35.0) -> np.ndarray:
+    """Evens out the level of the singing: every passage is pulled towards the level of the loud parts by `strength` (0 = off, 1 = all equally
+    loud), slowly (`window_ms`) so syllables keep their accents, at most `max_boost_db` up. follow() copies the singer's dynamics, and
+    quiet lines (ad-libs, a softer verse) then vanished behind the note blocks. Pauses (more than `range_db` below the loud parts) stay
+    silent – nothing is raised there."""
+    if strength <= 0:
+        return y
+    env = 20 * np.log10(_envelope(y, window_ms) + 1e-9)
+    loud = np.percentile(env, 95)
+    weight = np.clip((env - (loud - range_db)) / 10.0, 0, 1)
+    gain_db = np.clip((loud - 3.0 - env) * strength, 0.0, max_boost_db) * weight
+    k = np.hanning(2 * int(0.05 * SR) + 1)
+    return (y * 10 ** (_smooth(gain_db, k) / 20)).astype(np.float32)
+
+
+def sung_level(y: np.ndarray) -> float:
+    """Level of the sung parts in dBFS: mean power of the 50 ms windows within 20 dB of the loud parts (95th percentile) – pauses do not
+    count, so a song with many gaps is not judged quieter than it sounds."""
+    win = int(0.05 * SR)
+    frames = y[: len(y) // win * win].astype(np.float64).reshape(-1, win)
+    power = (frames ** 2).mean(axis=1) + 1e-12
+    db = 10 * np.log10(power)
+    sung = db > np.percentile(db, 95) - 20
+    return float(10 * np.log10(power[sung].mean())) if sung.any() else -120.0
+
+
+def level_up(y: np.ndarray, min_db: float = -18.0) -> np.ndarray:
+    """Raises quiet singing to at least `min_db` (sung_level), never lowers it. The villager follows the level of the separated vocals,
+    and those are quiet in many mixes (rap: −23 dB) – in Minecraft a sound cannot play louder than its file (volume ≤ 1), so next to the
+    note blocks such a villager was hardly audible. Peaks are caught by limit() afterwards. 0 or above switches it off."""
+    if min_db >= 0:
+        return y
+    lift = min_db - sung_level(y)
+    return (y * 10 ** (max(0.0, lift) / 20)).astype(np.float32)
 
 
 def limit(y: np.ndarray, ceiling: float = 0.97) -> np.ndarray:
@@ -241,7 +420,7 @@ def limit(y: np.ndarray, ceiling: float = 0.97) -> np.ndarray:
     gain = minimum_filter1d(need, size=2 * hold + 1)
     release = int(0.12 * SR)
     k = np.hanning(2 * release + 1)
-    smooth = np.convolve(gain, k / k.sum(), mode="same")
+    smooth = _smooth(gain, k)
     gain = np.minimum(gain, smooth)
     return np.clip(y * gain, -ceiling, ceiling).astype(np.float32)
 
@@ -254,7 +433,7 @@ def boundaries(y: np.ndarray, reach_ms: int = 1000) -> list[int]:
     reach = int(reach_ms / 1000 * SR)
     hop = int(0.01 * SR)
     win = int(0.05 * SR)
-    energy = np.convolve(y.astype(np.float64) ** 2, np.ones(win) / win, mode="same")[::hop]
+    energy = _smooth(y.astype(np.float64) ** 2, np.ones(win))[::hop]
     cuts = [0]
     while cuts[-1] + chunk + reach < len(y):
         nominal = cuts[-1] + chunk
@@ -310,6 +489,41 @@ def write_chunks(y: np.ndarray, folder: Path, ident: str, model: str) -> dict:
     return meta
 
 
+def sing(vocals: np.ndarray, work: Path, args: argparse.Namespace) -> np.ndarray:
+    """The villager sings the vocal track (both for the plugin and for listening samples), before the final limiter:
+    - the model gets the vocal track as it is – cleaned (prepare()) it lost syllables (2–3 % of the sung passages went silent); the
+      cleaned track only steers level, gate and consonants (follow()), so the bleed stays out of the pauses,
+    - the pitch curve is shaped inside the conversion (shape_f0(): bridged, smoothed, every phrase in the villager's register),
+    - then hiss down, villager sound, level curve, even level, syllables, minimum level."""
+    import soundfile as sf
+    # only 12 dB off where prepare() hears no voice: quiet lines and ad-libs (14 dB below the singing in "Döner von Ibo") stay audible;
+    # what is really silent (an intro with bleed only) the gate in follow() closes anyway
+    cleaned = prepare(vocals, args.prepare, gate_floor_db=-12.0)
+    src, raw = work / "_vocals.wav", work / "_villager.wav"
+    sf.write(str(src), vocals, SR)
+    shape = None
+    if args.register != "off":
+        low, high = (float(v) for v in args.register.split(","))
+        shape = {"low": low, "high": high, "fill_ms": args.pitch_fill_ms, "smooth_ms": args.pitch_smooth_ms, "tune": args.tune}
+        pitch = 0 if args.pitch == "auto" else int(args.pitch)
+    else:
+        pitch = auto_pitch(cleaned) if args.pitch == "auto" else int(args.pitch)
+    convert(src, raw, args.model, pitch, args.f0_method, args.index_rate, args.protect, args.noise, shape)
+    y = clean(load(raw), args.clean)
+    if not args.no_colour:
+        y = colour(y)
+    n = len(vocals)
+    y = np.pad(y, (0, max(0, n - len(y))))[:n]
+    y *= float(np.sqrt(np.mean(cleaned ** 2))) / (float(np.sqrt(np.mean(y ** 2))) + 1e-9)
+    if not args.no_follow:
+        y = follow(cleaned, y, args.consonants)
+    y = follow_timbre(cleaned, y, args.timbre_follow, args.timbre_max_db, args.timbre_window_ms, args.timbre_smooth_ms)
+    y = level_up(articulate(even(y, args.even), args.articulation), args.min_level)
+    src.unlink(missing_ok=True)
+    raw.unlink(missing_ok=True)
+    return y
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--cache")
@@ -323,16 +537,23 @@ def main() -> None:
     parser.add_argument("--id", help="id of the piece (with --chunks)")
     parser.add_argument("--model", default="villager")
     parser.add_argument("--pitch", default="auto")
-    parser.add_argument("--f0-method", default="fcpe", help="fcpe (default, faster, just as accurate) or rmvpe")
+    parser.add_argument("--f0-method", default="rmvpe", help="rmvpe (default: robust on separated vocals with bleed) or fcpe (faster)")
     parser.add_argument("--no-colour", action="store_true", help="do not match the sound to the villager videos")
-    parser.add_argument("--index-rate", type=float, default=1.0, help="how much of the villager's own timbre (index) to use, 0 … 1")
+    parser.add_argument("--prepare", type=float, default=1.0, help="how strongly the reference for level and gate is cleaned of bleed (0 … 1)")
+    parser.add_argument("--register", default="60,178", help="lowest,highest pitch in Hz the villager sings (hard limits, moved by octaves; 'off' = --pitch)")
+    parser.add_argument("--pitch-fill-ms", type=float, default=150.0, help="bridge gaps without pitch inside a phrase up to this length")
+    parser.add_argument("--pitch-smooth-ms", type=float, default=50.0, help="remove pitch jitter (median over this time, ms)")
+    parser.add_argument("--tune", type=float, default=0.0, help="pull the pitch towards the nearest semitone (0 … 1)")
+    parser.add_argument("--even", type=float, default=0.0, help="even out the level of quiet passages (0 = off … 1)")
+    parser.add_argument("--min-level", type=float, default=-18.0, help="raise quiet singing to at least this level (dBFS, 0 = off)")
+    parser.add_argument("--index-rate", type=float, default=0.5, help="how much of the villager's own timbre (index) to use, 0 … 1")
     parser.add_argument("--protect", type=float, default=0.5, help="how much consonants/breaths stay untouched, 0 … 0.5")
     parser.add_argument("--noise", type=float, default=0.0, help="the model's latent noise (1 = RVC's own; 0 = clean, steady voice)")
     parser.add_argument("--clean", type=float, default=0.6, help="lower the hiss in sung parts (0 = off … 1)")
     parser.add_argument("--consonants", type=float, default=0.5, help="mix in the consonants of the original (0 = off)")
     parser.add_argument("--no-follow", action="store_true", help="do not align offset, level curve and consonants to the original")
     parser.add_argument("--vocal-gain", type=float, default=0.0, help="villager level in the mix relative to the original vocals (dB)")
-    parser.add_argument("--articulation", type=float, default=2.0, help="sing syllable by syllable like the videos (0 = bound together)")
+    parser.add_argument("--articulation", type=float, default=0.0, help="sing syllable by syllable like the videos (0 = bound together)")
     parser.add_argument("--timbre-follow", type=float, default=0.0, help="carry the singer's timbre movement over (0 = off … 1 = fully)")
     parser.add_argument("--timbre-max-db", type=float, default=6.0, help="limit of the timbre movement per band (dB)")
     parser.add_argument("--timbre-window-ms", type=float, default=400.0, help="what counts as movement: changes against this average (ms)")
@@ -347,22 +568,8 @@ def main() -> None:
         work = folder.with_name(folder.name + ".part")
         work.mkdir(parents=True, exist_ok=True)
         vocals = load(Path(args.vocals), args.start, args.end)
-        src = work / "_vocals.wav"
-        sf.write(str(src), vocals, SR)
-        pitch = auto_pitch(vocals) if args.pitch == "auto" else int(args.pitch)
-        raw = work / "_villager.wav"
         log("@@step Villager is singing")
-        convert(src, raw, args.model, pitch, args.f0_method, args.index_rate, args.protect, args.noise)
-        y = clean(load(raw), args.clean)
-        if not args.no_colour:
-            y = colour(y)
-        y = np.pad(y, (0, max(0, len(vocals) - len(y))))[: len(vocals)]
-        y *= float(np.sqrt(np.mean(vocals ** 2))) / (float(np.sqrt(np.mean(y ** 2))) + 1e-9)
-        if not args.no_follow:
-            y = follow(vocals, y, args.consonants)
-        y = follow_timbre(vocals, y, args.timbre_follow, args.timbre_max_db, args.timbre_window_ms, args.timbre_smooth_ms)
-        y = articulate(y, args.articulation)
-        y = np.clip(y, -0.98, 0.98)
+        y = limit(sing(vocals, work, args))
         log("@@step Writing sections")
         meta = write_chunks(y, folder, args.id, args.model)
         log(f"@@done {args.id} {meta['count']} sections, {meta['lengthMs'] / 1000:.1f} s")
@@ -381,22 +588,9 @@ def main() -> None:
     n = min(len(vocals), len(backing)) if np.ndim(backing) else len(vocals)
     vocals, backing = vocals[:n], (backing[:n] if np.ndim(backing) else np.zeros(n, dtype=np.float32))
     title = args.title
-    src = out / f"{title} - 1 Original - vocals only.wav"
-    sf.write(str(src), vocals, SR)
+    sf.write(str(out / f"{title} - 1 Original - vocals only.wav"), vocals, SR)
     sf.write(str(out / f"{title} - 1 Original - with backing.wav"), limit(vocals + backing), SR)
-    pitch = auto_pitch(vocals) if args.pitch == "auto" else int(args.pitch)
-    raw = out / f"_{args.label}-raw.wav"
-    convert(src, raw, args.model, pitch, args.f0_method, args.index_rate, args.protect, args.noise)
-    y = clean(load(raw), args.clean)
-    if not args.no_colour:
-        y = colour(y)
-    y = np.pad(y, (0, max(0, n - len(y))))[:n]
-    # level like the original vocals
-    y *= float(np.sqrt(np.mean(vocals ** 2))) / (float(np.sqrt(np.mean(y ** 2))) + 1e-9)
-    if not args.no_follow:
-        y = follow(vocals, y, args.consonants)
-    y = follow_timbre(vocals, y, args.timbre_follow, args.timbre_max_db, args.timbre_window_ms, args.timbre_smooth_ms)
-    y = articulate(y, args.articulation)
+    y = sing(vocals, out, args)
     sf.write(str(out / f"{title} - 2 {args.label} - vocals only.wav"), limit(y), SR)
     # the videos keep the original instrumental untouched and the villager about as loud as the original singer (measured: −0.6 dB)
     sung = y * 10 ** (args.vocal_gain / 20) + backing
@@ -404,14 +598,15 @@ def main() -> None:
     # comparison: the loudest 12 s of the vocals, original first, then villager (with backing)
     win = 12 * SR
     if n > win:
-        energy = np.convolve(vocals ** 2, np.ones(SR) / SR, mode="valid")[::SR // 4]
+        # 1 s moving sum via cumulative sum (a direct convolution with a 1 s window took minutes for a 60 s song)
+        c = np.concatenate([[0.0], np.cumsum(vocals.astype(np.float64) ** 2)])
+        energy = ((c[SR:] - c[:-SR]) / SR)[::SR // 4]
         best = int(np.argmax([energy[i: i + 48].sum() for i in range(max(1, len(energy) - 48))])) * (SR // 4)
     else:
         best = 0
     a = limit(vocals + backing)[best: best + win]
     b = limit(sung)[best: best + win]
     sf.write(str(out / f"{title} - Comparison (original first, then {args.label}).wav"), np.concatenate([a, np.zeros(SR // 2, dtype=np.float32), b]), SR)
-    raw.unlink(missing_ok=True)
     log(f"done: {out}")
 
 
