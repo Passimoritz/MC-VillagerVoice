@@ -51,8 +51,8 @@ class ApiContractTest {
     @Test
     void singWithOptionsWorksWithoutServer() {
         List<MelodyNote> melody = List.of(new MelodyNote(0, 300, 60).forWord(0), new MelodyNote(300, 300, 64).forWord(1));
-        Utterance sung = VoiceApi.sing("a a", Language.GERMAN, Speaker.WITCH, melody, Style.DEFAULT.withPitch(2), SingOptions.parse("legato=200"));
+        Utterance sung = VoiceApi.sing("a a", Language.GERMAN, Speaker.VILLAGER, melody, Style.DEFAULT.withPitch(2), SingOptions.parse("legato=200"));
         assertTrue(sung.sung());
-        assertTrue(VoiceApi.cues(sung, true).stream().allMatch(c -> c.sound().startsWith("voiceapi:hum.witch.")));
+        assertTrue(VoiceApi.cues(sung, true).stream().allMatch(c -> c.sound().startsWith("voiceapi:hum.villager.")));
     }
 }

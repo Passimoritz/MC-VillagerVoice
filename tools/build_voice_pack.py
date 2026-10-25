@@ -1,10 +1,12 @@
 """Builds the VoiceAPI sounds for the NoteAPI resource pack: real vowels and consonants instead of villager sounds, plus the sung hum of
-every voice.
+the villager (the other voices were removed in 1.9.0: they sounded too far from the villager videos and made the pack four times as big).
 
 The vowels come from formant synthesis (a voice tone of glottal pulses runs through the resonances of the mouth – like the classic speech
 synthesizers), the consonants from shaped noise and short plosive bursts. Every vowel is generated for every root (every STEP semitones
 from ROOT_LOW to ROOT_HIGH) so the game has to stretch it by at most two semitones and the formants (= the vowel) stay intact. Higher roots
-get slightly higher formants (a smaller speaker). The hums are the real vanilla recordings of each voice, pulled onto the semitone.
+get slightly higher formants (a smaller speaker). The hum is the real vanilla recording of the villager, pulled onto the semitone. The pack is reproducible (sorted
+entries, fixed time, OGG stored) and encoded at PACK_RATE (22.05 kHz: about a quarter smaller) – the same sounds give the same SHA-1, so
+players keep it in their cache.
 
 Names like de.passimoritz.voiceapi.pack.VoicePack:  voiceapi:v.<vowel>.<root>, voiceapi:c.<sound>.<root>, voiceapi:c.<sound>,
 voiceapi:hum.<voice>.<root>.<length>[g]
@@ -12,6 +14,8 @@ voiceapi:hum.<voice>.<root>.<length>[g]
 Usage:   python build_voice_pack.py --out VoiceAPI-Sounds.zip            standalone pack (only the sounds)
          python build_voice_pack.py --merge plugins/NoteAPI/pack/NoteAPI-Sounds.zip   mix the sounds into the NoteAPI pack
          python build_voice_pack.py --preview folder/                     the sounds as WAV to listen to
+         python build_voice_pack.py --repack old.zip --out new.zip       rewrite an existing pack: only the villager, PACK_RATE,
+                                                                        reproducible (no synthesis, no vanilla sounds needed)
 """
 from __future__ import annotations
 
@@ -31,7 +35,10 @@ SR = 44100
 PACK_FORMAT = 97  # Minecraft 26.3 (for information only; the pack is valid for all versions, see pack_meta)
 PACK_FORMAT_OLDEST = 7  # Minecraft 1.17
 PACK_FORMAT_OPEN = 9999  # open upper end: future versions accept the pack without a warning
-SOUND_FORMAT = 2  # muss zu VoicePack.FORMAT passen
+SOUND_FORMAT = 3  # muss zu VoicePack.FORMAT passen (3: only the villager, 22.05 kHz)
+PACK_RATE = 22050  # sample rate of the OGG files in the pack (the synthesis runs at SR)
+VORBIS_QUALITY = "4"
+ZIP_TIME = (1980, 1, 1, 0, 0, 0)  # fixed time of every entry: same sounds -> same zip -> same SHA-1
 STEP, ROOT_LOW, ROOT_HIGH = 4, 33, 85
 VOWEL_MS, SONORANT_MS = 1500, 400
 ROOTS = list(range(ROOT_LOW, ROOT_HIGH + 1, STEP))
@@ -61,12 +68,7 @@ NOISES = ["p", "b", "t", "d", "k", "g", "f", "v", "s", "z", "sh", "zh", "th", "d
 # (level and pitch curves of the takes measured: loop only where level and pitch are stable – before the natural decay)
 HUMS = {"villager": [("mob/villager/idle2", 0.32, 0.72, 0.40, 0.70, 42.6), ("mob/villager/idle1", 0.18, 0.48, 0.28, 0.46, 45.0),
                      ("mob/villager/no1", 0.10, 0.42, 0.16, 0.40, 43.2)]}
-# the other voices: stable spots found by tools/find_hums.py (tools/hums.json); the best 2 takes per voice (pack size)
-_HUMS_FILE = Path(__file__).resolve().parent / "hums.json"
-if _HUMS_FILE.exists():
-    for _speaker, _takes in json.loads(_HUMS_FILE.read_text(encoding="utf-8")).items():
-        if _speaker != "villager" and _takes:
-            HUMS[_speaker] = [tuple(t) for t in _takes[:2]]
+# only the villager since 1.9.0 (tools/hums.json still lists the stable spots of the former voices, for find_hums.py)
 # lengths (ms in total, ms held): short for short notes (air in between like in the videos), long for held ones
 HUM_RMS_DB = -20.0  # loudness of the held hum (dBFS)
 HUM_LENGTHS = {"s": (350, 200), "m": (520, 340), "l": (750, 480), "x": (1700, 1450)}  # x: held notes without a new attack
@@ -383,19 +385,23 @@ def hum(speaker: str, root: int, length: str = "l", take: int = 0, legato: bool 
 # ── Pack ────────────────────────────────────────────────────
 
 def ogg(y: np.ndarray, work: Path) -> bytes:
-    """Encodes as OGG Vorbis: with soundfile, otherwise with ffmpeg."""
-    try:
-        import soundfile as sf
+    """Encodes as OGG Vorbis at PACK_RATE (ffmpeg; without ffmpeg with soundfile at SR)."""
+    import soundfile as sf
+    if shutil.which("ffmpeg") is None:
         buffer = io.BytesIO()
         sf.write(buffer, y, SR, format="OGG", subtype="VORBIS")
         return buffer.getvalue()
-    except Exception:  # noqa: BLE001
-        import soundfile as sf
-        wav = work / "tmp.wav"
-        out = work / "tmp.ogg"
-        sf.write(str(wav), y, SR)
-        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav), "-c:a", "libvorbis", "-q:a", "4", str(out)], check=True)
-        return out.read_bytes()
+    wav = work / "tmp.wav"
+    sf.write(str(wav), y, SR)
+    return encode(wav, work)
+
+
+def encode(source: Path, work: Path) -> bytes:
+    """A sound file as OGG Vorbis at PACK_RATE (mono, VORBIS_QUALITY, without metadata)."""
+    out = work / "tmp-out.ogg"
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(source), "-ac", "1", "-ar", str(PACK_RATE), "-c:a", "libvorbis",
+                    "-q:a", VORBIS_QUALITY, "-map_metadata", "-1", "-fflags", "+bitexact", "-flags:a", "+bitexact", str(out)], check=True)
+    return out.read_bytes()
 
 
 def all_sounds():
@@ -431,7 +437,8 @@ def build_entries(progress) -> dict[str, bytes]:
                 progress(i, len(items))
     entries["assets/voiceapi/sounds.json"] = json.dumps(sounds, indent=1).encode("utf-8")
     entries["assets/voiceapi/voiceapi.json"] = json.dumps({"format": SOUND_FORMAT, "step": STEP, "roots": ROOTS, "vowels": list(VOWELS),
-                                                            "sonorants": list(SONORANTS), "noises": NOISES, "hums": list(HUMS)}).encode("utf-8")
+                                                            "sonorants": list(SONORANTS), "noises": NOISES, "hums": list(HUMS),
+                                                            "rate": PACK_RATE}).encode("utf-8")
     entries["assets/voiceapi/CREDITS.txt"] = CREDITS.encode("utf-8")
     return entries
 
@@ -444,23 +451,58 @@ def pack_meta(description: str) -> dict:
                      "min_format": PACK_FORMAT_OLDEST, "max_format": PACK_FORMAT_OPEN, "description": description}}
 
 
+def write_zip(target: Path, entries: dict[str, bytes]) -> None:
+    """Writes a reproducible zip: sorted, fixed time, OGG/PNG stored (like PackZip in the plugin)."""
+    with zipfile.ZipFile(target, "w") as pack:
+        for name in sorted(entries):
+            info = zipfile.ZipInfo(name, date_time=ZIP_TIME)
+            info.compress_type = zipfile.ZIP_STORED if name.endswith((".ogg", ".png")) else zipfile.ZIP_DEFLATED
+            info.external_attr = 0o644 << 16
+            pack.writestr(info, entries[name], compresslevel=9)
+
+
 def write_standalone(target: Path, entries: dict[str, bytes]) -> None:
-    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as pack:
-        pack.writestr("pack.mcmeta", json.dumps(pack_meta("VoiceAPI: speech and singing with real sounds"), indent=1))
-        for name, data in entries.items():
-            pack.writestr(name, data)
+    write_zip(target, {"pack.mcmeta": json.dumps(pack_meta("VoiceAPI: speech and singing with real sounds"), indent=1).encode("utf-8"), **entries})
+
+
+def repack(source: Path, target: Path) -> None:
+    """Rewrites an existing pack without synthesis: only the voices in HUMS, every OGG re-encoded at PACK_RATE, sounds.json and
+    voiceapi.json without the removed voices, reproducible zip."""
+    keep = tuple(f"assets/voiceapi/sounds/hum/{speaker}/" for speaker in HUMS)
+    entries: dict[str, bytes] = {}
+    with zipfile.ZipFile(source) as old, tempfile.TemporaryDirectory() as tmp:
+        work = Path(tmp)
+        names = [n for n in old.namelist() if not n.endswith("/")]
+        for i, name in enumerate(names):
+            if name.startswith("assets/voiceapi/sounds/hum/") and not name.startswith(keep):
+                continue
+            if name.startswith("assets/voiceapi/sounds/song/"):
+                continue  # the villager singings of songs come from the plugin (songs/), not from the base pack
+            data = old.read(name)
+            if name.endswith(".ogg"):
+                original = work / "in.ogg"
+                original.write_bytes(data)
+                data = encode(original, work)
+            entries[name] = data
+            if i % 200 == 0:
+                log(f"  {i}/{len(names)}")
+    sounds = json.loads(entries["assets/voiceapi/sounds.json"])
+    sounds = {key: value for key, value in sounds.items() if not key.startswith("hum.") or key.split(".")[1] in HUMS}
+    entries["assets/voiceapi/sounds.json"] = json.dumps(sounds, indent=1).encode("utf-8")
+    marker = json.loads(entries["assets/voiceapi/voiceapi.json"])
+    marker.update({"format": SOUND_FORMAT, "hums": list(HUMS), "rate": PACK_RATE})
+    marker.pop("songs", None)
+    entries["assets/voiceapi/voiceapi.json"] = json.dumps(marker).encode("utf-8")
+    write_zip(target, entries)
 
 
 def merge(target: Path, entries: dict[str, bytes]) -> None:
     """Mixes the sounds into an existing pack (e.g. NoteAPI-Sounds.zip): everything old stays, voiceapi entries are replaced."""
     tmp = target.with_suffix(".tmp.zip")
-    with zipfile.ZipFile(target) as old, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as new:
-        for info in old.infolist():
-            if info.filename.startswith("assets/voiceapi/"):
-                continue
-            new.writestr(info, old.read(info.filename))
-        for name, data in entries.items():
-            new.writestr(name, data)
+    with zipfile.ZipFile(target) as old:
+        merged = {n: old.read(n) for n in old.namelist() if not n.endswith("/") and not n.startswith("assets/voiceapi/")}
+    merged.update(entries)
+    write_zip(tmp, merged)
     shutil.move(str(tmp), str(target))
 
 
@@ -489,7 +531,14 @@ def main() -> None:
     parser.add_argument("--out", help="write a standalone pack")
     parser.add_argument("--merge", help="mix into this pack (NoteAPI-Sounds.zip)")
     parser.add_argument("--preview", help="samples as WAV into this folder")
+    parser.add_argument("--repack", help="rewrite this existing pack (with --out): only the villager, PACK_RATE, reproducible")
     args = parser.parse_args()
+    if args.repack:
+        if not args.out:
+            parser.error("--repack needs --out")
+        repack(Path(args.repack), Path(args.out))
+        log(f"pack: {args.out} ({Path(args.out).stat().st_size // 1024} KB)")
+        return
     if args.preview:
         preview(Path(args.preview))
     if not args.out and not args.merge:

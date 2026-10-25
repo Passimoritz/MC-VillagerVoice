@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 public final class VoicePack {
 
     /** How the sounds are named; must match {@code SOUND_FORMAT} in build_voice_pack.py. */
-    public static final int FORMAT = 2;
+    public static final int FORMAT = 3;
     /** Semitones between two roots. */
     public static final int STEP = 4;
     public static final int ROOT_LOW = 33;
@@ -58,9 +58,8 @@ public final class VoicePack {
     }
     /** After this many milliseconds a long note retriggers the hum (before the sample has decayed). */
     public static final int HUM_RETRIGGER_MS = 1450;
-    /** The voices the pack has real hum samples for (like {@code HUMS} in build_voice_pack.py). */
-    public static final java.util.Set<String> HUM_SPEAKERS = java.util.Set.of("villager", "trader", "witch", "allay", "piglin", "zombie", "evoker",
-            "goat", "cat");
+    /** The voices the pack has real hum samples for (like {@code HUMS} in build_voice_pack.py) – only the villager since 1.9.0. */
+    public static final java.util.Set<String> HUM_SPEAKERS = java.util.Set.of("villager");
 
     /** The hum sound of a voice at a root and length (voices without their own sample: the villager). */
     public static String humSound(String speaker, int root, String length) {

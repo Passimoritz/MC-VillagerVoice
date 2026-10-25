@@ -11,12 +11,36 @@ VOICEAPI_DEVICE=cpu forces the CPU (even if a GPU is present).
 """
 from __future__ import annotations
 
+import json
 import os
 import random
 import runpy
 import sys
 
 SEED = 1234
+
+
+def patch_f0(options: dict) -> None:
+    """VOICEAPI_F0 (JSON, the arguments of villager_sing.shape_f0): Applio's pitch curve is shaped before the model sings it – gaps
+    bridged, smoothed, every phrase moved by octaves into the villager's register. The pitch key (--pitch) is applied afterwards."""
+    import numpy as np
+    from rvc.infer import pipeline
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from villager_sing import shape_f0
+
+    original = pipeline.Pipeline.get_f0
+
+    def get_f0(self, x, p_len, f0_method="rmvpe", pitch=0, f0_autotune=False, f0_autotune_strength=1.0, proposed_pitch=False,
+               proposed_pitch_threshold=155.0):
+        _, f0 = original(self, x, p_len, f0_method, 0, False, 1.0, False, proposed_pitch_threshold)
+        f0 = shape_f0(f0, frame_s=self.window / self.sample_rate, **options) * 2 ** (pitch / 12)
+        f0_mel = 1127 * np.log(1 + f0 / 700)
+        f0_mel[f0_mel > 0] = (f0_mel[f0_mel > 0] - self.f0_mel_min) * 254 / (self.f0_mel_max - self.f0_mel_min) + 1
+        f0_mel[f0_mel <= 1] = 1
+        f0_mel[f0_mel > 255] = 255
+        return np.rint(f0_mel).astype(int), f0
+
+    pipeline.Pipeline.get_f0 = get_f0
 
 
 def main() -> None:
@@ -63,6 +87,9 @@ def main() -> None:
     torch.randn = randn
     os.chdir(applio)
     sys.path.insert(0, applio)
+    shape = os.environ.get("VOICEAPI_F0", "")
+    if shape:
+        patch_f0(json.loads(shape))
     sys.argv = [os.path.join(applio, "core.py")] + sys.argv[2:]
     runpy.run_path(sys.argv[0], run_name="__main__")
 

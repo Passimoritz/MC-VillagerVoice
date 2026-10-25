@@ -14,6 +14,7 @@ on:
       - "tools/rvc_setup.py"
       - "tools/rvc_infer.py"
       - "ci/voice_model_test.py"
+      - "ci/villager_sing_test.py"
       - ".github/workflows/voice-model.yml"
 
 jobs:
@@ -42,4 +43,5 @@ jobs:
       shell: bash
       run: |
         if [ "$RUNNER_OS" = "Windows" ]; then py="$HOME/.voiceapi/rvc/venv/Scripts/python.exe"; else py="$HOME/.voiceapi/rvc/venv/bin/python"; fi
+        "$py" ci/villager_sing_test.py
         "$py" ci/voice_model_test.py
