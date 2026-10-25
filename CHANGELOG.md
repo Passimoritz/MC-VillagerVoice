@@ -14,6 +14,13 @@
   big jar with the sounds inside (then nothing is downloaded).
 - The sounds stay in the repository (`src/main/resources/pack/VoiceAPI-Sounds.zip`); a test fails if they change without updating the
   checksum.
+- **The repository is public and now called `MC-VillagerVoice`** (old links redirect). The plugin keeps its name VoiceAPI, so
+  integrations (NoteAPI) keep working.
+- **New documentation** in English (`docs/en/`) and German (`docs/de/`): getting started, configuration, developer guide, how it works,
+  sound pack, villager singing, tools, development, troubleshooting. Diagrams as SVG in light and dark (`tools/doc_diagrams.py`, the speech
+  and singing diagrams show real plugin output), audio samples in `docs/audio/`: famous public-domain speeches spoken by the villager
+  voice model (`tools/doc_speeches.py`: voice separated from the background first, speech settings, gate in the pauses) and live in-game
+  speech (`tools/doc_samples.py`).
 
 ## 1.8.0 (2026-10-23)
 

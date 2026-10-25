@@ -30,7 +30,7 @@ public final class SoundDownload {
     /** SHA-256 of the sounds this plugin version is made for ({@code src/main/resources/pack/VoiceAPI-Sounds.zip}, checked by a test). */
     public static final String SHA256 = "3284456f716157534115d4c3a8ed860c1016221b6ccb19bf7c590feba6661a29";
     /** Where they are downloaded from; {@code {sha256}} and {@code {sha}} (first 12 characters) are filled in. */
-    public static final String DEFAULT_URL = "https://github.com/Passimoritz/MC-VoiceAPI/releases/download/voice-pack/VoiceAPI-Sounds-{sha}.zip";
+    public static final String DEFAULT_URL = "https://github.com/Passimoritz/MC-VillagerVoice/releases/download/voice-pack/VoiceAPI-Sounds-{sha}.zip";
     /** Larger answers are not a sound pack. */
     static final long MAX_BYTES = 128L * 1024 * 1024;
 

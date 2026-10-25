@@ -11,7 +11,7 @@
 
   <name>VoiceAPI</name>
   <description>Speech and singing from villager sounds for Bukkit servers (Spigot, Paper, Purpur, Folia, Minecraft 1.17+): text (German, English) becomes sounds, stress and melody; with the resource pack real vowels and AI villager singing.</description>
-  <url>https://github.com/Passimoritz/MC-VoiceAPI</url>
+  <url>https://github.com/Passimoritz/MC-VillagerVoice</url>
 
   <properties>
     <!--
@@ -140,6 +140,10 @@
           <include>*.py</include>
           <include>*.json</include>
         </includes>
+        <!-- only for this repository's documentation (docs/images, docs/audio) -->
+        <excludes>
+          <exclude>doc_*.py</exclude>
+        </excludes>
       </resource>
     </resources>
   </build>

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" width="1200" height="420" role="img" aria-label="Was Spieler hören">
+<title>Was Spieler hören</title>
+<style>
+  .bg{fill:#fbf8f1}.panel{fill:#ffffff;stroke:#e2d6bf}.ink{fill:#33281e}.muted{fill:#7c6b58}.faint{fill:#b9a88f}
+  .t{font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif}.mono{font-family:ui-monospace,'Cascadia Code',Consolas,monospace}
+  .green{fill:#3a7d44}.green-l{fill:#dcefd9}.brown{fill:#8a5a3b}.brown-l{fill:#f1e2d3}.sky{fill:#3f7cc0}.sky-l{fill:#dde9f7}
+  .gold{fill:#c98b1b}.gold-l{fill:#f8ecd2}.red{fill:#b8473b}.red-l{fill:#f6dcd8}.violet{fill:#7653b0}.violet-l{fill:#e8e0f5}
+  .on-dark{fill:#ffffff}.line{stroke:#6b5848;fill:none}.grid{stroke:#ece3d2}.dash{stroke-dasharray:5 5}
+  .s-green{stroke:#3a7d44}.s-brown{stroke:#8a5a3b}.s-sky{stroke:#3f7cc0}.s-gold{stroke:#c98b1b}.s-red{stroke:#b8473b}.s-violet{stroke:#7653b0}
+  .arrow{fill:#6b5848}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117}.panel{fill:#161b22;stroke:#30363d}.ink{fill:#e6edf3}.muted{fill:#9ba6b2}.faint{fill:#5a6470}
+    .green-l{fill:#17301c}.brown-l{fill:#33251a}.sky-l{fill:#152a44}.gold-l{fill:#3a2c10}.red-l{fill:#3d1d19}.violet-l{fill:#2a2140}
+    .green{fill:#4c9a57}.brown{fill:#a8724e}.sky{fill:#5592d6}.gold{fill:#d9a03a}.red{fill:#d0614f}.violet{fill:#9373cc}
+    .line{stroke:#9ba6b2}.grid{stroke:#21262d}.arrow{fill:#9ba6b2}
+    .s-green{stroke:#4c9a57}.s-brown{stroke:#a8724e}.s-sky{stroke:#5592d6}.s-gold{stroke:#d9a03a}.s-red{stroke:#d0614f}.s-violet{stroke:#9373cc}
+  }
+</style>
+<defs>
+  <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="arrow"/></marker>
+</defs>
+<rect width="1200" height="420" rx="16" class="bg"/>
+<text x="40.0" y="48.0" font-size="22" font-weight="700" text-anchor="start" class="t ink">Was Spieler hören</text>
+<rect x="220.0" y="70.0" width="450.0" height="46.0" rx="10" class="green" />
+<text x="445.0" y="99.0" font-size="16" font-weight="700" text-anchor="middle" class="t on-dark">Mit Ressourcenpaket</text>
+<rect x="700.0" y="70.0" width="460.0" height="46.0" rx="10" class="brown" />
+<text x="930.0" y="99.0" font-size="16" font-weight="700" text-anchor="middle" class="t on-dark">Ohne (Vanilla-Laute)</text>
+<text x="40.0" y="170.0" font-size="17" font-weight="700" text-anchor="start" class="t ink">Vokale</text>
+<rect x="220.0" y="128.0" width="450.0" height="70.0" rx="10" class="green-l" />
+<rect x="700.0" y="128.0" width="460.0" height="70.0" rx="10" class="brown-l" />
+<text x="240.0" y="158.0" font-size="14" font-weight="400" text-anchor="start" class="t ink">Formant-Samples je Grundton</text>
+<text x="240.0" y="180.0" font-size="12.5" font-weight="400" text-anchor="start" class="mono muted">voiceapi:v.o.45 …</text>
+<text x="720.0" y="158.0" font-size="14" font-weight="400" text-anchor="start" class="t ink">das „Hmm“ des Villagers, auf der Tonhöhe</text>
+<text x="720.0" y="175.5" font-size="14" font-weight="400" text-anchor="start" class="t ink">der Silbe gestartet, rechtzeitig gestoppt</text>
+<text x="40.0" y="252.0" font-size="17" font-weight="700" text-anchor="start" class="t ink">Konsonanten</text>
+<rect x="220.0" y="210.0" width="450.0" height="70.0" rx="10" class="green-l" />
+<rect x="700.0" y="210.0" width="460.0" height="70.0" rx="10" class="brown-l" />
+<text x="240.0" y="240.0" font-size="14" font-weight="400" text-anchor="start" class="t ink">aufgenommene Konsonanten</text>
+<text x="240.0" y="262.0" font-size="12.5" font-weight="400" text-anchor="start" class="mono muted">voiceapi:c.k, c.f …</text>
+<text x="720.0" y="240.0" font-size="14" font-weight="400" text-anchor="start" class="t ink">Sand, Kies, Calcit, ein Knopf,</text>
+<text x="720.0" y="257.5" font-size="14" font-weight="400" text-anchor="start" class="t ink">ein Lava-Plopp, Pferdeatem …</text>
+<text x="40.0" y="334.0" font-size="17" font-weight="700" text-anchor="start" class="t ink">Gesang</text>
+<rect x="220.0" y="292.0" width="450.0" height="70.0" rx="10" class="green-l" />
+<rect x="700.0" y="292.0" width="460.0" height="70.0" rx="10" class="brown-l" />
+<text x="240.0" y="322.0" font-size="14" font-weight="400" text-anchor="start" class="t ink">das echte Summen jeder Stimme,</text>
+<text x="240.0" y="344.0" font-size="12.5" font-weight="400" text-anchor="start" class="t muted">genau auf dem Halbton</text>
+<text x="720.0" y="322.0" font-size="14" font-weight="400" text-anchor="start" class="t ink">standardmäßig aus — das Vanilla-</text>
+<text x="720.0" y="339.5" font-size="14" font-weight="400" text-anchor="start" class="t ink">Summen kann keinen Ton halten</text>
+<text x="40.0" y="390.0" font-size="13.5" font-weight="400" text-anchor="start" class="t muted">VoiceAPI entscheidet je Spieler — die NoteAPI sagt, wer das Paket geladen hat (oder dein eigener packProbe).</text>
+</svg>

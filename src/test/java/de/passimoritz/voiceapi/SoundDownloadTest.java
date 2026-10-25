@@ -61,7 +61,7 @@ class SoundDownloadTest {
     @Test
     void defaultUrlPointsToTheVersionedReleaseAsset() {
         SoundDownload sounds = new SoundDownload(dir.resolve("base.zip"), SoundDownload.SHA256, LOG);
-        assertEquals("https://github.com/Passimoritz/MC-VoiceAPI/releases/download/voice-pack/VoiceAPI-Sounds-"
+        assertEquals("https://github.com/Passimoritz/MC-VillagerVoice/releases/download/voice-pack/VoiceAPI-Sounds-"
                 + SoundDownload.SHA256.substring(0, 12) + ".zip", sounds.url(""));
         assertEquals("http://mirror/x-" + SoundDownload.SHA256 + ".zip", sounds.url("http://mirror/x-{sha256}.zip"));
     }
