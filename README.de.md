@@ -19,8 +19,8 @@ NoteAPI-Ressourcenpaket mit den VoiceAPI-Lauten geladen hat, hört stattdessen e
   Dorfbewohner die Töne nicht (sein Brummen steht nur ~180 ms stabil, das Spiel wählt zufällig eine von drei Aufnahmen), darum gilt
   `sing.require-pack: true`: Spieler ohne Paket hören keinen Gesang, und `VoiceApi.needsPack(utterance)` sagt dem einbindenden Plugin, dass es
   das Paket erzwingen soll
-- **9 Stimmen** – Dorfbewohner, Fahrender Händler, Hexe, Allay, Piglin, Zombie-Dorfbewohner, Magier (Wololo), Schreiende Ziege, Katze – jede
-  singt mit ihrem eigenen Hmm
+- **Die Dorfbewohner-Stimme** – sie singt mit ihrem eigenen Hmm (die anderen acht Stimmen sind seit 1.9.0 entfernt: sie machten das
+  Ressourcenpaket viermal so groß; ihre Namen funktionieren weiter und werden zum Dorfbewohner)
 - **Smoother Gesang einstellbar** – `SingOptions`: Lautstärke, Dynamik, Binden/Überlappen, Gleiten bei Sprüngen, kürzeste Note
 - **10 Stimmungen** – neutral, fröhlich, traurig, wütend, ängstlich, ruhig, aufgeregt, flüstern, Roboter, müde; dazu Tempo, Tonlage, Umfang, Kraft
 - **Sprach-Uhr** – eigener Thread mit 5-ms-Schritten: Klänge starten und stoppen auf die Millisekunde (der Server-Tick wäre zu grob)

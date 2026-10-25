@@ -18,8 +18,8 @@ the VoiceAPI sounds hear real vowels and consonants instead (formant synthesis).
   (the real villager hum per root, cleanly cut and pulled onto the semitone). With vanilla sounds the villager does not hit the notes (its hum
   is only stable for ~180 ms, the game randomly picks one of three takes), so `sing.require-pack: true` applies: players without the pack hear
   no singing, and `VoiceApi.needsPack(utterance)` tells the integrating plugin to enforce the pack
-- **9 voices** – villager, wandering trader, witch, allay, piglin, zombie villager, evoker (wololo), screaming goat, cat – each sings with its
-  own hum
+- **The villager voice** – it sings with its own hum (the other eight voices were removed in 1.9.0: they made the resource pack four
+  times as big; their names still work and become the villager)
 - **Adjustable smooth singing** – `SingOptions`: volume, dynamics, tying/overlapping, gliding on jumps, shortest note
 - **10 moods** – neutral, happy, sad, angry, scared, calm, excited, whisper, robot, tired; plus tempo, pitch, range, power
 - **Speech clock** – its own thread with 5 ms steps: sounds start and stop to the millisecond (the server tick would be too coarse)

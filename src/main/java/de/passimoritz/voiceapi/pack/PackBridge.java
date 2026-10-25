@@ -13,10 +13,11 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 
 /**
- * The connection to NoteAPI's resource pack: VoiceAPI has no pack of its own, its sounds are mixed into {@code NoteAPI-Sounds.zip}
- * (NoteAPI does that by itself, or {@code tools/build_voice_pack.py --merge}). This class knows whether the pack file contains the sounds
- * ({@link #available()}) and which player has loaded the pack – it asks NoteAPI for that ({@code MusicApi.player().hasRealSound(uuid)},
- * without a compile-time dependency), or a plugin decides it itself ({@link #probe(Predicate)}).
+ * The connection to NoteAPI's resource packs: NoteAPI sends VoiceAPI's sounds as a pack of their own ({@code pack/VoiceAPI-Base.zip},
+ * newer NoteAPI) or mixed into {@code NoteAPI-Sounds.zip} (older NoteAPI, servers before 1.20.3). This class knows whether one of these files
+ * contains the sounds ({@link #available()}) and which player has loaded them – it asks NoteAPI for that ({@code MusicApi.player()
+ * .hasVoiceSound(uuid)}, with older NoteAPI {@code hasRealSound}, without a compile-time dependency), or a plugin decides it itself
+ * ({@link #probe(Predicate)}).
  */
 public final class PackBridge {
 
@@ -25,6 +26,8 @@ public final class PackBridge {
     private final JavaPlugin plugin;
     private volatile boolean enabled = true;
     private volatile Path file;
+    /** NoteAPI's own pack with only the VoiceAPI sounds (newer NoteAPI). */
+    private volatile Path voiceFile;
     private volatile boolean available;
     private volatile long checkedAt = -RECHECK_MS;
     private volatile Predicate<Player> probe;
@@ -39,15 +42,17 @@ public final class PackBridge {
     /** Takes over the settings ({@code pack.use}, {@code pack.file}). */
     public void configure(boolean use, String path) {
         enabled = use;
-        file = path == null || path.isBlank() ? plugin.getDataFolder().toPath().getParent().resolve("NoteAPI").resolve("pack").resolve("NoteAPI-Sounds.zip")
-                : Path.of(path.strip());
+        Path noteApi = plugin.getDataFolder().toPath().getParent().resolve("NoteAPI").resolve("pack");
+        file = path == null || path.isBlank() ? noteApi.resolve("NoteAPI-Sounds.zip") : Path.of(path.strip());
+        voiceFile = path == null || path.isBlank() ? noteApi.resolve("VoiceAPI-Base.zip") : null;
         checkedAt = -RECHECK_MS;
         refresh();
     }
 
-    /** The pack file in which the sounds are expected. */
+    /** The pack file in which the sounds are expected (NoteAPI's voice pack if it has one, otherwise its sound pack). */
     public Path file() {
-        return file;
+        Path voice = voiceFile;
+        return voice != null && Files.isRegularFile(voice) ? voice : file;
     }
 
     /** Checks the pack file again (at most every 30 seconds). */
@@ -57,10 +62,13 @@ public final class PackBridge {
             return;
         }
         checkedAt = now;
-        boolean found = enabled && file != null && Files.isRegularFile(file) && VoicePack.matches(file);
+        Path voice = voiceFile;
+        Path where = enabled && voice != null && Files.isRegularFile(voice) && VoicePack.matches(voice) ? voice
+                : enabled && file != null && Files.isRegularFile(file) && VoicePack.matches(file) ? file : null;
+        boolean found = where != null;
         if (found != available) {
-            plugin.getLogger().info(found ? "VoiceAPI sounds found in the resource pack: " + file
-                    : "Resource pack without VoiceAPI sounds (" + file + ") – players hear villager sounds. NoteAPI mixes them in by itself.");
+            plugin.getLogger().info(found ? "VoiceAPI sounds found in the resource pack: " + where
+                    : "Resource pack without VoiceAPI sounds (" + file + ") – players hear villager sounds. NoteAPI adds them by itself.");
         }
         available = found;
     }
@@ -107,7 +115,12 @@ public final class PackBridge {
                 if (noteApi != null && noteApi.isEnabled()) {
                     Class<?> api = Class.forName("de.passimoritz.noteapi.MusicApi", true, noteApi.getClass().getClassLoader());
                     Object music = api.getMethod("player").invoke(null);
-                    Method found = music.getClass().getMethod("hasRealSound", UUID.class);
+                    Method found;
+                    try {
+                        found = music.getClass().getMethod("hasVoiceSound", UUID.class); // newer NoteAPI: the voice pack of its own
+                    } catch (NoSuchMethodException older) {
+                        found = music.getClass().getMethod("hasRealSound", UUID.class);
+                    }
                     musicPlayer = music;
                     hasRealSound = found;
                     method = found;

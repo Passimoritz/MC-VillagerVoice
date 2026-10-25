@@ -5,7 +5,8 @@ import java.util.Locale;
 import java.util.Optional;
 
 /**
- * The voices: which vanilla sounds of a creature carry the vowels. Every voice has a natural pitch (the MIDI number at which the creature
+ * The voice: which vanilla sounds of the villager carry the vowels (only the villager since 1.9.0 – the other creatures sounded too far
+ * from the well-known villager videos and made the resource pack four times as big). Every voice has a natural pitch (the MIDI number at which the creature
  * hums in the game – the villager at 43.6 ≈ 100 Hz) and three carriers:
  * <ul>
  *   <li>{@link #hum()}: the held sound ("Hmm") that vowels, nasals and glides are cut from (it is started and stopped after the duration of
@@ -23,55 +24,7 @@ public enum Speaker {
             new Carrier("entity.villager.no", 54, 150, 329, 64, 0.0),
             new Carrier("entity.villager.hurt", 19, 40, 151, 24, 4.8),
             new Carrier("entity.villager.death", 19, 60, 284, 34, 7.0),
-            List.of(new Carrier("entity.villager.ambient", 84, 300, 473, 269, -1.4), new Carrier("entity.villager.trade", 64, 200, 239, 189, 2.2))),
-
-    TRADER("trader", "Wandering trader", 55.0, 1.1,
-            new Carrier("entity.wandering_trader.no", 94, 180, 548, 114, 6.2),
-            new Carrier("entity.wandering_trader.hurt", 17, 60, 254, 34, 8.5),
-            new Carrier("entity.wandering_trader.yes", 114, 200, 508, 136, 9.8),
-            List.of(new Carrier("entity.wandering_trader.ambient", 139, 250, 314, 234, 2.6), new Carrier("entity.wandering_trader.trade", 69, 200, 628, 234, 1.9))),
-
-    WITCH("witch", "Witch", 64.0, 1.25,
-            new Carrier("entity.witch.ambient", 117, 200, 436, 59, 5.7),
-            new Carrier("entity.witch.hurt", 29, 60, 259, 39, 6.1),
-            new Carrier("entity.witch.celebrate", 104, 200, 473, 59, 7.6),
-            List.of()),
-
-    ALLAY("allay", "Allay", 75.0, 1.1,
-            new Carrier("entity.allay.ambient_with_item", 72, 150, 760, 159, -2.2),
-            new Carrier("entity.allay.hurt", 104, 150, 545, 114, 7.6),
-            new Carrier("entity.allay.item_given", 0, 100, 678, 59, -10.0),
-            List.of()),
-
-    PIGLIN("piglin", "Piglin", 41.5, 0.9,
-            new Carrier("entity.piglin.ambient", 39, 150, 508, 194, 2.9),
-            new Carrier("entity.piglin.hurt", 9, 60, 264, 109, 2.5),
-            new Carrier("entity.piglin.angry", 39, 150, 683, 141, 4.6),
-            List.of(new Carrier("entity.piglin.jealous", 54, 150, 379, 209, 6.8))),
-
-    ZOMBIE("zombie", "Zombie villager", 40.0, 0.6,
-            new Carrier("entity.zombie_villager.ambient", 104, 250, 1032, 254, 0.3),
-            new Carrier("entity.zombie_villager.death", 9, 80, 563, 84, 3.7),
-            new Carrier("entity.zombie_villager.hurt", 217, 250, 550, 126, 5.1),
-            List.of(new Carrier("entity.zombified_piglin.ambient", 29, 120, 927, 101, -2.4))),
-
-    EVOKER("evoker", "Evoker", 46.0, 1.0,
-            new Carrier("entity.evoker.prepare_wololo", 29, 60, 1785, 453, -2.6),
-            new Carrier("entity.evoker.ambient", 37, 120, 725, 176, 4.3),
-            new Carrier("entity.evoker.hurt", 17, 40, 149, 34, 7.5),
-            List.of(new Carrier("entity.evoker.prepare_attack", 14, 80, 2052, 872, -5.0))),
-
-    GOAT("goat", "Screaming goat", 64.0, 1.3,
-            new Carrier("entity.goat.screaming.ambient", 69, 200, 763, 354, -0.8),
-            new Carrier("entity.goat.screaming.hurt", 0, 120, 738, 349, 3.0),
-            new Carrier("entity.goat.screaming.hurt", 0, 120, 738, 349, 3.0),
-            List.of(new Carrier("entity.goat.ambient", 99, 250, 598, 316, -7.6))),
-
-    CAT("cat", "Cat", 72.0, 1.2,
-            new Carrier("entity.cat.ambient", 59, 150, 488, 189, 2.0),
-            new Carrier("entity.cat.hurt", 9, 80, 409, 159, -0.1),
-            new Carrier("entity.cat.hurt", 9, 80, 409, 159, -0.1),
-            List.of(new Carrier("entity.cat.purreow", 194, 300, 710, 351, -15.6)));
+            List.of(new Carrier("entity.villager.ambient", 84, 300, 473, 269, -1.4), new Carrier("entity.villager.trade", 64, 200, 239, 189, 2.2)));
 
     /**
      * A vanilla sound that carries vowels.
@@ -198,7 +151,7 @@ public enum Speaker {
         return fitted;
     }
 
-    /** The voice for an id or a name (also the former German names). */
+    /** The voice for an id or a name (also the former German names; the voices removed in 1.9.0 – trader, witch … – become the villager). */
     public static Optional<Speaker> find(String text) {
         if (text == null) {
             return Optional.empty();
@@ -210,13 +163,9 @@ public enum Speaker {
             }
         }
         return switch (key) {
-            case "dorfbewohner", "villager_de", "bauer" -> Optional.of(VILLAGER);
-            case "haendler", "händler", "wandering_trader", "wanderhändler", "fahrender händler" -> Optional.of(TRADER);
-            case "hexe" -> Optional.of(WITCH);
-            case "zombie_villager", "zombiedorfbewohner", "zombie-dorfbewohner" -> Optional.of(ZOMBIE);
-            case "magier", "beschwoerer", "beschwörer" -> Optional.of(EVOKER);
-            case "ziege", "screaming_goat", "schreiende ziege" -> Optional.of(GOAT);
-            case "katze" -> Optional.of(CAT);
+            case "dorfbewohner", "villager_de", "bauer", "trader", "haendler", "händler", "wandering_trader", "wandering trader", "wanderhändler", "fahrender händler",
+                 "witch", "hexe", "allay", "piglin", "zombie", "zombie_villager", "zombie villager", "zombiedorfbewohner", "zombie-dorfbewohner", "evoker", "magier",
+                 "beschwoerer", "beschwörer", "goat", "ziege", "screaming_goat", "screaming goat", "schreiende ziege", "cat", "katze" -> Optional.of(VILLAGER);
             default -> Optional.empty();
         };
     }

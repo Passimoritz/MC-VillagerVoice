@@ -32,8 +32,8 @@ class SpeechTest {
         assertTrue(sung.sung());
         assertTrue(UtteranceFile.read("la", UtteranceFile.write(sung)).sung());
         assertFalse(UtteranceFile.read("hi", UtteranceFile.write(speak("Hello", Language.ENGLISH, Style.DEFAULT))).sung());
-        assertEquals(Speaker.TRADER, Speaker.find("Fahrender Händler").orElseThrow());
-        assertEquals(Speaker.TRADER, Speaker.find("Wandering trader").orElseThrow());
+        assertEquals(Speaker.VILLAGER, Speaker.find("Fahrender Händler").orElseThrow());
+        assertEquals(Speaker.VILLAGER, Speaker.find("Wandering trader").orElseThrow()); // removed in 1.9.0: becomes the villager
     }
 
     @Test
