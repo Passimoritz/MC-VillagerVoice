@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300" role="img" aria-label="Villager-Gesang für ein Lied — convertSong()">
+<title>Villager-Gesang für ein Lied — convertSong()</title>
+<style>
+  .bg{fill:#fbf8f1}.panel{fill:#ffffff;stroke:#e2d6bf}.ink{fill:#33281e}.muted{fill:#7c6b58}.faint{fill:#b9a88f}
+  .t{font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif}.mono{font-family:ui-monospace,'Cascadia Code',Consolas,monospace}
+  .green{fill:#3a7d44}.green-l{fill:#dcefd9}.brown{fill:#8a5a3b}.brown-l{fill:#f1e2d3}.sky{fill:#3f7cc0}.sky-l{fill:#dde9f7}
+  .gold{fill:#c98b1b}.gold-l{fill:#f8ecd2}.red{fill:#b8473b}.red-l{fill:#f6dcd8}.violet{fill:#7653b0}.violet-l{fill:#e8e0f5}
+  .on-dark{fill:#ffffff}.line{stroke:#6b5848;fill:none}.grid{stroke:#ece3d2}.dash{stroke-dasharray:5 5}
+  .s-green{stroke:#3a7d44}.s-brown{stroke:#8a5a3b}.s-sky{stroke:#3f7cc0}.s-gold{stroke:#c98b1b}.s-red{stroke:#b8473b}.s-violet{stroke:#7653b0}
+  .arrow{fill:#6b5848}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117}.panel{fill:#161b22;stroke:#30363d}.ink{fill:#e6edf3}.muted{fill:#9ba6b2}.faint{fill:#5a6470}
+    .green-l{fill:#17301c}.brown-l{fill:#33251a}.sky-l{fill:#152a44}.gold-l{fill:#3a2c10}.red-l{fill:#3d1d19}.violet-l{fill:#2a2140}
+    .green{fill:#4c9a57}.brown{fill:#a8724e}.sky{fill:#5592d6}.gold{fill:#d9a03a}.red{fill:#d0614f}.violet{fill:#9373cc}
+    .line{stroke:#9ba6b2}.grid{stroke:#21262d}.arrow{fill:#9ba6b2}
+    .s-green{stroke:#4c9a57}.s-brown{stroke:#a8724e}.s-sky{stroke:#5592d6}.s-gold{stroke:#d9a03a}.s-red{stroke:#d0614f}.s-violet{stroke:#9373cc}
+  }
+</style>
+<defs>
+  <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="arrow"/></marker>
+</defs>
+<rect width="1200" height="300" rx="16" class="bg"/>
+<text x="40.0" y="46.0" font-size="22" font-weight="700" text-anchor="start" class="t ink">Villager-Gesang für ein Lied — convertSong()</text>
+<rect x="40.0" y="76.0" width="170.0" height="100.0" rx="12" class="brown-l" />
+<text x="125.0" y="122.7" font-size="15" font-weight="650" text-anchor="middle" class="t ink">Gesangsspur</text>
+<text x="125.0" y="141.7" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">WAV von der NoteAPI</text>
+<path d="M210.0,126.0 L232.0,126.0" class="line" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="234.0" y="76.0" width="170.0" height="100.0" rx="12" class="gold-l" />
+<text x="319.0" y="114.9" font-size="15" font-weight="650" text-anchor="middle" class="t ink">Auftragsdatei</text>
+<text x="319.0" y="133.9" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">songs/&lt;id&gt;.job</text>
+<text x="319.0" y="149.5" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">übersteht Neustarts</text>
+<path d="M404.0,126.0 L426.0,126.0" class="line" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="428.0" y="76.0" width="170.0" height="100.0" rx="12" class="green" />
+<text x="513.0" y="114.9" font-size="15" font-weight="650" text-anchor="middle" class="t on-dark">Stimmmodell</text>
+<text x="513.0" y="133.9" font-size="12.5" font-weight="400" text-anchor="middle" class="t on-dark">RVC auf der CPU</text>
+<text x="513.0" y="149.5" font-size="12.5" font-weight="400" text-anchor="middle" class="t on-dark">villager_sing.py</text>
+<path d="M598.0,126.0 L620.0,126.0" class="line" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="622.0" y="76.0" width="170.0" height="100.0" rx="12" class="panel" stroke-width="1.2"/>
+<text x="707.0" y="114.9" font-size="15" font-weight="650" text-anchor="middle" class="t ink">Abschnitte</text>
+<text x="707.0" y="133.9" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">≈ 4 s, an leisen</text>
+<text x="707.0" y="149.5" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">Stellen geschnitten</text>
+<path d="M792.0,126.0 L814.0,126.0" class="line" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="816.0" y="76.0" width="170.0" height="100.0" rx="12" class="panel" stroke-width="1.2"/>
+<text x="901.0" y="122.7" font-size="15" font-weight="650" text-anchor="middle" class="t ink">Einsetzen</text>
+<text x="901.0" y="141.7" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">&lt;id&gt;.part → &lt;id&gt;</text>
+<path d="M986.0,126.0 L1008.0,126.0" class="line" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="1010.0" y="76.0" width="170.0" height="100.0" rx="12" class="violet-l" />
+<text x="1095.0" y="114.9" font-size="15" font-weight="650" text-anchor="middle" class="t ink">Lautpaket</text>
+<text x="1095.0" y="133.9" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">neu geschrieben +</text>
+<text x="1095.0" y="149.5" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">onSoundPackChanged</text>
+<path d="M500.0,180.0 Q330.0,228.0 160.0,180.0" class="line dash" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="40.0" y="254.0" font-size="13" font-weight="600" text-anchor="start" class="t gold">↻  Server mittendrin gestoppt? Der nächste Start macht weiter (rvc.resume)</text>
+<text x="40.0" y="280.0" font-size="13" font-weight="400" text-anchor="start" class="t muted">▶  Wiedergabe: SongVoice.cues() auf der Musikuhr der NoteAPI</text>
+</svg>

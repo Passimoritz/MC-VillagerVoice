@@ -18,7 +18,7 @@ import java.util.logging.Level;
 public final class VoiceApiPlugin extends JavaPlugin {
 
     private static final List<String> TOOLS = List.of("voicelab.py", "build_voice_pack.py", "compare.py", "villager_sing.py", "villager_dataset.py",
-            "rvc_setup.py", "villager_voice.py", "sing_test.py", "find_hums.py", "hums.json", "rvc_infer.py");
+            "rvc_setup.py", "villager_voice.py", "sing_test.py", "find_hums.py", "hums.json", "rvc_infer.py", "villager_speak.py");
 
     private VoicePlayer player;
     private de.passimoritz.voiceapi.song.SongConverter converter;
@@ -36,7 +36,12 @@ public final class VoiceApiPlugin extends JavaPlugin {
         player.singRequiresPack(getConfig().getBoolean("sing.require-pack", true));
         player.speechRequiresPack(getConfig().getBoolean("speech.require-pack", true));
         player.start();
-        Path base = extractSounds();
+        de.passimoritz.voiceapi.pack.SoundDownload sounds = new de.passimoritz.voiceapi.pack.SoundDownload(
+                getDataFolder().toPath().resolve("pack").resolve("VoiceAPI-Sounds-base.zip"), de.passimoritz.voiceapi.pack.SoundDownload.SHA256,
+                getLogger());
+        boolean bundled = extractSounds(sounds.target());
+        boolean current = sounds.current();
+        Path base = current ? sounds.target() : sounds.usable().orElse(null);
         de.passimoritz.voiceapi.song.SongVoices songs = new de.passimoritz.voiceapi.song.SongVoices(getDataFolder().toPath().resolve("songs"),
                 message -> getLogger().warning(message));
         songs.load();
@@ -53,15 +58,24 @@ public final class VoiceApiPlugin extends JavaPlugin {
         converter = new de.passimoritz.voiceapi.song.SongConverter(rvcHome, getDataFolder().toPath().resolve("tools").resolve("villager_sing.py"),
                 getConfig().getString("rvc.model", "villager"));
         converter.options(timbreOptions());
+        converter.speechOptions(speechOptions());
         VoiceApi.enable(player, library, pack, Files.isRegularFile(soundPack) ? soundPack : base);
         VoiceApi.enableSongs(this, songs, converter, base, soundPack);
+        if (!bundled && !current) {
+            if (getConfig().getBoolean("pack.download", true)) {
+                downloadSounds(sounds, sounds.url(getConfig().getString("pack.download-url", "")));
+            } else if (base == null) {
+                getLogger().warning("No VoiceAPI sounds at " + sounds.target() + " and pack.download is off – running without resource pack. Place "
+                        + "the file from " + sounds.url("") + " there and restart.");
+            }
+        }
         if (getConfig().getBoolean("rvc.resume", true)) {
             int resumed = VoiceApi.resumeInterrupted();
             if (resumed > 0) {
                 getLogger().info("Continuing " + resumed + " conversion(s) a server stop interrupted.");
             }
         }
-        getLogger().info("VoiceAPI " + getDescription().getVersion() + " ready: " + Speaker.values().length + " voices, " + library.size()
+        getLogger().info("VoiceAPI " + getDescription().getVersion() + " ready: " + Speaker.values().length + (Speaker.values().length == 1 ? " voice, " : " voices, ") + library.size()
                 + " saved utterances, " + songs.size() + " villager songs, resource pack " + (pack.available() ? "with" : "without")
                 + " VoiceAPI sounds, voice model " + (converter.ready() ? "ready" : "not set up (" + String.join(", ", converter.missing()) + ")") + ".");
     }
@@ -82,6 +96,15 @@ public final class VoiceApiPlugin extends JavaPlugin {
                 "--timbre-smooth-ms", num.apply(Compat.clamp(getConfig().getDouble("rvc.timbre-follow.smooth-ms", 40.0), 0.0, 200.0)));
     }
 
+    /** The speech mode ({@code rvc.speech}): noise filter strength, how far under the speech pauses are closed, voice separation. */
+    private List<String> speechOptions() {
+        java.util.function.DoubleFunction<String> num = v -> String.format(java.util.Locale.ROOT, "%.3f", v);
+        String separate = getConfig().getString("rvc.speech.separate", "auto");
+        return List.of("--denoise", num.apply(Compat.clamp(getConfig().getDouble("rvc.speech.denoise", 1.0), 0.0, 1.0)),
+                "--gate", num.apply(Compat.clamp(getConfig().getDouble("rvc.speech.gate", 24.0), 0.0, 60.0)),
+                "--separate", List.of("auto", "on", "off").contains(separate) ? separate : "auto");
+    }
+
     @Override
     public void onDisable() {
         if (converter != null) {
@@ -92,26 +115,40 @@ public final class VoiceApiPlugin extends JavaPlugin {
     }
 
     /**
-     * Places the bundled sounds as the base pack at {@code pack/VoiceAPI-Sounds-base.zip} (only if they changed); the finished
-     * {@code VoiceAPI-Sounds.zip} is made from it plus the villager songs ({@link de.passimoritz.voiceapi.song.SongVoices#writePack}).
-     * @return the file, or null
+     * Places sounds bundled with the jar (only a jar built with {@code -P bundled-pack} has them) as the base pack, only if they changed;
+     * the finished {@code VoiceAPI-Sounds.zip} is made from it plus the villager songs ({@link de.passimoritz.voiceapi.song.SongVoices#writePack}).
+     * @return whether the jar carries the sounds (then nothing is downloaded)
      */
-    private Path extractSounds() {
-        Path target = getDataFolder().toPath().resolve("pack").resolve("VoiceAPI-Sounds-base.zip");
+    private boolean extractSounds(Path target) {
         try (InputStream in = getResource("pack/VoiceAPI-Sounds.zip")) {
             if (in == null) {
-                return Files.isRegularFile(target) ? target : null;
+                return false;
             }
             byte[] data = in.readAllBytes();
             if (!Files.isRegularFile(target) || !java.util.Arrays.equals(Files.readAllBytes(target), data)) {
                 Files.createDirectories(target.getParent());
                 Files.write(target, data);
             }
-            return target;
+            return true;
         } catch (IOException e) {
             getLogger().log(Level.WARNING, "Could not unpack the sounds", e);
-            return Files.isRegularFile(target) ? target : null;
+            return false;
         }
+    }
+
+    /**
+     * Downloads the base sounds in the background (never holds up the server start); until they are there VoiceAPI runs without resource
+     * pack. Afterwards the sound pack is written and {@link VoiceApi#onSoundPackChanged} listeners mix it into the resource pack.
+     */
+    private void downloadSounds(de.passimoritz.voiceapi.pack.SoundDownload sounds, String url) {
+        getLogger().info("Downloading the VoiceAPI sounds in the background from " + url);
+        Thread thread = new Thread(() -> {
+            if (sounds.fetch(url)) {
+                VoiceApi.basePackArrived(sounds.target());
+            }
+        }, "VoiceAPI sound download");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     /** Places the Python tools from the jar in the data folder (always the jar's version). */

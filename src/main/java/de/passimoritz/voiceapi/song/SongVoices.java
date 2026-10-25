@@ -12,7 +12,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -25,7 +24,6 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
 
 /**
  * The converted villager songs ({@code plugins/VoiceAPI/songs/<id>/voice.json} + {@code <n>.ogg}) and the sound pack that contains them:
@@ -112,15 +110,30 @@ public final class SongVoices {
     /** Conversions a server stop interrupted: id → vocal track (only those whose vocal track still exists; the others are dropped). */
     public synchronized Map<String, Path> interrupted() {
         Map<String, Path> out = new LinkedHashMap<>();
+        jobs().forEach((id, job) -> out.put(id, job.input()));
+        return out;
+    }
+
+    /** An interrupted conversion: its recording and whether it was speech ({@code VoiceApi.convertSpeech}) or singing. */
+    public record Job(Path input, boolean speech) {
+    }
+
+    /**
+     * The interrupted conversions with their mode. A job file holds the recording's path on the first line and {@code speech} on a second
+     * line for the speech mode (files of older versions have only the path: singing).
+     */
+    public synchronized Map<String, Job> jobs() {
+        Map<String, Job> out = new LinkedHashMap<>();
         if (!Files.isDirectory(folder)) {
             return out;
         }
         try (Stream<Path> files = Files.list(folder)) {
             for (Path file : files.filter(p -> p.getFileName().toString().endsWith(".job")).sorted().toList()) {
                 String id = file.getFileName().toString().replaceFirst("\\.job$", "");
-                Path vocals = Path.of(Files.readString(file, StandardCharsets.UTF_8).strip());
-                if (Files.isRegularFile(vocals)) {
-                    out.put(id, vocals);
+                List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8).stream().map(String::strip).filter(l -> !l.isEmpty()).toList();
+                Path input = lines.isEmpty() ? null : Path.of(lines.get(0));
+                if (input != null && Files.isRegularFile(input)) {
+                    out.put(id, new Job(input, lines.size() > 1 && lines.get(1).equals("speech")));
                 } else {
                     Files.deleteIfExists(file);
                 }
@@ -190,7 +203,9 @@ public final class SongVoices {
     }
 
     /**
-     * Writes the sound pack: base pack plus all songs. Without songs it is a copy of the base pack.
+     * Writes the sound pack: base pack plus all songs. Without songs it is a copy of the base pack. Reproducible ({@link
+     * de.passimoritz.voiceapi.pack.PackZip}): the same sounds give the same file – before, every start wrote new timestamps, and packs built
+     * from it got a new checksum (a new download for every player).
      *
      * @param base   the bundled base pack
      * @param target the finished file ({@code VoiceAPI-Sounds.zip})
@@ -200,77 +215,62 @@ public final class SongVoices {
         if (!Files.isRegularFile(base)) {
             return false;
         }
-        Path temp = target.resolveSibling(target.getFileName() + ".tmp");
-        try (ZipFile source = new ZipFile(base.toFile()); ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(temp))) {
-            JsonObject sounds = new JsonObject();
-            JsonObject marker = new JsonObject();
-            var entries = source.entries();
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = entries.nextElement();
+        java.util.SortedMap<String, byte[]> entries = new java.util.TreeMap<>();
+        JsonObject sounds = new JsonObject();
+        JsonObject marker = new JsonObject();
+        try (ZipFile source = new ZipFile(base.toFile())) {
+            var list = source.entries();
+            while (list.hasMoreElements()) {
+                ZipEntry entry = list.nextElement();
+                if (entry.isDirectory() || entry.getName().startsWith("assets/voiceapi/sounds/song/")) {
+                    continue;
+                }
+                byte[] data = read(source, entry);
                 if (entry.getName().equals(SOUNDS_JSON)) {
-                    sounds = Compat.json(new String(read(source, entry), StandardCharsets.UTF_8)).getAsJsonObject();
-                    continue;
+                    sounds = Compat.json(new String(data, StandardCharsets.UTF_8)).getAsJsonObject();
+                } else if (entry.getName().equals(MARKER)) {
+                    marker = Compat.json(new String(data, StandardCharsets.UTF_8)).getAsJsonObject();
+                } else {
+                    entries.put(entry.getName(), data);
                 }
-                if (entry.getName().equals(MARKER)) {
-                    marker = Compat.json(new String(read(source, entry), StandardCharsets.UTF_8)).getAsJsonObject();
-                    continue;
-                }
-                if (entry.getName().startsWith("assets/voiceapi/sounds/song/")) {
-                    continue;
-                }
-                out.putNextEntry(new ZipEntry(entry.getName()));
-                try (InputStream in = source.getInputStream(entry)) {
-                    in.transferTo(out);
-                }
-                out.closeEntry();
             }
-            JsonArray songs = new JsonArray();
-            for (SongVoice voice : voices.values()) {
-                Path dir = folder(voice.id());
-                JsonObject info = new JsonObject();
-                info.addProperty("id", voice.id());
-                info.addProperty("count", voice.count());
-                info.addProperty("lengthMs", voice.lengthMs());
-                long size = 0;
-                for (int n = 0; n < voice.count(); n++) {
-                    Path file = dir.resolve(n + ".ogg");
-                    if (voice.silent().contains(n) || !Files.isRegularFile(file)) {
-                        continue;
-                    }
-                    String path = "song/" + voice.id() + "/" + n;
-                    out.putNextEntry(new ZipEntry("assets/voiceapi/sounds/" + path + ".ogg"));
-                    Files.copy(file, out);
-                    out.closeEntry();
-                    size += Files.size(file);
-                    JsonObject sound = new JsonObject();
-                    sound.addProperty("name", "voiceapi:" + path);
-                    sound.addProperty("stream", true);
-                    JsonArray list = new JsonArray();
-                    list.add(sound);
-                    JsonObject event = new JsonObject();
-                    event.add("sounds", list);
-                    sounds.add(voice.key(n), event);
+        }
+        JsonArray songs = new JsonArray();
+        List<SongVoice> sorted = new ArrayList<>(voices.values());
+        sorted.sort(java.util.Comparator.comparing(SongVoice::id));
+        for (SongVoice voice : sorted) {
+            Path dir = folder(voice.id());
+            JsonObject info = new JsonObject();
+            info.addProperty("id", voice.id());
+            info.addProperty("count", voice.count());
+            info.addProperty("lengthMs", voice.lengthMs());
+            long size = 0;
+            for (int n = 0; n < voice.count(); n++) {
+                Path file = dir.resolve(n + ".ogg");
+                if (voice.silent().contains(n) || !Files.isRegularFile(file)) {
+                    continue;
                 }
-                info.addProperty("bytes", size);
-                info.addProperty("model", voice.model());
-                songs.add(info);
+                String path = "song/" + voice.id() + "/" + n;
+                byte[] data = Files.readAllBytes(file);
+                entries.put("assets/voiceapi/sounds/" + path + ".ogg", data);
+                size += data.length;
+                JsonObject sound = new JsonObject();
+                sound.addProperty("name", "voiceapi:" + path);
+                sound.addProperty("stream", true);
+                JsonArray one = new JsonArray();
+                one.add(sound);
+                JsonObject event = new JsonObject();
+                event.add("sounds", one);
+                sounds.add(voice.key(n), event);
             }
-            marker.add("songs", songs);
-            put(out, SOUNDS_JSON, sounds.toString());
-            put(out, MARKER, marker.toString());
+            info.addProperty("bytes", size);
+            info.addProperty("model", voice.model());
+            songs.add(info);
         }
-        if (Files.isRegularFile(target) && Files.mismatch(target, temp) == -1) {
-            Files.delete(temp);
-            return false;
-        }
-        Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-        return true;
-    }
-
-    private static void put(ZipOutputStream out, String name, String text) throws IOException {
-        out.putNextEntry(new ZipEntry(name));
-        out.write(text.getBytes(StandardCharsets.UTF_8));
-        out.closeEntry();
+        marker.add("songs", songs);
+        entries.put(SOUNDS_JSON, sounds.toString().getBytes(StandardCharsets.UTF_8));
+        entries.put(MARKER, marker.toString().getBytes(StandardCharsets.UTF_8));
+        return de.passimoritz.voiceapi.pack.PackZip.write(target, entries);
     }
 
     private static byte[] read(ZipFile zip, ZipEntry entry) throws IOException {

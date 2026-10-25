@@ -1,0 +1,166 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 645" width="1200" height="645" role="img" aria-label="From text to sound — real output for “Willkommen im Dorf!” (German)">
+<title>From text to sound — real output for “Willkommen im Dorf!” (German)</title>
+<style>
+  .bg{fill:#fbf8f1}.panel{fill:#ffffff;stroke:#e2d6bf}.ink{fill:#33281e}.muted{fill:#7c6b58}.faint{fill:#b9a88f}
+  .t{font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif}.mono{font-family:ui-monospace,'Cascadia Code',Consolas,monospace}
+  .green{fill:#3a7d44}.green-l{fill:#dcefd9}.brown{fill:#8a5a3b}.brown-l{fill:#f1e2d3}.sky{fill:#3f7cc0}.sky-l{fill:#dde9f7}
+  .gold{fill:#c98b1b}.gold-l{fill:#f8ecd2}.red{fill:#b8473b}.red-l{fill:#f6dcd8}.violet{fill:#7653b0}.violet-l{fill:#e8e0f5}
+  .on-dark{fill:#ffffff}.line{stroke:#6b5848;fill:none}.grid{stroke:#ece3d2}.dash{stroke-dasharray:5 5}
+  .s-green{stroke:#3a7d44}.s-brown{stroke:#8a5a3b}.s-sky{stroke:#3f7cc0}.s-gold{stroke:#c98b1b}.s-red{stroke:#b8473b}.s-violet{stroke:#7653b0}
+  .arrow{fill:#6b5848}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117}.panel{fill:#161b22;stroke:#30363d}.ink{fill:#e6edf3}.muted{fill:#9ba6b2}.faint{fill:#5a6470}
+    .green-l{fill:#17301c}.brown-l{fill:#33251a}.sky-l{fill:#152a44}.gold-l{fill:#3a2c10}.red-l{fill:#3d1d19}.violet-l{fill:#2a2140}
+    .green{fill:#4c9a57}.brown{fill:#a8724e}.sky{fill:#5592d6}.gold{fill:#d9a03a}.red{fill:#d0614f}.violet{fill:#9373cc}
+    .line{stroke:#9ba6b2}.grid{stroke:#21262d}.arrow{fill:#9ba6b2}
+    .s-green{stroke:#4c9a57}.s-brown{stroke:#a8724e}.s-sky{stroke:#5592d6}.s-gold{stroke:#d9a03a}.s-red{stroke:#d0614f}.s-violet{stroke:#9373cc}
+  }
+</style>
+<defs>
+  <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="arrow"/></marker>
+</defs>
+<rect width="1200" height="645" rx="16" class="bg"/>
+<text x="40.0" y="46.0" font-size="21" font-weight="700" text-anchor="start" class="t ink">From text to sound — real output for “Willkommen im Dorf!” (German)</text>
+<text x="40.0" y="101.0" font-size="14" font-weight="700" text-anchor="start" class="t green">1  Read</text>
+<rect x="152.0" y="72.0" width="501.4" height="50.0" rx="8" class="green-l" />
+<text x="402.7" y="93.0" font-size="15" font-weight="650" text-anchor="middle" class="t ink">Willkommen</text>
+<text x="402.7" y="112.0" font-size="13" font-weight="400" text-anchor="middle" class="mono muted">[vɪl.ˈkɔ.mən]</text>
+<rect x="657.4" y="72.0" width="136.2" height="50.0" rx="8" class="green-l" />
+<text x="725.5" y="93.0" font-size="15" font-weight="650" text-anchor="middle" class="t ink">im</text>
+<text x="725.5" y="112.0" font-size="13" font-weight="400" text-anchor="middle" class="mono muted">[ˈɪm]</text>
+<rect x="797.6" y="72.0" width="360.4" height="50.0" rx="8" class="green-l" />
+<text x="977.8" y="93.0" font-size="15" font-weight="650" text-anchor="middle" class="t ink">Dorf!</text>
+<text x="977.8" y="112.0" font-size="13" font-weight="400" text-anchor="middle" class="mono muted">[ˈdɔrf]</text>
+<text x="40.0" y="162.0" font-size="14" font-weight="700" text-anchor="start" class="t green">2  Prosody — pitch (MIDI) and length of every sound</text>
+<path d="M150.0,390.0 L1160.0,390.0" class="grid" stroke-width="1"/>
+<text x="138.0" y="394.0" font-size="11" font-weight="400" text-anchor="end" class="t faint">38</text>
+<path d="M150.0,353.6 L1160.0,353.6" class="grid" stroke-width="1"/>
+<text x="138.0" y="357.6" font-size="11" font-weight="400" text-anchor="end" class="t faint">40</text>
+<path d="M150.0,317.3 L1160.0,317.3" class="grid" stroke-width="1"/>
+<text x="138.0" y="321.3" font-size="11" font-weight="400" text-anchor="end" class="t faint">42</text>
+<path d="M150.0,280.9 L1160.0,280.9" class="grid" stroke-width="1"/>
+<text x="138.0" y="284.9" font-size="11" font-weight="400" text-anchor="end" class="t faint">44</text>
+<path d="M150.0,244.5 L1160.0,244.5" class="grid" stroke-width="1"/>
+<text x="138.0" y="248.5" font-size="11" font-weight="400" text-anchor="end" class="t faint">46</text>
+<path d="M150.0,208.2 L1160.0,208.2" class="grid" stroke-width="1"/>
+<text x="138.0" y="212.2" font-size="11" font-weight="400" text-anchor="end" class="t faint">48</text>
+<path d="M150.0,190.0 L150.0,390.0" class="grid" stroke-width="1"/>
+<text x="150.0" y="408.0" font-size="11" font-weight="400" text-anchor="middle" class="t faint">0</text>
+<path d="M319.9,190.0 L319.9,390.0" class="grid" stroke-width="1"/>
+<text x="319.9" y="408.0" font-size="11" font-weight="400" text-anchor="middle" class="t faint">200</text>
+<path d="M489.8,190.0 L489.8,390.0" class="grid" stroke-width="1"/>
+<text x="489.8" y="408.0" font-size="11" font-weight="400" text-anchor="middle" class="t faint">400</text>
+<path d="M659.7,190.0 L659.7,390.0" class="grid" stroke-width="1"/>
+<text x="659.7" y="408.0" font-size="11" font-weight="400" text-anchor="middle" class="t faint">600</text>
+<path d="M829.6,190.0 L829.6,390.0" class="grid" stroke-width="1"/>
+<text x="829.6" y="408.0" font-size="11" font-weight="400" text-anchor="middle" class="t faint">800</text>
+<path d="M999.5,190.0 L999.5,390.0" class="grid" stroke-width="1"/>
+<text x="999.5" y="408.0" font-size="11" font-weight="400" text-anchor="middle" class="t faint">1000</text>
+<path d="M1160.0,190.0 L1160.0,390.0" class="grid" stroke-width="1"/>
+<text x="1160.0" y="408.0" font-size="11" font-weight="400" text-anchor="middle" class="t faint">1200 ms</text>
+<path d="M154.0,286.4 L201.2,271.8" class="s-brown" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.6"/>
+<text x="177.6" y="258.8" font-size="13" font-weight="600" text-anchor="middle" class="mono ink">v</text>
+<path d="M209.2,271.8 L253.0,271.8" class="s-sky" stroke-width="10" stroke-linecap="round" fill="none" opacity="1"/>
+<text x="231.1" y="258.8" font-size="13" font-weight="600" text-anchor="middle" class="mono ink">ɪ</text>
+<path d="M261.0,271.8 L304.0,280.9" class="s-brown" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.6"/>
+<text x="282.5" y="258.8" font-size="13" font-weight="600" text-anchor="middle" class="mono ink">l</text>
+<path d="M312.0,239.1 L376.2,224.5" class="s-brown" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.6"/>
+<text x="344.1" y="211.5" font-size="13" font-weight="600" text-anchor="middle" class="mono ink">k</text>
+<path d="M384.2,224.5 L477.3,251.8" class="s-green" stroke-width="10" stroke-linecap="round" fill="none" opacity="1"/>
+<text x="430.7" y="211.5" font-size="13" font-weight="600" text-anchor="middle" class="mono ink">ɔ</text>
+<path d="M485.3,335.5 L535.9,320.9" class="s-brown" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.6"/>
+<text x="510.6" y="307.9" font-size="13" font-weight="600" text-anchor="middle" class="mono ink">m</text>
+<path d="M543.9,320.9 L570.7,320.9" class="s-sky" stroke-width="10" stroke-linecap="round" fill="none" opacity="1"/>
+<text x="557.3" y="307.9" font-size="13" font-weight="600" text-anchor="middle" class="mono ink">ə</text>
+<path d="M578.7,320.9 L625.9,330.0" class="s-brown" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.6"/>
+<text x="602.3" y="307.9" font-size="13" font-weight="600" text-anchor="middle" class="mono ink">n</text>
+<path d="M659.4,337.3 L705.8,337.3" class="s-sky" stroke-width="10" stroke-linecap="round" fill="none" opacity="1"/>
+<text x="682.6" y="324.3" font-size="13" font-weight="600" text-anchor="middle" class="mono ink">ɪ</text>
+<path d="M713.8,337.3 L766.1,346.4" class="s-brown" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.6"/>
+<text x="739.9" y="324.3" font-size="13" font-weight="600" text-anchor="middle" class="mono ink">m</text>
+<path d="M799.6,282.7 L851.9,268.2" class="s-brown" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.6"/>
+<text x="825.7" y="255.2" font-size="13" font-weight="600" text-anchor="middle" class="mono ink">d</text>
+<path d="M859.9,268.2 L985.3,359.1" class="s-green" stroke-width="10" stroke-linecap="round" fill="none" opacity="1"/>
+<text x="922.6" y="255.2" font-size="13" font-weight="600" text-anchor="middle" class="mono ink">ɔ</text>
+<path d="M993.3,359.1 L1051.5,368.2" class="s-brown" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.6"/>
+<text x="1022.4" y="346.1" font-size="13" font-weight="600" text-anchor="middle" class="mono ink">r</text>
+<path d="M1059.5,359.1 L1156.0,368.2" class="s-brown" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.6"/>
+<text x="1107.8" y="346.1" font-size="13" font-weight="600" text-anchor="middle" class="mono ink">f</text>
+<path d="M740,176 l24,0" class="s-green" stroke-width="10" stroke-linecap="round"/>
+<text x="774.0" y="180.0" font-size="12" font-weight="400" text-anchor="start" class="t muted">stressed vowel</text>
+<path d="M880,176 l24,0" class="s-sky" stroke-width="10" stroke-linecap="round"/>
+<text x="914.0" y="180.0" font-size="12" font-weight="400" text-anchor="start" class="t muted">vowel</text>
+<path d="M1020,176 l24,0" class="s-brown" stroke-width="5" stroke-linecap="round"/>
+<text x="1054.0" y="180.0" font-size="12" font-weight="400" text-anchor="start" class="t muted">consonant</text>
+<text x="40.0" y="442.0" font-size="14" font-weight="700" text-anchor="start" class="t green">3  Render — sound commands</text>
+<text x="138.0" y="492.0" font-size="12" font-weight="600" text-anchor="end" class="t muted">with pack</text>
+<rect x="150.0" y="456.0" width="1010.0" height="62.0" rx="8" class="green-l" />
+<path d="M150.0,461.0 L150.0,513.0" class="s-green" stroke-width="2"/>
+<text x="154.0" y="473.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">c.v</text>
+<path d="M205.2,461.0 L205.2,513.0" class="s-green" stroke-width="2"/>
+<text x="209.2" y="491.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">v.i.45</text>
+<path d="M257.0,461.0 L257.0,513.0" class="s-green" stroke-width="2"/>
+<text x="261.0" y="509.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">c.l.45</text>
+<path d="M308.0,461.0 L308.0,513.0" class="s-green" stroke-width="2"/>
+<text x="312.0" y="473.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">c.k</text>
+<path d="M380.2,461.0 L380.2,513.0" class="s-green" stroke-width="2"/>
+<text x="384.2" y="491.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">v.o.49</text>
+<path d="M420.1,461.0 L420.1,513.0" class="s-green" stroke-width="2"/>
+<text x="424.1" y="509.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">v.o.45</text>
+<path d="M481.3,461.0 L481.3,513.0" class="s-green" stroke-width="2"/>
+<text x="485.3" y="473.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">c.m.41</text>
+<path d="M539.9,461.0 L539.9,513.0" class="s-green" stroke-width="2"/>
+<text x="543.9" y="491.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">v.schwa.41</text>
+<path d="M574.7,461.0 L574.7,513.0" class="s-green" stroke-width="2"/>
+<text x="578.7" y="509.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">c.n.41</text>
+<path d="M655.4,461.0 L655.4,513.0" class="s-green" stroke-width="2"/>
+<text x="659.4" y="473.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">v.i.41</text>
+<path d="M709.8,461.0 L709.8,513.0" class="s-green" stroke-width="2"/>
+<text x="713.8" y="491.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">c.m.41</text>
+<path d="M795.6,461.0 L795.6,513.0" class="s-green" stroke-width="2"/>
+<text x="799.6" y="509.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">c.d</text>
+<path d="M855.9,461.0 L855.9,513.0" class="s-green" stroke-width="2"/>
+<text x="859.9" y="473.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">v.o.45</text>
+<path d="M908.6,461.0 L908.6,513.0" class="s-green" stroke-width="2"/>
+<text x="912.6" y="491.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">v.o.41</text>
+<path d="M989.3,461.0 L989.3,513.0" class="s-green" stroke-width="2"/>
+<text x="993.3" y="509.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">c.r.41</text>
+<path d="M1055.5,461.0 L1055.5,513.0" class="s-green" stroke-width="2"/>
+<text x="1059.5" y="473.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">c.f</text>
+<text x="138.0" y="562.0" font-size="12" font-weight="600" text-anchor="end" class="t muted">vanilla</text>
+<rect x="150.0" y="526.0" width="1010.0" height="62.0" rx="8" class="brown-l" />
+<path d="M150.0,531.0 L150.0,583.0" class="s-brown" stroke-width="2"/>
+<text x="154.0" y="543.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">villager.no</text>
+<path d="M199.3,531.0 L199.3,583.0" class="s-brown" stroke-width="2"/>
+<text x="203.3" y="561.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">horse.breathe</text>
+<path d="M216.3,531.0 L216.3,583.0" class="s-brown" stroke-width="2"/>
+<text x="220.3" y="579.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">villager.no</text>
+<path d="M259.6,531.0 L259.6,583.0" class="s-brown" stroke-width="2"/>
+<text x="263.6" y="543.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">villager.no</text>
+<path d="M357.3,531.0 L357.3,583.0" class="s-brown" stroke-width="2"/>
+<text x="361.3" y="561.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">calcite.place</text>
+<path d="M415.9,531.0 L415.9,583.0" class="s-brown" stroke-width="2"/>
+<text x="419.9" y="579.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">villager.death</text>
+<path d="M472.8,531.0 L472.8,583.0" class="s-brown" stroke-width="2"/>
+<text x="476.8" y="543.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">villager.no</text>
+<path d="M538.2,531.0 L538.2,583.0" class="s-brown" stroke-width="2"/>
+<text x="542.2" y="561.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">villager.no</text>
+<path d="M573.0,531.0 L573.0,583.0" class="s-brown" stroke-width="2"/>
+<text x="577.0" y="579.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">villager.no</text>
+<path d="M657.1,531.0 L657.1,583.0" class="s-brown" stroke-width="2"/>
+<text x="661.1" y="543.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">villager.no</text>
+<path d="M698.7,531.0 L698.7,583.0" class="s-brown" stroke-width="2"/>
+<text x="702.7" y="561.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">villager.no</text>
+<path d="M795.6,531.0 L795.6,583.0" class="s-brown" stroke-width="2"/>
+<text x="799.6" y="579.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">villager.no</text>
+<path d="M844.9,531.0 L844.9,583.0" class="s-brown" stroke-width="2"/>
+<text x="848.9" y="543.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">small_fall</text>
+<path d="M889.0,531.0 L889.0,583.0" class="s-brown" stroke-width="2"/>
+<text x="893.0" y="561.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">villager.death</text>
+<path d="M971.4,531.0 L971.4,583.0" class="s-brown" stroke-width="2"/>
+<text x="975.4" y="579.0" font-size="10.5" font-weight="400" text-anchor="start" class="mono ink">villager.no</text>
+<path d="M1104.8,531.0 L1104.8,583.0" class="s-brown" stroke-width="2"/>
+<text x="1100.8" y="543.0" font-size="10.5" font-weight="400" text-anchor="end" class="mono ink">horse.breathe</text>
+<text x="40.0" y="618.0" font-size="13" font-weight="400" text-anchor="start" class="t muted">An exclamation: the sentence melody falls at the end. Stressed syllables are longer, louder and carry an accent peak.</text>
+</svg>

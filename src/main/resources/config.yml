@@ -37,9 +37,25 @@ rvc:
     window-ms: 400
     # smoothing of the movement (ms)
     smooth-ms: 40
+  # The villager speaks spoken recordings (VoiceApi.convertSpeech – voice lines, speeches, old radio recordings; not songs).
+  # Noise is detected first (the quietest moments give the noise profile) and filtered; clean recordings are left alone.
+  speech:
+    # noise filter strength: 0 = off … 1 = strong
+    denoise: 1.0
+    # close the pauses: what the model still made of noise this many dB under the speech is lowered (0 = off)
+    gate: 24
+    # separate the voice from the background with Demucs first: auto = if installed, on, off
+    separate: auto
 
 pack:
   # players with the NoteAPI resource pack (which contains the VoiceAPI sounds) hear real vowels and consonants instead of villager sounds
   use: true
   # where the NoteAPI pack is (empty = plugins/NoteAPI/pack/NoteAPI-Sounds.zip); VoiceAPI reads from it whether the sounds are included
   file: ""
+  # The sounds are not inside the jar (it stays small): on the first start VoiceAPI downloads them once in the background from the GitHub
+  # release "voice-pack", checks the SHA-256 and keeps them at plugins/VoiceAPI/pack/VoiceAPI-Sounds-base.zip. Until then (or without
+  # internet) it runs without resource pack. Offline: download the file from https://github.com/Passimoritz/MC-VillagerVoice/releases/tag/voice-pack
+  # yourself, place it there and restart. false = never download (e.g. an own file).
+  download: true
+  # another address (mirror); {sha} = first 12 characters of the checksum, {sha256} = all of it. Empty = the GitHub release.
+  download-url: ""

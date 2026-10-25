@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" width="1200" height="320" role="img" aria-label="Why a speech clock of its own">
+<title>Why a speech clock of its own</title>
+<style>
+  .bg{fill:#fbf8f1}.panel{fill:#ffffff;stroke:#e2d6bf}.ink{fill:#33281e}.muted{fill:#7c6b58}.faint{fill:#b9a88f}
+  .t{font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif}.mono{font-family:ui-monospace,'Cascadia Code',Consolas,monospace}
+  .green{fill:#3a7d44}.green-l{fill:#dcefd9}.brown{fill:#8a5a3b}.brown-l{fill:#f1e2d3}.sky{fill:#3f7cc0}.sky-l{fill:#dde9f7}
+  .gold{fill:#c98b1b}.gold-l{fill:#f8ecd2}.red{fill:#b8473b}.red-l{fill:#f6dcd8}.violet{fill:#7653b0}.violet-l{fill:#e8e0f5}
+  .on-dark{fill:#ffffff}.line{stroke:#6b5848;fill:none}.grid{stroke:#ece3d2}.dash{stroke-dasharray:5 5}
+  .s-green{stroke:#3a7d44}.s-brown{stroke:#8a5a3b}.s-sky{stroke:#3f7cc0}.s-gold{stroke:#c98b1b}.s-red{stroke:#b8473b}.s-violet{stroke:#7653b0}
+  .arrow{fill:#6b5848}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117}.panel{fill:#161b22;stroke:#30363d}.ink{fill:#e6edf3}.muted{fill:#9ba6b2}.faint{fill:#5a6470}
+    .green-l{fill:#17301c}.brown-l{fill:#33251a}.sky-l{fill:#152a44}.gold-l{fill:#3a2c10}.red-l{fill:#3d1d19}.violet-l{fill:#2a2140}
+    .green{fill:#4c9a57}.brown{fill:#a8724e}.sky{fill:#5592d6}.gold{fill:#d9a03a}.red{fill:#d0614f}.violet{fill:#9373cc}
+    .line{stroke:#9ba6b2}.grid{stroke:#21262d}.arrow{fill:#9ba6b2}
+    .s-green{stroke:#4c9a57}.s-brown{stroke:#a8724e}.s-sky{stroke:#5592d6}.s-gold{stroke:#d9a03a}.s-red{stroke:#d0614f}.s-violet{stroke:#9373cc}
+  }
+</style>
+<defs>
+  <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="arrow"/></marker>
+</defs>
+<rect width="1200" height="320" rx="16" class="bg"/>
+<text x="40.0" y="46.0" font-size="22" font-weight="700" text-anchor="start" class="t ink">Why a speech clock of its own</text>
+<text x="60.0" y="84.0" font-size="14" font-weight="600" text-anchor="start" class="t ink">server tick — every 50 ms</text>
+<path d="M60.0,116.0 L1140.0,116.0" class="line" stroke-width="1.2"/>
+<path d="M60.0,107.0 L60.0,125.0" class="s-brown" stroke-width="2"/>
+<path d="M240.0,107.0 L240.0,125.0" class="s-brown" stroke-width="2"/>
+<path d="M420.0,107.0 L420.0,125.0" class="s-brown" stroke-width="2"/>
+<path d="M600.0,107.0 L600.0,125.0" class="s-brown" stroke-width="2"/>
+<path d="M780.0,107.0 L780.0,125.0" class="s-brown" stroke-width="2"/>
+<path d="M960.0,107.0 L960.0,125.0" class="s-brown" stroke-width="2"/>
+<path d="M1140.0,107.0 L1140.0,125.0" class="s-brown" stroke-width="2"/>
+<circle cx="193.2" cy="116" r="5.5" class="gold"/>
+<rect x="193.2" y="130.0" width="46.8" height="8.0" rx="3" class="brown" />
+<circle cx="463.2" cy="116" r="5.5" class="gold"/>
+<rect x="463.2" y="130.0" width="136.8" height="8.0" rx="3" class="brown" />
+<circle cx="675.6" cy="116" r="5.5" class="gold"/>
+<rect x="675.6" y="130.0" width="104.4" height="8.0" rx="3" class="brown" />
+<circle cx="909.6" cy="116" r="5.5" class="gold"/>
+<rect x="909.6" y="130.0" width="50.4" height="8.0" rx="3" class="brown" />
+<text x="1140.0" y="156.0" font-size="12.5" font-weight="700" text-anchor="end" class="t brown">up to 49 ms late</text>
+<text x="60.0" y="184.0" font-size="14" font-weight="600" text-anchor="start" class="t ink">speech clock — every 5 ms</text>
+<path d="M60.0,216.0 L1140.0,216.0" class="line" stroke-width="1.2"/>
+<path d="M60.0,207.0 L60.0,225.0" class="s-green" stroke-width="2"/>
+<path d="M78.0,212.0 L78.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M96.0,212.0 L96.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M114.0,212.0 L114.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M132.0,212.0 L132.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M150.0,212.0 L150.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M168.0,212.0 L168.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M186.0,212.0 L186.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M204.0,212.0 L204.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M222.0,212.0 L222.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M240.0,207.0 L240.0,225.0" class="s-green" stroke-width="2"/>
+<path d="M258.0,212.0 L258.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M276.0,212.0 L276.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M294.0,212.0 L294.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M312.0,212.0 L312.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M330.0,212.0 L330.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M348.0,212.0 L348.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M366.0,212.0 L366.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M384.0,212.0 L384.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M402.0,212.0 L402.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M420.0,207.0 L420.0,225.0" class="s-green" stroke-width="2"/>
+<path d="M438.0,212.0 L438.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M456.0,212.0 L456.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M474.0,212.0 L474.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M492.0,212.0 L492.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M510.0,212.0 L510.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M528.0,212.0 L528.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M546.0,212.0 L546.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M564.0,212.0 L564.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M582.0,212.0 L582.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M600.0,207.0 L600.0,225.0" class="s-green" stroke-width="2"/>
+<path d="M618.0,212.0 L618.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M636.0,212.0 L636.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M654.0,212.0 L654.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M672.0,212.0 L672.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M690.0,212.0 L690.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M708.0,212.0 L708.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M726.0,212.0 L726.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M744.0,212.0 L744.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M762.0,212.0 L762.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M780.0,207.0 L780.0,225.0" class="s-green" stroke-width="2"/>
+<path d="M798.0,212.0 L798.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M816.0,212.0 L816.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M834.0,212.0 L834.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M852.0,212.0 L852.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M870.0,212.0 L870.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M888.0,212.0 L888.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M906.0,212.0 L906.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M924.0,212.0 L924.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M942.0,212.0 L942.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M960.0,207.0 L960.0,225.0" class="s-green" stroke-width="2"/>
+<path d="M978.0,212.0 L978.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M996.0,212.0 L996.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M1014.0,212.0 L1014.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M1032.0,212.0 L1032.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M1050.0,212.0 L1050.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M1068.0,212.0 L1068.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M1086.0,212.0 L1086.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M1104.0,212.0 L1104.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M1122.0,212.0 L1122.0,220.0" class="s-green" stroke-width="1"/>
+<path d="M1140.0,207.0 L1140.0,225.0" class="s-green" stroke-width="2"/>
+<circle cx="193.2" cy="216" r="5.5" class="gold"/>
+<rect x="193.2" y="230.0" width="10.8" height="8.0" rx="3" class="green" />
+<circle cx="463.2" cy="216" r="5.5" class="gold"/>
+<rect x="463.2" y="230.0" width="10.8" height="8.0" rx="3" class="green" />
+<circle cx="675.6" cy="216" r="5.5" class="gold"/>
+<rect x="675.6" y="230.0" width="14.4" height="8.0" rx="3" class="green" />
+<circle cx="909.6" cy="216" r="5.5" class="gold"/>
+<rect x="909.6" y="230.0" width="14.4" height="8.0" rx="3" class="green" />
+<text x="1140.0" y="256.0" font-size="12.5" font-weight="700" text-anchor="end" class="t green">at most 4 ms late</text>
+<circle cx="66" cy="292" r="5.5" class="gold"/>
+<text x="78.0" y="296.0" font-size="12.5" font-weight="400" text-anchor="start" class="t muted">wanted start of a sound</text>
+<text x="310.0" y="296.0" font-size="12.5" font-weight="400" text-anchor="start" class="t muted">A syllable lasts 60–150 ms: on the tick grid speech would stumble. VoiceAPI starts and stops sounds on its own thread.</text>
+</svg>

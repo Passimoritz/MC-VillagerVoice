@@ -30,7 +30,7 @@ STABLE = re.compile(r"^\d+(\.\d+)+$")
 
 
 def get(url: str) -> dict:
-    req = urllib.request.Request(url, headers={"User-Agent": "VoiceAPI-CI (github.com/Passimoritz/MC-VoiceAPI)"})
+    req = urllib.request.Request(url, headers={"User-Agent": "VoiceAPI-CI (github.com/Passimoritz/MC-VillagerVoice)"})
     with urllib.request.urlopen(req, timeout=60) as resp:
         return json.load(resp)
 

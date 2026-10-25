@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300" role="img" aria-label="VoiceAPI — Sprache und Gesang aus Villager-Lauten">
+<title>VoiceAPI — Sprache und Gesang aus Villager-Lauten</title>
+<style>
+  .bg{fill:#fbf8f1}.panel{fill:#ffffff;stroke:#e2d6bf}.ink{fill:#33281e}.muted{fill:#7c6b58}.faint{fill:#b9a88f}
+  .t{font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif}.mono{font-family:ui-monospace,'Cascadia Code',Consolas,monospace}
+  .green{fill:#3a7d44}.green-l{fill:#dcefd9}.brown{fill:#8a5a3b}.brown-l{fill:#f1e2d3}.sky{fill:#3f7cc0}.sky-l{fill:#dde9f7}
+  .gold{fill:#c98b1b}.gold-l{fill:#f8ecd2}.red{fill:#b8473b}.red-l{fill:#f6dcd8}.violet{fill:#7653b0}.violet-l{fill:#e8e0f5}
+  .on-dark{fill:#ffffff}.line{stroke:#6b5848;fill:none}.grid{stroke:#ece3d2}.dash{stroke-dasharray:5 5}
+  .s-green{stroke:#3a7d44}.s-brown{stroke:#8a5a3b}.s-sky{stroke:#3f7cc0}.s-gold{stroke:#c98b1b}.s-red{stroke:#b8473b}.s-violet{stroke:#7653b0}
+  .arrow{fill:#6b5848}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117}.panel{fill:#161b22;stroke:#30363d}.ink{fill:#e6edf3}.muted{fill:#9ba6b2}.faint{fill:#5a6470}
+    .green-l{fill:#17301c}.brown-l{fill:#33251a}.sky-l{fill:#152a44}.gold-l{fill:#3a2c10}.red-l{fill:#3d1d19}.violet-l{fill:#2a2140}
+    .green{fill:#4c9a57}.brown{fill:#a8724e}.sky{fill:#5592d6}.gold{fill:#d9a03a}.red{fill:#d0614f}.violet{fill:#9373cc}
+    .line{stroke:#9ba6b2}.grid{stroke:#21262d}.arrow{fill:#9ba6b2}
+    .s-green{stroke:#4c9a57}.s-brown{stroke:#a8724e}.s-sky{stroke:#5592d6}.s-gold{stroke:#d9a03a}.s-red{stroke:#d0614f}.s-violet{stroke:#9373cc}
+  }
+</style>
+<defs>
+  <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="arrow"/></marker>
+</defs>
+<rect width="1200" height="300" rx="16" class="bg"/>
+<rect x="660.0" y="160.0" width="5.4" height="16.0" rx="2.7" class="green" opacity="0.88"/>
+<rect x="668.6" y="150.8" width="5.4" height="34.4" rx="2.7" class="green" opacity="0.88"/>
+<rect x="677.2" y="130.8" width="5.4" height="74.5" rx="2.7" class="green" opacity="0.88"/>
+<rect x="685.8" y="122.0" width="5.4" height="92.0" rx="2.7" class="green" opacity="0.88"/>
+<rect x="694.4" y="126.5" width="5.4" height="83.0" rx="2.7" class="green" opacity="0.88"/>
+<rect x="703.0" y="125.8" width="5.4" height="84.4" rx="2.7" class="green" opacity="0.88"/>
+<rect x="711.6" y="130.4" width="5.4" height="75.2" rx="2.7" class="green" opacity="0.88"/>
+<rect x="720.2" y="140.0" width="5.4" height="56.1" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="728.8" y="153.0" width="5.4" height="30.0" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="737.4" y="152.7" width="5.4" height="30.6" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="746.0" y="139.5" width="5.4" height="57.0" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="754.6" y="119.7" width="5.4" height="96.7" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="763.2" y="114.7" width="5.4" height="106.6" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="771.8" y="125.2" width="5.4" height="85.6" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="780.4" y="130.7" width="5.4" height="74.6" rx="2.7" class="green" opacity="0.88"/>
+<rect x="789.0" y="139.7" width="5.4" height="56.6" rx="2.7" class="green" opacity="0.88"/>
+<rect x="797.6" y="150.2" width="5.4" height="35.5" rx="2.7" class="green" opacity="0.88"/>
+<rect x="806.2" y="159.8" width="5.4" height="16.3" rx="2.7" class="green" opacity="0.88"/>
+<rect x="814.8" y="152.4" width="5.4" height="31.3" rx="2.7" class="green" opacity="0.88"/>
+<rect x="823.4" y="148.4" width="5.4" height="39.1" rx="2.7" class="green" opacity="0.88"/>
+<rect x="832.0" y="138.3" width="5.4" height="59.5" rx="2.7" class="green" opacity="0.88"/>
+<rect x="840.6" y="141.1" width="5.4" height="53.8" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="849.2" y="155.5" width="5.4" height="25.1" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="857.8" y="159.6" width="5.4" height="16.7" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="866.4" y="158.0" width="5.4" height="20.0" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="875.0" y="158.6" width="5.4" height="18.8" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="883.6" y="157.6" width="5.4" height="20.7" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="892.2" y="151.3" width="5.4" height="33.4" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="900.8" y="143.9" width="5.4" height="48.2" rx="2.7" class="green" opacity="0.88"/>
+<rect x="909.4" y="127.3" width="5.4" height="81.5" rx="2.7" class="green" opacity="0.88"/>
+<rect x="918.0" y="123.3" width="5.4" height="89.4" rx="2.7" class="green" opacity="0.88"/>
+<rect x="926.6" y="133.5" width="5.4" height="69.0" rx="2.7" class="green" opacity="0.88"/>
+<rect x="935.2" y="138.5" width="5.4" height="59.0" rx="2.7" class="green" opacity="0.88"/>
+<rect x="943.8" y="147.9" width="5.4" height="40.1" rx="2.7" class="green" opacity="0.88"/>
+<rect x="952.4" y="159.5" width="5.4" height="17.0" rx="2.7" class="green" opacity="0.88"/>
+<rect x="961.0" y="145.9" width="5.4" height="44.2" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="969.6" y="133.6" width="5.4" height="68.8" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="978.2" y="124.9" width="5.4" height="86.3" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="986.8" y="111.2" width="5.4" height="113.6" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="995.4" y="113.2" width="5.4" height="109.5" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="1004.0" y="130.5" width="5.4" height="75.0" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="1012.6" y="141.6" width="5.4" height="52.8" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="1021.2" y="154.3" width="5.4" height="27.4" rx="2.7" class="green" opacity="0.88"/>
+<rect x="1029.8" y="153.6" width="5.4" height="28.8" rx="2.7" class="green" opacity="0.88"/>
+<rect x="1038.4" y="144.2" width="5.4" height="47.5" rx="2.7" class="green" opacity="0.88"/>
+<rect x="1047.0" y="138.9" width="5.4" height="58.2" rx="2.7" class="green" opacity="0.88"/>
+<rect x="1055.6" y="138.0" width="5.4" height="60.0" rx="2.7" class="green" opacity="0.88"/>
+<rect x="1064.2" y="131.0" width="5.4" height="74.1" rx="2.7" class="green" opacity="0.88"/>
+<rect x="1072.8" y="136.4" width="5.4" height="63.1" rx="2.7" class="green" opacity="0.88"/>
+<rect x="1081.4" y="152.6" width="5.4" height="30.9" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="1090.0" y="157.6" width="5.4" height="20.9" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="1098.6" y="159.9" width="5.4" height="16.1" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="1107.2" y="159.5" width="5.4" height="17.1" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="1115.8" y="156.1" width="5.4" height="23.9" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="1124.4" y="151.0" width="5.4" height="33.9" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="1133.0" y="146.0" width="5.4" height="43.9" rx="2.7" class="brown" opacity="0.88"/>
+<rect x="1141.6" y="132.9" width="5.4" height="70.2" rx="2.7" class="green" opacity="0.88"/>
+<rect x="1150.2" y="133.1" width="5.4" height="69.9" rx="2.7" class="green" opacity="0.88"/>
+<rect x="1158.8" y="147.3" width="5.4" height="41.4" rx="2.7" class="green" opacity="0.88"/>
+<rect x="1167.4" y="155.5" width="5.4" height="25.0" rx="2.7" class="green" opacity="0.88"/>
+<text x="70.0" y="128.0" font-size="66" font-weight="800" text-anchor="start" class="t ink">VoiceAPI</text>
+<text x="72.0" y="170.0" font-size="24" font-weight="600" text-anchor="start" class="t green">Sprache und Gesang aus Villager-Lauten</text>
+<text x="72.0" y="206.0" font-size="15" font-weight="400" text-anchor="start" class="t muted">Spigot · Paper · Purpur · Folia — Minecraft 1.17 bis heute — ein Jar mit 0,2 MB</text>
+<rect x="820.0" y="30.0" width="300.0" height="46.0" rx="23" class="panel" stroke-width="1.2"/>
+<text x="970.0" y="59.0" font-size="17" font-weight="600" text-anchor="middle" class="t ink" font-style="italic">“Willkommen im Dorf!”</text>
+<path d="M884,75.5 L874,96 L904,75.5" class="panel" stroke-width="1.2"/>
+<rect x="72.0" y="232.0" width="77.6" height="24.0" rx="12.0" class="green" />
+<text x="110.8" y="247.0" font-size="12" font-weight="600" text-anchor="middle" class="t on-dark">Java 17+</text>
+<rect x="159.6" y="232.0" width="56.0" height="24.0" rx="12.0" class="brown" />
+<text x="187.6" y="247.0" font-size="12" font-weight="600" text-anchor="middle" class="t on-dark">API 3</text>
+<rect x="225.6" y="232.0" width="120.8" height="24.0" rx="12.0" class="sky" />
+<text x="286.0" y="247.0" font-size="12" font-weight="600" text-anchor="middle" class="t on-dark">MC 1.17 → 26.x</text>
+<rect x="356.4" y="232.0" width="70.4" height="24.0" rx="12.0" class="violet" />
+<text x="391.6" y="247.0" font-size="12" font-weight="600" text-anchor="middle" class="t on-dark">Folia ✓</text>
+</svg>

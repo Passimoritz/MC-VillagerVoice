@@ -39,6 +39,8 @@ class ApiContractTest {
         VoiceApi.class.getMethod("onSoundPackChanged", Runnable.class);
         VoiceApi.class.getMethod("songVoice", String.class);
         VoiceApi.class.getMethod("convertSong", String.class, java.nio.file.Path.class, java.util.function.Consumer.class);
+        VoiceApi.class.getMethod("convertSpeech", String.class, java.nio.file.Path.class, java.util.function.Consumer.class);
+        assertTrue(VoiceApi.API_VERSION >= 4, "convertSpeech came with interface 4");
         VoiceApi.class.getMethod("songVoiceMissing");
         MelodyNote.class.getMethod("forWord", int.class);
         SingOptions.class.getMethod("parse", String.class);
@@ -49,8 +51,8 @@ class ApiContractTest {
     @Test
     void singWithOptionsWorksWithoutServer() {
         List<MelodyNote> melody = List.of(new MelodyNote(0, 300, 60).forWord(0), new MelodyNote(300, 300, 64).forWord(1));
-        Utterance sung = VoiceApi.sing("a a", Language.GERMAN, Speaker.WITCH, melody, Style.DEFAULT.withPitch(2), SingOptions.parse("legato=200"));
+        Utterance sung = VoiceApi.sing("a a", Language.GERMAN, Speaker.VILLAGER, melody, Style.DEFAULT.withPitch(2), SingOptions.parse("legato=200"));
         assertTrue(sung.sung());
-        assertTrue(VoiceApi.cues(sung, true).stream().allMatch(c -> c.sound().startsWith("voiceapi:hum.witch.")));
+        assertTrue(VoiceApi.cues(sung, true).stream().allMatch(c -> c.sound().startsWith("voiceapi:hum.villager.")));
     }
 }

@@ -11,7 +11,7 @@
 
   <name>VoiceAPI</name>
   <description>Speech and singing from villager sounds for Bukkit servers (Spigot, Paper, Purpur, Folia, Minecraft 1.17+): text (German, English) becomes sounds, stress and melody; with the resource pack real vowels and AI villager singing.</description>
-  <url>https://github.com/Passimoritz/MC-VoiceAPI</url>
+  <url>https://github.com/Passimoritz/MC-VillagerVoice</url>
 
   <properties>
     <!--
@@ -24,11 +24,13 @@
     <java.version>17</java.version>
     <maven.compiler.release>${java.version}</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <revision>1.8.0</revision>
+    <revision>1.9.0</revision>
     <bukkit.groupId>org.spigotmc</bukkit.groupId>
     <bukkit.artifactId>spigot-api</bukkit.artifactId>
     <bukkit.version>1.17.1-R0.1-SNAPSHOT</bukkit.version>
     <junit.version>6.1.3</junit.version>
+    <!-- The sounds (23 MB, 98 % of a jar) are downloaded by the plugin on first start (release "voice-pack", SoundDownload); -P bundled-pack puts them back into the jar -->
+    <voiceapi.pack.include>none</voiceapi.pack.include>
   </properties>
 
   <repositories>
@@ -69,6 +71,13 @@
     <!-- Cross-check: newest Spigot API (-Dbukkit.version=<version>-R0.1-SNAPSHOT) -->
     <profile>
       <id>spigot-latest</id>
+    </profile>
+    <!-- A jar with the sounds inside (~24 MB) for servers that may not download anything: nothing is downloaded then -->
+    <profile>
+      <id>bundled-pack</id>
+      <properties>
+        <voiceapi.pack.include>pack/**</voiceapi.pack.include>
+      </properties>
     </profile>
   </profiles>
 
@@ -114,12 +123,12 @@
           <exclude>pack/**</exclude>
         </excludes>
       </resource>
-      <!-- The finished sounds (resource pack part): binary, do not filter. NoteAPI mixes them into its pack -->
+      <!-- The finished sounds (resource pack part): not in the normal jar (downloaded, see voiceapi.pack.include); binary, do not filter -->
       <resource>
         <directory>src/main/resources</directory>
         <filtering>false</filtering>
         <includes>
-          <include>pack/**</include>
+          <include>${voiceapi.pack.include}</include>
         </includes>
       </resource>
       <!-- The tools (build the pack, render samples, voice model) are unpacked to plugins/VoiceAPI/tools/ on start -->
@@ -131,6 +140,10 @@
           <include>*.py</include>
           <include>*.json</include>
         </includes>
+        <!-- only for this repository's documentation (docs/images, docs/audio) -->
+        <excludes>
+          <exclude>doc_*.py</exclude>
+        </excludes>
       </resource>
     </resources>
   </build>

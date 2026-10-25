@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 470" width="1200" height="470" role="img" aria-label="Wie sich VoiceAPI in einen Server einfügt">
+<title>Wie sich VoiceAPI in einen Server einfügt</title>
+<style>
+  .bg{fill:#fbf8f1}.panel{fill:#ffffff;stroke:#e2d6bf}.ink{fill:#33281e}.muted{fill:#7c6b58}.faint{fill:#b9a88f}
+  .t{font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif}.mono{font-family:ui-monospace,'Cascadia Code',Consolas,monospace}
+  .green{fill:#3a7d44}.green-l{fill:#dcefd9}.brown{fill:#8a5a3b}.brown-l{fill:#f1e2d3}.sky{fill:#3f7cc0}.sky-l{fill:#dde9f7}
+  .gold{fill:#c98b1b}.gold-l{fill:#f8ecd2}.red{fill:#b8473b}.red-l{fill:#f6dcd8}.violet{fill:#7653b0}.violet-l{fill:#e8e0f5}
+  .on-dark{fill:#ffffff}.line{stroke:#6b5848;fill:none}.grid{stroke:#ece3d2}.dash{stroke-dasharray:5 5}
+  .s-green{stroke:#3a7d44}.s-brown{stroke:#8a5a3b}.s-sky{stroke:#3f7cc0}.s-gold{stroke:#c98b1b}.s-red{stroke:#b8473b}.s-violet{stroke:#7653b0}
+  .arrow{fill:#6b5848}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117}.panel{fill:#161b22;stroke:#30363d}.ink{fill:#e6edf3}.muted{fill:#9ba6b2}.faint{fill:#5a6470}
+    .green-l{fill:#17301c}.brown-l{fill:#33251a}.sky-l{fill:#152a44}.gold-l{fill:#3a2c10}.red-l{fill:#3d1d19}.violet-l{fill:#2a2140}
+    .green{fill:#4c9a57}.brown{fill:#a8724e}.sky{fill:#5592d6}.gold{fill:#d9a03a}.red{fill:#d0614f}.violet{fill:#9373cc}
+    .line{stroke:#9ba6b2}.grid{stroke:#21262d}.arrow{fill:#9ba6b2}
+    .s-green{stroke:#4c9a57}.s-brown{stroke:#a8724e}.s-sky{stroke:#5592d6}.s-gold{stroke:#d9a03a}.s-red{stroke:#d0614f}.s-violet{stroke:#9373cc}
+  }
+</style>
+<defs>
+  <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="arrow"/></marker>
+</defs>
+<rect width="1200" height="470" rx="16" class="bg"/>
+<text x="40.0" y="48.0" font-size="22" font-weight="700" text-anchor="start" class="t ink">Wie sich VoiceAPI in einen Server einfügt</text>
+<rect x="40.0" y="84.0" width="220.0" height="110.0" rx="12" class="brown-l" />
+<text x="150.0" y="127.9" font-size="15" font-weight="650" text-anchor="middle" class="t ink">Dein Plugin</text>
+<text x="150.0" y="146.9" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">NoteAPI, Spiele, NPCs</text>
+<text x="150.0" y="162.5" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">softdepend: VoiceAPI</text>
+<rect x="330.0" y="84.0" width="240.0" height="110.0" rx="12" class="green" />
+<text x="450.0" y="128.8" font-size="18" font-weight="650" text-anchor="middle" class="t on-dark">VoiceApi</text>
+<text x="450.0" y="147.8" font-size="12.5" font-weight="400" text-anchor="middle" class="t on-dark">speak · sing · play · cues</text>
+<text x="450.0" y="163.4" font-size="12.5" font-weight="400" text-anchor="middle" class="t on-dark">library · songs · pack</text>
+<path d="M260.0,139.0 L326.0,139.0" class="line" stroke-width="2.2" marker-end="url(#arr)"/>
+<rect x="40.0" y="262.0" width="220.0" height="100.0" rx="12" class="panel" stroke-width="1.2"/>
+<text x="150.0" y="300.9" font-size="15" font-weight="650" text-anchor="middle" class="t ink">Lesen</text>
+<text x="150.0" y="319.9" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">Buchstaben → Laute,</text>
+<text x="150.0" y="335.5" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">Silben, Betonung</text>
+<text x="56.0" y="284.0" font-size="13" font-weight="700" text-anchor="start" class="t faint">1</text>
+<path d="M260.0,312.0 L294.0,312.0" class="line" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="296.0" y="262.0" width="220.0" height="100.0" rx="12" class="panel" stroke-width="1.2"/>
+<text x="406.0" y="300.9" font-size="15" font-weight="650" text-anchor="middle" class="t ink">Prosodie</text>
+<text x="406.0" y="319.9" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">Länge, Melodie,</text>
+<text x="406.0" y="335.5" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">Lautstärke, Stimmung</text>
+<text x="312.0" y="284.0" font-size="13" font-weight="700" text-anchor="start" class="t faint">2</text>
+<path d="M516.0,312.0 L550.0,312.0" class="line" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="552.0" y="262.0" width="220.0" height="100.0" rx="12" class="panel" stroke-width="1.2"/>
+<text x="662.0" y="300.9" font-size="15" font-weight="650" text-anchor="middle" class="t ink">Rendern</text>
+<text x="662.0" y="319.9" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">Klangbefehle,</text>
+<text x="662.0" y="335.5" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">Vanilla oder Paket</text>
+<text x="568.0" y="284.0" font-size="13" font-weight="700" text-anchor="start" class="t faint">3</text>
+<path d="M772.0,312.0 L806.0,312.0" class="line" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="808.0" y="262.0" width="220.0" height="100.0" rx="12" class="panel" stroke-width="1.2"/>
+<text x="918.0" y="300.9" font-size="15" font-weight="650" text-anchor="middle" class="t ink">Sprechuhr</text>
+<text x="918.0" y="319.9" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">5-ms-Schritte,</text>
+<text x="918.0" y="335.5" font-size="12.5" font-weight="400" text-anchor="middle" class="t muted">Start + Stopp</text>
+<text x="824.0" y="284.0" font-size="13" font-weight="700" text-anchor="start" class="t faint">4</text>
+<path d="M450.0,194.0 Q330.0,250.0 150.0,258.0" class="line" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="940.0" y="84.0" width="220.0" height="64.0" rx="12" class="sky" />
+<text x="1050.0" y="113.3" font-size="17" font-weight="650" text-anchor="middle" class="t on-dark">Spieler</text>
+<text x="1050.0" y="132.3" font-size="12.5" font-weight="400" text-anchor="middle" class="t on-dark">je Spieler</text>
+<path d="M850.0,262.0 Q990.0,240.0 1000.0,152.0" class="line" stroke-width="2.2" marker-end="url(#arr)"/>
+<rect x="940.0" y="160.0" width="220.0" height="34.0" rx="8" class="green-l" />
+<text x="1050.0" y="182.0" font-size="12" font-weight="400" text-anchor="middle" class="t ink">mit Ressourcenpaket: echte Vokale</text>
+<rect x="940.0" y="200.0" width="220.0" height="34.0" rx="8" class="brown-l" />
+<text x="1050.0" y="222.0" font-size="12" font-weight="400" text-anchor="middle" class="t ink">ohne: Villager- + Blockgeräusche</text>
+<rect x="40.0" y="396.0" width="1120.0" height="44.0" rx="10" class="panel" stroke-width="1.2"/>
+<text x="600.0" y="424.0" font-size="14" font-weight="400" text-anchor="middle" class="mono muted">plugins/VoiceAPI/ — config.yml · voices/*.voice · songs/ · pack/ · tools/</text>
+</svg>
