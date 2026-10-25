@@ -19,7 +19,7 @@ import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
- * The base sounds ({@code plugins/VoiceAPI/pack/VoiceAPI-Sounds-base.zip}, 23 MB) are not part of the jar: on first start they are
+ * The base sounds ({@code plugins/VoiceAPI/pack/VoiceAPI-Sounds-base.zip}, 6 MB) are not part of the jar: on first start they are
  * downloaded from the GitHub release {@code voice-pack} and checked against the SHA-256 compiled in here, so the jar stays small. Without
  * internet VoiceAPI runs "without resource pack" until the file is there; an admin can also place it by hand.
  * <p>
@@ -28,7 +28,7 @@ import java.util.logging.Logger;
 public final class SoundDownload {
 
     /** SHA-256 of the sounds this plugin version is made for ({@code src/main/resources/pack/VoiceAPI-Sounds.zip}, checked by a test). */
-    public static final String SHA256 = "3284456f716157534115d4c3a8ed860c1016221b6ccb19bf7c590feba6661a29";
+    public static final String SHA256 = "81d420b1354348031178c7fbb4f096e0217104186dc034d5fbab79a051b4dd4c";
     /** Where they are downloaded from; {@code {sha256}} and {@code {sha}} (first 12 characters) are filled in. */
     public static final String DEFAULT_URL = "https://github.com/Passimoritz/MC-VillagerVoice/releases/download/voice-pack/VoiceAPI-Sounds-{sha}.zip";
     /** Larger answers are not a sound pack. */

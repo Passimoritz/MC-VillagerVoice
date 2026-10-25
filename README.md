@@ -25,7 +25,7 @@ It is a library: **no commands**. [NoteAPI](https://github.com/Passimoritz/MC-Mu
 
 Public-domain recordings, 10–20 s, converted by the plugin's speech mode (`VoiceApi.convertSpeech`: noise detected and filtered). Live in-game speech (`VoiceApi.speak`):
 [English](docs/audio/speech-en-pack.mp3) · [German](docs/audio/speech-de-pack.mp3) · [without pack](docs/audio/speech-en-vanilla.mp3) ·
-[witch](docs/audio/speech-en-witch.mp3) · [singing on notes](docs/audio/sing-en-pack.mp3).
+[sad](docs/audio/speech-en-sad.mp3) · [singing on notes](docs/audio/sing-en-pack.mp3).
 
 ## ✨ What it does
 
@@ -34,7 +34,7 @@ Public-domain recordings, 10–20 s, converted by the plugin's speech mode (`Voi
 | 🗣️ **Speak** | German by the rules of spelling, English with dictionary + rules; numbers as words; `?` rises, `.` falls, `CAPS` and `*stars*` emphasise |
 | 🎵 **Sing** | syllables on notes, melismas, legato, glides; the real villager hum exactly on the semitone (with the pack) |
 | 🤖 **AI villager voice** | an RVC voice model trained only on villager sounds turns real vocals into villager singing — and spoken recordings into villager speech, with noise detected and filtered. CPU only, Linux and Windows |
-| 🎭 **9 voices · 10 moods** | villager, trader, witch, allay, piglin, zombie villager, evoker, goat, cat · happy, sad, angry, scared, whisper, robot … |
+| 🎭 **The villager · 10 moods** | the voice of the villager videos (the other eight creatures were removed in 1.9.0; their names still work and become the villager) · happy, sad, angry, scared, whisper, robot … |
 | ⏱️ **Speech clock** | its own 5 ms thread — sounds start and stop to the millisecond, not on the 50 ms server tick |
 | 📦 **Small and maintenance-free** | 0.2 MB jar, sounds downloaded once (SHA-256 checked); compiled against the oldest API, tested weekly against the newest |
 
@@ -42,7 +42,7 @@ Public-domain recordings, 10–20 s, converted by the plugin's speech mode (`Voi
 
 ## 🚀 Quick start
 
-**Server owners:** put `voiceapi-<version>.jar` into `plugins/` and restart. On the first start the sounds (23 MB) are downloaded in the
+**Server owners:** put `voiceapi-<version>.jar` into `plugins/` and restart. On the first start the sounds (6 MB) are downloaded in the
 background; with NoteAPI they end up in its resource pack by themselves. → [Getting started](docs/en/getting-started.md)
 
 **Developers:**

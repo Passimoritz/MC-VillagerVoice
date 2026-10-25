@@ -111,19 +111,19 @@ T = {
         "pv_pack": "With the resource pack", "pv_vanilla": "Without (vanilla sounds)",
         "pv_rows": [("Vowels", "formant samples per root", "voiceapi:v.o.45 …", "the villager's “Hmm”, started at the\nsyllable's pitch, stopped in time"),
                     ("Consonants", "recorded consonant samples", "voiceapi:c.k, c.f …", "sand, gravel, calcite, a button,\na lava pop, horse breath …"),
-                    ("Singing", "the real hum of each voice,", "exactly on the semitone", "off by default — the vanilla hum\ncannot hold a note")],
+                    ("Singing", "the real hum of the villager,", "exactly on the semitone", "off by default — the vanilla hum\ncannot hold a note")],
         "pv_hint": "VoiceAPI decides per player — NoteAPI tells it who loaded the pack (or your own packProbe).",
         "dl_title": "Where the sounds come from (since 1.9.0)",
         "dl_jar": ("voiceapi.jar", "0.2 MB — code only"), "dl_start": ("Server start", "never waits"),
         "dl_have": "file there,\nSHA-256 right?", "dl_yes": "yes", "dl_no": "no",
         "dl_get": ("Download in the background", "GitHub release “voice-pack”\n.part → check SHA-256 → move"),
-        "dl_base": ("VoiceAPI-Sounds-base.zip", "plugins/VoiceAPI/pack/ — 23 MB"),
+        "dl_base": ("VoiceAPI-Sounds-base.zip", "plugins/VoiceAPI/pack/ — 6 MB"),
         "dl_songs": ("+ villager songs", "songs/<id>/*.ogg"),
         "dl_pack": ("VoiceAPI-Sounds.zip", "the finished sound pack"),
         "dl_event": ("onSoundPackChanged", "NoteAPI mixes it into\nits resource pack"),
         "dl_offline": ("Offline / download off", "runs without resource pack;\nplace the file by hand"),
         "size_title": "Jar size", "size_before": "1.8.0 — sounds inside", "size_after": "1.9.0 — sounds downloaded",
-        "size_sounds": "sound pack — 98 %", "size_note": "2,405 OGG Vorbis files: 9 hum voices × 14 roots × 4 lengths × 2 takes, plus speech sounds",
+        "size_sounds": "sound pack (9 voices) — 98 %", "size_note": "1.9.0: only the villager voice — 721 OGG files, 5.9 MB, downloaded once on the first start (SHA-256 checked)",
         "clock_title": "Why a speech clock of its own",
         "clock_tick": "server tick — every 50 ms", "clock_voice": "speech clock — every 5 ms",
         "clock_want": "wanted start of a sound", "clock_late": "up to 49 ms late", "clock_ok": "at most 4 ms late",
@@ -166,19 +166,19 @@ T = {
         "pv_pack": "Mit Ressourcenpaket", "pv_vanilla": "Ohne (Vanilla-Laute)",
         "pv_rows": [("Vokale", "Formant-Samples je Grundton", "voiceapi:v.o.45 …", "das „Hmm“ des Villagers, auf der Tonhöhe\nder Silbe gestartet, rechtzeitig gestoppt"),
                     ("Konsonanten", "aufgenommene Konsonanten", "voiceapi:c.k, c.f …", "Sand, Kies, Calcit, ein Knopf,\nein Lava-Plopp, Pferdeatem …"),
-                    ("Gesang", "das echte Summen jeder Stimme,", "genau auf dem Halbton", "standardmäßig aus — das Vanilla-\nSummen kann keinen Ton halten")],
+                    ("Gesang", "das echte Summen des Villagers,", "genau auf dem Halbton", "standardmäßig aus — das Vanilla-\nSummen kann keinen Ton halten")],
         "pv_hint": "VoiceAPI entscheidet je Spieler — die NoteAPI sagt, wer das Paket geladen hat (oder dein eigener packProbe).",
         "dl_title": "Woher die Laute kommen (seit 1.9.0)",
         "dl_jar": ("voiceapi.jar", "0,2 MB — nur Code"), "dl_start": ("Serverstart", "wartet nie"),
         "dl_have": "Datei da,\nSHA-256 richtig?", "dl_yes": "ja", "dl_no": "nein",
         "dl_get": ("Download im Hintergrund", "GitHub-Release „voice-pack“\n.part → SHA-256 prüfen → verschieben"),
-        "dl_base": ("VoiceAPI-Sounds-base.zip", "plugins/VoiceAPI/pack/ — 23 MB"),
+        "dl_base": ("VoiceAPI-Sounds-base.zip", "plugins/VoiceAPI/pack/ — 6 MB"),
         "dl_songs": ("+ Villager-Lieder", "songs/<id>/*.ogg"),
         "dl_pack": ("VoiceAPI-Sounds.zip", "das fertige Lautpaket"),
         "dl_event": ("onSoundPackChanged", "die NoteAPI mischt es in\nihr Ressourcenpaket"),
         "dl_offline": ("Offline / Download aus", "läuft ohne Ressourcenpaket;\nDatei von Hand ablegen"),
         "size_title": "Größe des Jars", "size_before": "1.8.0 — Laute im Jar", "size_after": "1.9.0 — Laute per Download",
-        "size_sounds": "Lautpaket — 98 %", "size_note": "2.405 OGG-Vorbis-Dateien: 9 Summ-Stimmen × 14 Grundtöne × 4 Längen × 2 Takes, dazu Sprachlaute",
+        "size_sounds": "Lautpaket (9 Stimmen) — 98 %", "size_note": "1.9.0: nur noch die Villager-Stimme — 721 OGG-Dateien, 5,9 MB, einmal beim ersten Start geladen (SHA-256 geprüft)",
         "clock_title": "Warum eine eigene Sprechuhr",
         "clock_tick": "Server-Tick — alle 50 ms", "clock_voice": "Sprechuhr — alle 5 ms",
         "clock_want": "gewünschter Start eines Lauts", "clock_late": "bis zu 49 ms zu spät", "clock_ok": "höchstens 4 ms zu spät",
@@ -361,7 +361,7 @@ def jar_size(t: dict, out: Path) -> None:
     s = Svg(1200, 250, t["size_title"])
     s.text(40, 46, t["size_title"], 22, "ink", weight=700)
     full, x0 = 820, 270
-    for i, (label, sounds, code, total) in enumerate(((t["size_before"], 23.25, 0.45, "23.7 MB"), (t["size_after"], 0.0, 0.23, "0.23 MB"))):
+    for i, (label, sounds, code, total) in enumerate(((t["size_before"], 23.25, 0.45, "23.7 MB"), (t["size_after"], 0.0, 0.24, "0.24 MB"))):
         y = 76 + i * 70
         s.text(40, y + 30, label, 14.5, "ink", weight=600)
         w_sounds, w_code = full * sounds / 23.7, max(5, full * code / 23.7)

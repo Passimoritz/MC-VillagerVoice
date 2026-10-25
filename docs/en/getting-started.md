@@ -15,7 +15,7 @@ on a server.
 | Server | Spigot, Paper, Purpur, Folia or a fork — **one and the same jar** |
 | Minecraft | 1.17 or newer (tested up to 26.3, future versions are checked weekly by CI) |
 | Java | 17 or newer |
-| Internet | once, on the first start (23 MB of sounds). Not needed afterwards — see [offline servers](#offline-servers) |
+| Internet | once, on the first start (6 MB of sounds). Not needed afterwards — see [offline servers](#offline-servers) |
 
 ## Install
 
@@ -25,10 +25,10 @@ on a server.
 
    ```text
    [VoiceAPI] Enabling VoiceAPI v1.9.0
-   [VoiceAPI] Downloading the VoiceAPI sounds in the background from https://github.com/Passimoritz/MC-VillagerVoice/releases/download/voice-pack/VoiceAPI-Sounds-3284456f7161.zip
-   [VoiceAPI] VoiceAPI 1.9.0 ready: 9 voices, 0 saved utterances, 0 villager songs, resource pack without VoiceAPI sounds, …
+   [VoiceAPI] Downloading the VoiceAPI sounds in the background from https://github.com/Passimoritz/MC-VillagerVoice/releases/download/voice-pack/VoiceAPI-Sounds-81d420b13543.zip
+   [VoiceAPI] VoiceAPI 1.9.0 ready: 1 voice, 0 saved utterances, 0 villager songs, resource pack without VoiceAPI sounds, …
    Done (10.986s)! For help, type "help"
-   [VoiceAPI] Downloaded the VoiceAPI sounds (23123 KB) from https://github.com/…
+   [VoiceAPI] Downloaded the VoiceAPI sounds (5917 KB) from https://github.com/…
    ```
 
    The server start never waits for the download. Until the sounds are there, VoiceAPI already works with vanilla sounds.
@@ -68,7 +68,7 @@ consonants, everyone else hears villager and block sounds.
 | 🗣️ English, villager, with the pack | [▶ listen](../audio/speech-en-pack.mp3) |
 | 🗣️ German, villager, with the pack | [▶ listen](../audio/speech-de-pack.mp3) |
 | 🗣️ English, vanilla sounds only (no pack) | [▶ listen](../audio/speech-en-vanilla.mp3) |
-| 🧙 Witch, excited · 😢 villager, sad | [▶ witch](../audio/speech-en-witch.mp3) · [▶ sad](../audio/speech-en-sad.mp3) |
+| 😢 Villager, sad | [▶ listen](../audio/speech-en-sad.mp3) |
 | 🎵 Singing on notes (hum) | [▶ listen](../audio/sing-en-pack.mp3) |
 
 ## Offline servers
@@ -79,7 +79,7 @@ A server without internet access runs without the resource pack sounds until the
    [`voice-pack`](https://github.com/Passimoritz/MC-VillagerVoice/releases/tag/voice-pack), save it as
    `plugins/VoiceAPI/pack/VoiceAPI-Sounds-base.zip` and restart. Set `pack.download: false` so VoiceAPI never tries.
 2. **Mirror:** host the file yourself and set `pack.download-url` (`{sha}` = first 12 characters of the checksum, `{sha256}` = all of it).
-3. **Big jar:** build a jar with the sounds inside: `mvn package -P bundled-pack` (≈ 24 MB, never downloads).
+3. **Jar with the sounds inside:** `mvn package -P bundled-pack` (≈ 3.7 MB, never downloads).
 
 ## Updating
 

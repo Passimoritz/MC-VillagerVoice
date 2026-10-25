@@ -39,7 +39,7 @@ Vokale beginnen mit dem „Uh!“, Ausrufe mit dem Schrei. Konsonanten sind Bloc
 Lava-Plopp, Pferdeatem …); stimmhafte bekommen einen leisen Stimmton.
 
 **Paket**: Vokale sind Formant-Samples je Grundton (alle 4 Halbtöne, höchstens um 2 gestreckt), Konsonanten aufgenommene Samples. Gesang
-nutzt das echte Summen jeder Stimme (`voiceapi:hum.<Stimme>.<Grundton>.<Länge>`), nahtlos verlängert und genau auf den Halbton gezogen.
+nutzt das echte Summen des Villagers (`voiceapi:hum.villager.<Grundton>.<Länge>`), nahtlos verlängert und genau auf den Halbton gezogen.
 
 Die Stimmwerte (Einsatz, Länge, Tonhöhe, Lautheit jedes Vanilla-Lauts) stammen aus der Messung aller Laute von Minecraft 26.3
 (`tools/voicelab.py atlas`).
@@ -59,7 +59,7 @@ Millisekunde startet und stoppt. Orte (wer wo spricht) und Zuhörer werden jeden
 ![Singen](../images/de/singing.svg)
 
 `VoiceApi.sing` verteilt die Silben auf die Melodie (Melismen erlaubt), schiebt die ganze Melodie oktavweise in die Lage der Stimme,
-bindet Noten (Legato) und gleitet bei großen Sprüngen. Mit Ressourcenpaket ist jede Silbe ein gehaltenes Summen der Stimme, genau auf
+bindet Noten (Legato) und gleitet bei großen Sprüngen. Mit Ressourcenpaket ist jede Silbe ein gehaltenes Summen des Villagers, genau auf
 der Note. Ohne kann der Villager keinen Ton halten (sein Summen ist nur ~180 ms stabil, das Spiel wählt zufällig einen von drei Takes),
 darum hören Gesang standardmäßig nur Spieler mit Paket (`sing.require-pack`).
 

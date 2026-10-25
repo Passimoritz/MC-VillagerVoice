@@ -41,7 +41,7 @@
 <text x="746.0" y="110.0" font-size="12" font-weight="600" text-anchor="middle" class="t muted">no</text>
 <rect x="434.0" y="250.0" width="360.0" height="80.0" rx="12" class="green" />
 <text x="614.0" y="287.0" font-size="16" font-weight="650" text-anchor="middle" class="t on-dark">VoiceAPI-Sounds-base.zip</text>
-<text x="614.0" y="306.0" font-size="12.5" font-weight="400" text-anchor="middle" class="t on-dark">plugins/VoiceAPI/pack/ — 23 MB</text>
+<text x="614.0" y="306.0" font-size="12.5" font-weight="400" text-anchor="middle" class="t on-dark">plugins/VoiceAPI/pack/ — 6 MB</text>
 <path d="M614.0,180.0 L614.0,246.0" class="line" stroke-width="1.8" marker-end="url(#arr)"/>
 <text x="626.0" y="212.0" font-size="12" font-weight="600" text-anchor="start" class="t muted">yes</text>
 <path d="M930.0,170.0 Q920.0,262.0 798.0,272.0" class="line" stroke-width="1.8" marker-end="url(#arr)"/>

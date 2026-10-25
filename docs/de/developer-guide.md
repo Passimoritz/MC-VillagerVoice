@@ -41,7 +41,7 @@ Kurzformen:
 
 ```java
 VoiceApi.say("Hallo!", Language.GERMAN, Speaker.VILLAGER, Style.DEFAULT, () -> npc.getLocation());   // alle in der Nähe hören es
-VoiceApi.tell(spieler, "Nur du hörst das.", Language.GERMAN, Speaker.WITCH, Style.parse("mood=whisper"));
+VoiceApi.tell(spieler, "Nur du hörst das.", Language.GERMAN, Speaker.VILLAGER, Style.parse("mood=whisper"));
 ```
 
 `speak` braucht keinen Server — es funktioniert in Tests und im [Kommandozeilen-Werkzeug](tools.md). Nur `play`, `say` und `tell`
@@ -90,19 +90,19 @@ VoiceApi.sing(text, Language.ENGLISH, Speaker.VILLAGER, melodie, Style.DEFAULT, 
 
 ## Stimmen, Stimmungen und Stil
 
-| `Speaker` | Stimme | | `Style.Mood` | Wirkung |
-|---|---|---|---|---|
-| `VILLAGER` | Dorfbewohner | | `NEUTRAL` | sachlich |
-| `TRADER` | fahrender Händler | | `HAPPY` | höher, lebhafter, schneller |
-| `WITCH` | Hexe | | `SAD` | tiefer, flacher, langsamer, längere Pausen |
-| `ALLAY` | Hilfsgeist | | `ANGRY` | lauter, hart, fallende Akzente |
-| `PIGLIN` | Piglin | | `SCARED` | höher, zittrig, schnell |
-| `ZOMBIE` | Zombie-Dorfbewohner | | `CALM` | gleichmäßig, langsam, weich |
-| `EVOKER` | Magier („wololo“) | | `EXCITED` | schnell, großer Umfang, laut |
-| `GOAT` | schreiende Ziege | | `WHISPER` | leise, fast monoton |
-| `CAT` | Katze | | `ROBOT` · `TIRED` | monoton, gleich lange Silben · langsam, tief, verklingend |
+**Die Stimme** ist `Speaker.VILLAGER` — die Stimme der bekannten Villager-Videos, auf ihrer natürlichen Tonhöhe (≈ 100 Hz) mit einem
+Umfang von ±12 Halbtönen (das Spiel spielt Laute mit halber bis doppelter Geschwindigkeit). Seit 1.9.0 ist sie die einzige: Die übrigen
+acht Wesen (Händler, Hexe, Hilfsgeist, Piglin, Zombie-Dorfbewohner, Magier, Ziege, Katze) klangen zu weit weg von den Videos und machten
+das Ressourcenpaket viermal so groß. Ihre IDs und Namen (`witch`, `hexe` …) funktionieren weiter und werden zum Villager, gespeicherte
+`.voice`-Dateien und ältere Plugins laufen also weiter.
 
-Jede Stimme hat eine natürliche Tonhöhe und einen Umfang von ±12 Halbtönen (das Spiel spielt Laute mit halber bis doppelter Geschwindigkeit).
+| `Style.Mood` | Wirkung | | `Style.Mood` | Wirkung |
+|---|---|---|---|---|
+| `NEUTRAL` | sachlich | | `CALM` | gleichmäßig, langsam, weich |
+| `HAPPY` | höher, lebhafter, schneller | | `EXCITED` | schnell, großer Umfang, laut |
+| `SAD` | tiefer, flacher, langsamer, längere Pausen | | `WHISPER` | leise, fast monoton |
+| `ANGRY` | lauter, hart, fallende Akzente | | `ROBOT` | monoton, gleich lange Silben |
+| `SCARED` | höher, zittrig, schnell | | `TIRED` | langsam, tief, verklingend |
 
 ```java
 Style a = Style.of(Style.Mood.SAD).withRate(0.8).withPitch(-3);
@@ -231,5 +231,5 @@ Language.guess("Hallo zusammen");                                              /
 | Ressourcenpaket | `packAvailable`, `hearsPack`, `packProbe`, `soundPack`, `soundPackFormat`, `pack()`, `onSoundPackChanged` |
 | Villager-Lieder und -Sprache | `songVoice`, `songVoices`, `songVoiceMissing`, `songVoiceBusy`, `convertSong`, `convertSpeech` (4), `cancelSongConversion`, `deleteSongVoice` |
 
-Ältere deutsche Eingaben funktionieren weiter: deutsche Stimmennamen (`dorfbewohner`, `hexe` …), Stimmungen (`traurig`) und Schlüssel
+Ältere Eingaben funktionieren weiter: die alten Stimmennamen (`witch`, `dorfbewohner`, `hexe` … → Villager), deutsche Stimmungen (`traurig`) und Schlüssel
 (`stimmung=`, `binden=`).

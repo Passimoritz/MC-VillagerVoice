@@ -75,7 +75,7 @@ public final class VoiceApiPlugin extends JavaPlugin {
                 getLogger().info("Continuing " + resumed + " conversion(s) a server stop interrupted.");
             }
         }
-        getLogger().info("VoiceAPI " + getDescription().getVersion() + " ready: " + Speaker.values().length + " voices, " + library.size()
+        getLogger().info("VoiceAPI " + getDescription().getVersion() + " ready: " + Speaker.values().length + (Speaker.values().length == 1 ? " voice, " : " voices, ") + library.size()
                 + " saved utterances, " + songs.size() + " villager songs, resource pack " + (pack.available() ? "with" : "without")
                 + " VoiceAPI sounds, voice model " + (converter.ready() ? "ready" : "not set up (" + String.join(", ", converter.missing()) + ")") + ".");
     }

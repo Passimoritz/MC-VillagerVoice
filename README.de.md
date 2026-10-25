@@ -25,7 +25,7 @@ Es ist eine Bibliothek: **keine Befehle**. Die [NoteAPI](https://github.com/Pass
 
 Gemeinfreie Aufnahmen, 10–20 s, vom Sprechmodus des Plugins umgewandelt (`VoiceApi.convertSpeech`: Rauschen erkannt und gefiltert). Live-Sprache im Spiel (`VoiceApi.speak`):
 [Deutsch](docs/audio/speech-de-pack.mp3) · [Englisch](docs/audio/speech-en-pack.mp3) · [ohne Paket](docs/audio/speech-en-vanilla.mp3) ·
-[Hexe](docs/audio/speech-en-witch.mp3) · [Singen auf Noten](docs/audio/sing-en-pack.mp3).
+[traurig](docs/audio/speech-en-sad.mp3) · [Singen auf Noten](docs/audio/sing-en-pack.mp3).
 
 ## ✨ Was es kann
 
@@ -34,7 +34,7 @@ Gemeinfreie Aufnahmen, 10–20 s, vom Sprechmodus des Plugins umgewandelt (`Voic
 | 🗣️ **Sprechen** | Deutsch nach den Regeln der Rechtschreibung, Englisch mit Wörterbuch + Regeln; Zahlen als Wörter; `?` steigt, `.` fällt, `GROSS` und `*Sternchen*` betonen |
 | 🎵 **Singen** | Silben auf Noten, Melismen, Legato, Gleiten; das echte Villager-Summen genau auf dem Halbton (mit Paket) |
 | 🤖 **KI-Villager-Stimme** | ein RVC-Stimmmodell, nur mit Villager-Lauten trainiert, macht aus echtem Gesang Villager-Gesang — und aus gesprochenen Aufnahmen Villager-Sprache, mit erkanntem und gefiltertem Rauschen. Nur CPU, Linux und Windows |
-| 🎭 **9 Stimmen · 10 Stimmungen** | Villager, Händler, Hexe, Hilfsgeist, Piglin, Zombie-Villager, Magier, Ziege, Katze · fröhlich, traurig, wütend, ängstlich, Flüstern, Roboter … |
+| 🎭 **Der Villager · 10 Stimmungen** | die Stimme der Villager-Videos (die übrigen acht Wesen sind seit 1.9.0 entfernt; ihre Namen funktionieren weiter und werden zum Villager) · fröhlich, traurig, wütend, ängstlich, Flüstern, Roboter … |
 | ⏱️ **Sprechuhr** | eigener 5-ms-Thread — Laute starten und stoppen auf die Millisekunde, nicht im 50-ms-Server-Tick |
 | 📦 **Klein und wartungsfrei** | Jar mit 0,2 MB, Laute einmal geladen (SHA-256 geprüft); gegen die älteste API kompiliert, jede Woche gegen die neueste getestet |
 
@@ -42,7 +42,7 @@ Gemeinfreie Aufnahmen, 10–20 s, vom Sprechmodus des Plugins umgewandelt (`Voic
 
 ## 🚀 Schnellstart
 
-**Server-Betreiber:** `voiceapi-<Version>.jar` in `plugins/` legen und neu starten. Beim ersten Start werden die Laute (23 MB) im
+**Server-Betreiber:** `voiceapi-<Version>.jar` in `plugins/` legen und neu starten. Beim ersten Start werden die Laute (6 MB) im
 Hintergrund geladen; mit der NoteAPI landen sie von selbst in deren Ressourcenpaket. → [Erste Schritte](docs/de/getting-started.md)
 
 **Entwickler:**

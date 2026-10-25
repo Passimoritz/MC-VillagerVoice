@@ -15,7 +15,7 @@ Diese Seite bringt es auf einem Server zum Laufen.
 | Server | Spigot, Paper, Purpur, Folia oder ein Fork — **ein und dasselbe Jar** |
 | Minecraft | 1.17 oder neuer (getestet bis 26.3, künftige Versionen prüft die CI jede Woche) |
 | Java | 17 oder neuer |
-| Internet | einmal, beim ersten Start (23 MB Laute). Danach nicht mehr nötig — siehe [Server ohne Internet](#server-ohne-internet) |
+| Internet | einmal, beim ersten Start (6 MB Laute). Danach nicht mehr nötig — siehe [Server ohne Internet](#server-ohne-internet) |
 
 ## Installieren
 
@@ -24,10 +24,10 @@ Diese Seite bringt es auf einem Server zum Laufen.
 
    ```text
    [VoiceAPI] Enabling VoiceAPI v1.9.0
-   [VoiceAPI] Downloading the VoiceAPI sounds in the background from https://github.com/Passimoritz/MC-VillagerVoice/releases/download/voice-pack/VoiceAPI-Sounds-3284456f7161.zip
-   [VoiceAPI] VoiceAPI 1.9.0 ready: 9 voices, 0 saved utterances, 0 villager songs, resource pack without VoiceAPI sounds, …
+   [VoiceAPI] Downloading the VoiceAPI sounds in the background from https://github.com/Passimoritz/MC-VillagerVoice/releases/download/voice-pack/VoiceAPI-Sounds-81d420b13543.zip
+   [VoiceAPI] VoiceAPI 1.9.0 ready: 1 voice, 0 saved utterances, 0 villager songs, resource pack without VoiceAPI sounds, …
    Done (10.986s)! For help, type "help"
-   [VoiceAPI] Downloaded the VoiceAPI sounds (23123 KB) from https://github.com/…
+   [VoiceAPI] Downloaded the VoiceAPI sounds (5917 KB) from https://github.com/…
    ```
 
    Der Serverstart wartet nie auf den Download. Bis die Laute da sind, funktioniert VoiceAPI schon mit Vanilla-Lauten.
@@ -68,7 +68,7 @@ und Konsonanten, alle anderen Villager- und Blockgeräusche.
 | 🗣️ Deutsch, Villager, mit Paket | [▶ anhören](../audio/speech-de-pack.mp3) |
 | 🗣️ Englisch, Villager, mit Paket | [▶ anhören](../audio/speech-en-pack.mp3) |
 | 🗣️ Englisch, nur Vanilla-Laute (ohne Paket) | [▶ anhören](../audio/speech-en-vanilla.mp3) |
-| 🧙 Hexe, aufgeregt · 😢 Villager, traurig | [▶ Hexe](../audio/speech-en-witch.mp3) · [▶ traurig](../audio/speech-en-sad.mp3) |
+| 😢 Villager, traurig | [▶ anhören](../audio/speech-en-sad.mp3) |
 | 🎵 Singen auf Noten (Summen) | [▶ anhören](../audio/sing-en-pack.mp3) |
 
 ## Server ohne Internet
@@ -79,7 +79,7 @@ Ein Server ohne Internet läuft ohne die Laute des Ressourcenpakets, bis die Dat
    [`voice-pack`](https://github.com/Passimoritz/MC-VillagerVoice/releases/tag/voice-pack) laden, als
    `plugins/VoiceAPI/pack/VoiceAPI-Sounds-base.zip` speichern und neu starten. `pack.download: false`, damit VoiceAPI es nie versucht.
 2. **Spiegel:** die Datei selbst hosten und `pack.download-url` setzen (`{sha}` = erste 12 Zeichen der Prüfsumme, `{sha256}` = alle).
-3. **Großes Jar:** ein Jar mit den Lauten bauen: `mvn package -P bundled-pack` (≈ 24 MB, lädt nie etwas).
+3. **Jar mit den Lauten:** `mvn package -P bundled-pack` (≈ 3,7 MB, lädt nie etwas).
 
 ## Aktualisieren
 

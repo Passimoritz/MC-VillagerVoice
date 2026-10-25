@@ -41,7 +41,7 @@ Short forms:
 
 ```java
 VoiceApi.say("Hello!", Language.ENGLISH, Speaker.VILLAGER, Style.DEFAULT, () -> npc.getLocation());   // everyone near the place hears it
-VoiceApi.tell(player, "Only you hear this.", Language.ENGLISH, Speaker.WITCH, Style.parse("mood=whisper"));
+VoiceApi.tell(player, "Only you hear this.", Language.ENGLISH, Speaker.VILLAGER, Style.parse("mood=whisper"));
 ```
 
 `speak` needs no server — it works in tests and in the [command-line tool](tools.md). Only `play`, `say` and `tell` need a running server.
@@ -89,19 +89,18 @@ VoiceApi.sing(text, Language.ENGLISH, Speaker.VILLAGER, melody, Style.DEFAULT, s
 
 ## Voices, moods and style
 
-| `Speaker` | Voice | | `Style.Mood` | Effect |
-|---|---|---|---|---|
-| `VILLAGER` | villager | | `NEUTRAL` | matter-of-fact |
-| `TRADER` | wandering trader | | `HAPPY` | higher, livelier, faster |
-| `WITCH` | witch | | `SAD` | lower, flatter, slower, longer pauses |
-| `ALLAY` | allay | | `ANGRY` | louder, hard, falling accents |
-| `PIGLIN` | piglin | | `SCARED` | higher, shaky, fast |
-| `ZOMBIE` | zombie villager | | `CALM` | even, slow, soft |
-| `EVOKER` | evoker ("wololo") | | `EXCITED` | fast, wide range, loud |
-| `GOAT` | screaming goat | | `WHISPER` | quiet, almost monotone |
-| `CAT` | cat | | `ROBOT` · `TIRED` | monotone, equal syllables · slow, low, fading |
+**The voice** is `Speaker.VILLAGER` — the voice of the well-known villager videos, at its natural pitch (≈ 100 Hz) with a range of ±12
+semitones (the game plays sounds at half to double speed). Since 1.9.0 it is the only one: the other eight creatures (trader, witch, allay,
+piglin, zombie villager, evoker, goat, cat) sounded too far from the videos and made the resource pack four times as big. Their ids and
+names (`witch`, `hexe` …) still work and become the villager, so saved `.voice` files and older plugins keep working.
 
-Each voice has a natural pitch and a range of ±12 semitones (the game plays sounds at half to double speed).
+| `Style.Mood` | Effect | | `Style.Mood` | Effect |
+|---|---|---|---|---|
+| `NEUTRAL` | matter-of-fact | | `CALM` | even, slow, soft |
+| `HAPPY` | higher, livelier, faster | | `EXCITED` | fast, wide range, loud |
+| `SAD` | lower, flatter, slower, longer pauses | | `WHISPER` | quiet, almost monotone |
+| `ANGRY` | louder, hard, falling accents | | `ROBOT` | monotone, equal syllables |
+| `SCARED` | higher, shaky, fast | | `TIRED` | slow, low, fading |
 
 ```java
 Style a = Style.of(Style.Mood.SAD).withRate(0.8).withPitch(-3);
@@ -228,4 +227,4 @@ Language.guess("Hello there");                                                //
 | resource pack | `packAvailable`, `hearsPack`, `packProbe`, `soundPack`, `soundPackFormat`, `pack()`, `onSoundPackChanged` |
 | villager songs and speech | `songVoice`, `songVoices`, `songVoiceMissing`, `songVoiceBusy`, `convertSong`, `convertSpeech` (4), `cancelSongConversion`, `deleteSongVoice` |
 
-Older German input keeps working: German voice names (`dorfbewohner`, `hexe` …), moods (`traurig`) and keys (`stimmung=`, `binden=`).
+Older input keeps working: the old voice names (`witch`, `dorfbewohner`, `hexe` … → villager), German moods (`traurig`) and keys (`stimmung=`, `binden=`).

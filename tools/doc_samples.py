@@ -26,8 +26,6 @@ SAMPLES = [
      "Sprache — Deutsch, Villager, mit Ressourcenpaket"),
     ("speech-en-vanilla", "speak", "Welcome to the village, traveler! Would you like to trade some emeralds?", "en", "villager", "mood=happy",
      False, "Speech — English, villager, vanilla sounds only (no pack)"),
-    ("speech-en-witch", "speak", "Hehe! A lovely potion, brewed just for you. Drink it, quickly!", "en", "witch", "mood=excited", True,
-     "Speech — English, witch, excited"),
     ("speech-en-sad", "speak", "I lost all my emeralds... and the iron golem did nothing.", "en", "villager", "mood=sad", True,
      "Speech — English, villager, sad"),
     ("sing-en-pack", "sing", "Twinkle, twinkle, little star, how I wonder what you are", "en", "villager", "", True,

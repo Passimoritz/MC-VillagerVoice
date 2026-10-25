@@ -7,7 +7,7 @@
 ```bash
 mvn verify                                                                     # Spigot API 1.17.1, Java 17 target
 mvn -P paper-latest -Dbukkit.version=$(bash ci/latest-api.sh paper) verify    # against the newest Paper API
-mvn package -P bundled-pack                                                    # big jar with the sounds inside
+mvn package -P bundled-pack                                                    # jar with the sounds inside (≈ 3.7 MB)
 python ci/smoke.py --project paper --version latest --jar target/voiceapi-*.jar   # start a real server with the jar
 ```
 

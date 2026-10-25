@@ -39,7 +39,7 @@ start with the "Uh!", exclamations with the scream. Consonants are block and ani
 horse breath …); voiced ones get a quiet voicing tone.
 
 **Pack**: vowels are formant samples per root (every 4 semitones, stretched by at most 2), consonants are recorded samples. Singing uses the
-real hum of each voice (`voiceapi:hum.<voice>.<root>.<length>`), extended seamlessly and pulled exactly onto the semitone.
+real hum of the villager (`voiceapi:hum.villager.<root>.<length>`), extended seamlessly and pulled exactly onto the semitone.
 
 The voice numbers (onset, length, pitch, loudness of every vanilla sound) come from measuring all sounds of Minecraft 26.3
 (`tools/voicelab.py atlas`).
@@ -59,7 +59,7 @@ sounds to the millisecond. Places (who is speaking where) and listeners are refr
 ![Singing](../images/singing.svg)
 
 `VoiceApi.sing` spreads the syllables over the melody (melismas allowed), moves the whole melody by octaves into the voice's register,
-ties notes together (legato) and glides on large jumps. With the resource pack every syllable is a held hum of the voice, exactly on the
+ties notes together (legato) and glides on large jumps. With the resource pack every syllable is a held hum of the villager, exactly on the
 note. Without it the villager cannot hold a note (its hum is only steady for ~180 ms and the game picks one of three takes at random), so
 singing is only played to players with the pack by default (`sing.require-pack`).
 
